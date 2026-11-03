@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+/* ========================================================
+   Chronos Typography & Internationalization (i18n) Engine
+   Dual-Engine: Inter (English/LTR) & Vazirmatn (Persian/RTL)
+   ======================================================== */
+
+:root {
+  --font-sans-en: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans-fa: 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Base Global Smoothing */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* ========================================================
+   LTR (English) Typography Rules
+   ======================================================== */
+html[dir="ltr"],
+body[dir="ltr"],
+[dir="ltr"] {
+  font-family: var(--font-sans-en);
+  letter-spacing: -0.011em;
+  line-height: 1.5;
+}
+
+[dir="ltr"] h1,
+[dir="ltr"] h2,
+[dir="ltr"] h3,
+[dir="ltr"] h4 {
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+/* ========================================================
+   RTL (Persian / Farsi) Typography Rules
+   ======================================================== */
+html[dir="rtl"],
+body[dir="rtl"],
+[dir="rtl"] {
+  font-family: var(--font-sans-fa);
+  letter-spacing: 0 !important;
+  line-height: 1.68;
+}
+
+/* Persian Headings: Enhanced line-height to prevent diacritic clipping */
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6 {
+  font-family: var(--font-sans-fa);
+  letter-spacing: 0 !important;
+  line-height: 1.4 !important;
+  font-weight: 700;
+}
+
+/* Crucial Persian Fix: Letter-spacing breaks cursive Persian script connections.
+   Neutralize all Tailwind tracking utilities inside RTL mode. */
+[dir="rtl"] [class*="tracking-"],
+[dir="rtl"] p,
+[dir="rtl"] span,
+[dir="rtl"] button,
+[dir="rtl"] a,
+[dir="rtl"] label {
+  letter-spacing: 0 !important;
+}
+
+/* Uppercase has no typographic meaning in Persian; reset to preserve natural letterforms */
+[dir="rtl"] [class*="uppercase"] {
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* Persian Inputs, Textareas, Selects */
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  font-family: var(--font-sans-fa);
+  line-height: 1.6;
+  text-align: right;
+}
+
+[dir="rtl"] input::placeholder,
+[dir="rtl"] textarea::placeholder {
+  text-align: right;
+  font-family: var(--font-sans-fa);
+  opacity: 0.65;
+}
+
+/* Persian Buttons and Badges - Ensure vertical baseline centering */
+[dir="rtl"] button,
+[dir="rtl"] a[role="button"] {
+  font-family: var(--font-sans-fa);
+  line-height: 1.5;
+}
+
+/* ========================================================
+   Tabular Numbers & Numeric Standards
+   ======================================================== */
+.tabular-nums,
+[dir="rtl"] .tabular-nums,
+.font-mono,
+[dir="rtl"] .font-mono {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ========================================================
+   Animations & Transitions
+   ======================================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ========================================================
+   Custom High-End Dark Scrollbars
+   ======================================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.22);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}

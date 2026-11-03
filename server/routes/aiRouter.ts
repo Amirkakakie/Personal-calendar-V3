@@ -1,0 +1,164 @@
+import { Router, Request, Response } from 'express';
+import { db } from '../db.ts';
+import { geminiService } from '../services/geminiService.ts';
+
+const router = Router();
+
+// DECOMPOSE goal into actionable tasks
+router.post('/decompose', async (req: Request, res: Response) => {
+  const { goalTitle, context, category } = req.body;
+  if (!goalTitle || typeof goalTitle !== 'string') {
+    return res.status(400).json({ success: false, error: 'goalTitle is required' });
+  }
+
+  try {
+    const result = await geminiService.decomposeGoal(goalTitle.trim(), context, category);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Goal decomposition route failed:', error);
+    res.status(500).json({ success: false, error: error.message || 'Decomposition failed' });
+  }
+});
+
+// GENERATE daily productivity briefing and tailored schedule
+router.post('/daily-brief', async (req: Request, res: Response) => {
+  const { energyLevel = 'High' } = req.body;
+  const tasks = db.getTasks();
+  const goals = db.getGoals();
+
+  try {
+    const briefing = await geminiService.generateDailyBriefing(tasks, goals, energyLevel);
+    res.json({ success: true, data: briefing });
+  } catch (error: any) {
+    console.error('Daily briefing route failed:', error);
+    res.status(500).json({ success: false, error: error.message || 'Briefing failed' });
+  }
+});
+
+// ASK productivity coach
+router.post('/coach', async (req: Request, res: Response) => {
+  const { message } = req.body;
+  if (!message || typeof message !== 'string') {
+    return res.status(400).json({ success: false, error: 'Message is required' });
+  }
+
+  const tasks = db.getTasks();
+  const stats = db.getProductivityStats();
+  const contextSummary = `Total Tasks: ${tasks.length}, Completed: ${stats.completedCount}, Streak: ${stats.currentStreakDays} days, Completion Rate: ${stats.completionRate}%, Focus Minutes: ${stats.focusMinutesToday}`;
+
+  try {
+    const advice = await geminiService.askCoach(message.trim(), contextSummary);
+    res.json({ success: true, advice });
+  } catch (error: any) {
+    console.error('AI Coach route failed:', error);
+    res.status(500).json({ success: false, error: error.message || 'Coach request failed' });
+  }
+});
+
+// PREDICTIVE BURNOUT & 48-HOUR DEADLINE RISK ALERT
+router.get('/burnout-risk', async (_req: Request, res: Response) => {
+  const tasks = db.getTasks();
+  const pending = tasks.filter(t => t.status !== 'completed');
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const in48h = new Date(now.getTime() + 48 * 3600 * 1000).toISOString().split('T')[0];
+
+  // Detect tasks due within 48h
+  const imminentTasks = pending.filter(t => t.dueDate && t.dueDate <= in48h);
+  const totalImminentMinutes = imminentTasks.reduce((acc, t) => acc + (t.durationMinutes || 45), 0);
+  const highFocusMinutes = imminentTasks.filter(t => t.energyLevel === 'High Focus' || t.priority === 'High')
+    .reduce((acc, t) => acc + (t.durationMinutes || 45), 0);
+
+  // Calculate Burnout Index (0 - 100)
+  let burnoutIndex = Math.min(100, Math.round((totalImminentMinutes / 480) * 85));
+  if (imminentTasks.length > 6) burnoutIndex = Math.min(100, burnoutIndex + 15);
+
+  const riskLevel = burnoutIndex >= 75 ? 'Critical' : burnoutIndex >= 45 ? 'Moderate' : 'Low';
+
+  const deadlineAlerts = imminentTasks.map(t => {
+    const isToday = t.dueDate === todayStr;
+    const severity = isToday && t.priority === 'High' ? 'Critical' : t.priority === 'High' ? 'Warning' : 'Healthy';
+    return {
+      taskId: t.id,
+      taskTitle: t.title,
+      dueDate: t.dueDate,
+      category: t.category,
+      estimatedRemainingMinutes: t.durationMinutes || 45,
+      riskSeverity: severity,
+      reason: isToday 
+        ? 'Due today! High risk of delay if not blocked in morning circadian window.' 
+        : 'Due within 48 hours with high cognitive requirement.',
+      recommendedAction: t.energyLevel === 'High Focus' 
+        ? 'Protect 90m uninterrupted deep work block at 09:00 AM.' 
+        : 'Batch with related tasks or break into micro-subtasks.'
+    };
+  });
+
+  res.json({
+    success: true,
+    data: {
+      burnoutIndex,
+      riskLevel,
+      imminentTasksCount: imminentTasks.length,
+      totalImminentMinutes,
+      highFocusMinutes,
+      deadlineAlerts,
+      recommendation: riskLevel === 'Critical'
+        ? 'Workload exceeds cognitive threshold for the next 48h. Delegate or reschedule non-essential Q3/Q4 items.'
+        : riskLevel === 'Moderate'
+        ? 'Balanced workload. Maintain 25m Pomodoro cycles to protect energy.'
+        : 'Workload is optimal. Ideal window for creative exploratory sprints.'
+    }
+  });
+});
+
+// DYNAMIC TASK ATOMIZATION (One-click micro-task decomposition)
+router.post('/atomize', async (req: Request, res: Response) => {
+  const { taskId, taskTitle, category } = req.body;
+  let title = taskTitle;
+  let cat = category;
+
+  if (taskId) {
+    const t = db.getTaskById(taskId);
+    if (t) {
+      title = t.title;
+      cat = t.category;
+    }
+  }
+
+  if (!title) {
+    return res.status(400).json({ success: false, error: 'taskId or taskTitle is required' });
+  }
+
+  try {
+    const result = await geminiService.decomposeGoal(title, 'Atomize this into immediate tactical 15-45 minute execution subtasks', cat);
+    
+    // If taskId was provided, optionally append subtasks to the task in db
+    if (taskId) {
+      const task = db.getTaskById(taskId);
+      if (task) {
+        const newSubtasks = (result.subtasks || []).map((st: any, i: number) => ({
+          id: `st-atom-${Date.now()}-${i}`,
+          title: st.title,
+          completed: false,
+          estimatedMinutes: st.estimatedMinutes || 25
+        }));
+        db.updateTask(taskId, {
+          subtasks: [...task.subtasks, ...newSubtasks]
+        });
+      }
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Atomization failed' });
+  }
+});
+
+// GET productivity statistics
+router.get('/stats', (_req: Request, res: Response) => {
+  const stats = db.getProductivityStats();
+  res.json({ success: true, data: stats });
+});
+
+export default router;

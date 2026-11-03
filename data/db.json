@@ -1,0 +1,647 @@
+{
+  "tasks": [
+    {
+      "id": "task-1793614366422-uppn",
+      "title": "test",
+      "description": "test",
+      "category": "Work/Career",
+      "priority": "Medium",
+      "status": "todo",
+      "eisenhower": "q2_not_urgent_important",
+      "dueDate": "2026-11-02",
+      "dueTime": "10:00",
+      "durationMinutes": 45,
+      "subtasks": [],
+      "tags": [],
+      "syncedToGoogle": true,
+      "recurrence": "none",
+      "pomodoroSessions": 0,
+      "createdAt": "2026-11-02T10:12:46.422Z",
+      "updatedAt": "2026-11-02T10:12:46.422Z",
+      "googleCalendarEventId": "gcal-evt-1793614366422"
+    },
+    {
+      "id": "task-1",
+      "title": "Review System Architecture & Microservice Boundaries",
+      "description": "Analyze data consistency, idempotency keys, and Google Calendar event synchronization.",
+      "category": "Work/Career",
+      "priority": "High",
+      "status": "in_progress",
+      "eisenhower": "q1_urgent_important",
+      "energyLevel": "High Focus",
+      "dueDate": "2026-11-01",
+      "dueTime": "10:00",
+      "durationMinutes": 90,
+      "projectId": "proj-1",
+      "linkedSkillId": "skill-dist-sys",
+      "calendarOverlay": "work",
+      "xpReward": 80,
+      "driveDocUrl": "https://docs.google.com/document/create",
+      "subtasks": [
+        {
+          "id": "st-1",
+          "title": "Audit gRPC protobuf schemas",
+          "completed": true,
+          "estimatedMinutes": 30
+        },
+        {
+          "id": "st-2",
+          "title": "Stress test connection pool saturation",
+          "completed": false,
+          "estimatedMinutes": 30
+        },
+        {
+          "id": "st-3",
+          "title": "Document failover topology",
+          "completed": false,
+          "estimatedMinutes": 30
+        }
+      ],
+      "tags": [
+        "Architecture",
+        "Review",
+        "Backend"
+      ],
+      "syncedToGoogle": true,
+      "googleCalendarEventId": "gcal-evt-101",
+      "createdAt": "2026-11-01T22:10:55.762Z",
+      "updatedAt": "2026-11-01T22:10:55.762Z",
+      "pomodoroSessions": 2,
+      "pomodoroCount": 2
+    },
+    {
+      "id": "task-2",
+      "title": "Distributed Consensus: Raft Log Compaction Implementation",
+      "description": "Implement snapshotting and log compaction algorithm based on section 7 of Ongaro & Ousterhout.",
+      "category": "Academic/Study",
+      "priority": "High",
+      "status": "todo",
+      "eisenhower": "q2_not_urgent_important",
+      "energyLevel": "High Focus",
+      "dueDate": "2026-11-01",
+      "dueTime": "14:30",
+      "durationMinutes": 60,
+      "projectId": "proj-2",
+      "linkedSkillId": "skill-dist-sys",
+      "calendarOverlay": "study",
+      "xpReward": 70,
+      "driveDocUrl": "https://docs.google.com/document/create",
+      "subtasks": [
+        {
+          "id": "st-4",
+          "title": "Implement InstallSnapshot RPC struct",
+          "completed": false,
+          "estimatedMinutes": 30
+        },
+        {
+          "id": "st-5",
+          "title": "Handle stale term rejection edge cases",
+          "completed": false,
+          "estimatedMinutes": 30
+        }
+      ],
+      "tags": [
+        "Raft",
+        "Study",
+        "CS"
+      ],
+      "syncedToGoogle": false,
+      "createdAt": "2026-11-01T22:10:55.762Z",
+      "updatedAt": "2026-11-01T22:10:55.762Z",
+      "pomodoroSessions": 0,
+      "pomodoroCount": 0
+    },
+    {
+      "id": "task-3",
+      "title": "Zone 2 Aerobic Base Intervals (6km at 145 BPM)",
+      "description": "Aerobic threshold run followed by 10m mobility stretching.",
+      "category": "Health & Habits",
+      "priority": "Medium",
+      "status": "completed",
+      "eisenhower": "q2_not_urgent_important",
+      "energyLevel": "Creative",
+      "dueDate": "2026-11-01",
+      "dueTime": "07:30",
+      "durationMinutes": 45,
+      "projectId": "proj-3",
+      "linkedSkillId": "skill-biohacking",
+      "calendarOverlay": "personal",
+      "xpReward": 40,
+      "subtasks": [
+        {
+          "id": "st-6",
+          "title": "Hydration & pre-workout warm-up",
+          "completed": true,
+          "estimatedMinutes": 10
+        },
+        {
+          "id": "st-7",
+          "title": "Maintain target heart rate band",
+          "completed": true,
+          "estimatedMinutes": 35
+        }
+      ],
+      "tags": [
+        "Cardio",
+        "Health",
+        "Zone2"
+      ],
+      "syncedToGoogle": true,
+      "completedAt": "2026-11-01T22:10:55.762Z",
+      "createdAt": "2026-11-01T22:10:55.762Z",
+      "updatedAt": "2026-11-01T22:10:55.762Z",
+      "pomodoroSessions": 1,
+      "pomodoroCount": 1
+    },
+    {
+      "id": "task-4",
+      "title": "Weekly Executive Operating System Retrospective",
+      "description": "Review weekly completion velocity, adjust OKR milestone projections, and schedule next week deep work.",
+      "category": "Personal Growth",
+      "priority": "Medium",
+      "status": "todo",
+      "eisenhower": "q2_not_urgent_important",
+      "energyLevel": "Low Energy/Admin",
+      "dueDate": "2026-11-01",
+      "dueTime": "17:00",
+      "durationMinutes": 45,
+      "linkedSkillId": "skill-exec",
+      "calendarOverlay": "work",
+      "xpReward": 50,
+      "subtasks": [
+        {
+          "id": "st-8",
+          "title": "Calculate time ROI and billable yield",
+          "completed": false,
+          "estimatedMinutes": 20
+        },
+        {
+          "id": "st-9",
+          "title": "Block high focus morning slots in Google Calendar",
+          "completed": false,
+          "estimatedMinutes": 25
+        }
+      ],
+      "tags": [
+        "Planning",
+        "Productivity",
+        "WeeklyReview"
+      ],
+      "syncedToGoogle": false,
+      "createdAt": "2026-11-01T22:10:55.762Z",
+      "updatedAt": "2026-11-01T22:10:55.762Z",
+      "pomodoroSessions": 0,
+      "pomodoroCount": 0
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-1",
+      "title": "Master Distributed Computing & Cloud Infrastructure",
+      "description": "Acquire deep competency in consensus algorithms, fault-tolerant replication, and high-throughput systems.",
+      "category": "Academic/Study",
+      "timeframe": "quarterly",
+      "targetDate": "2026-12-31",
+      "progressPercent": 68,
+      "keyResults": [
+        {
+          "id": "kr-1",
+          "title": "Implement Raft Consensus Key-Value Store from scratch",
+          "currentValue": 3,
+          "targetValue": 4,
+          "unit": "milestones",
+          "completed": false
+        },
+        {
+          "id": "kr-2",
+          "title": "Complete MIT 6.824 Lab assignments",
+          "currentValue": 3,
+          "targetValue": 4,
+          "unit": "labs",
+          "completed": false
+        },
+        {
+          "id": "kr-3",
+          "title": "Publish 2 technical breakdown essays on distributed consensus",
+          "currentValue": 2,
+          "targetValue": 2,
+          "unit": "articles",
+          "completed": true
+        }
+      ],
+      "createdAt": "2026-10-01T00:00:00Z"
+    },
+    {
+      "id": "goal-2",
+      "title": "Scale Technical Leadership & High-Yield Career Output",
+      "description": "Drive high-leverage architectural impact and mentor engineering teams.",
+      "category": "Work/Career",
+      "timeframe": "quarterly",
+      "targetDate": "2026-12-31",
+      "progressPercent": 60,
+      "keyResults": [
+        {
+          "id": "kr-4",
+          "title": "Deliver 3 production architectural RFCs",
+          "currentValue": 2,
+          "targetValue": 3,
+          "unit": "RFCs",
+          "completed": false
+        },
+        {
+          "id": "kr-5",
+          "title": "Maintain >$120/hr average cognitive ROI across project work",
+          "currentValue": 125,
+          "targetValue": 120,
+          "unit": "$/hr",
+          "completed": true
+        }
+      ],
+      "createdAt": "2026-10-01T00:00:00Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "Enterprise Microservices & Distributed Core",
+      "description": "Building event-driven architecture with Kafka, gRPC, and PostgreSQL persistence.",
+      "category": "Work/Career",
+      "status": "in_progress",
+      "targetHours": 60,
+      "loggedHours": 34.5,
+      "hourlyValuation": 120,
+      "color": "blue",
+      "driveFolderUrl": "https://drive.google.com/drive/u/0/folders",
+      "tasksCount": 4,
+      "completedTasksCount": 2,
+      "createdAt": "2026-10-15T08:00:00Z"
+    },
+    {
+      "id": "proj-2",
+      "name": "Advanced Distributed Systems Mastery",
+      "description": "Deep dive into Raft consensus, Byzantine Fault Tolerance, and Paxos implementations.",
+      "category": "Academic/Study",
+      "status": "in_progress",
+      "targetHours": 40,
+      "loggedHours": 21,
+      "hourlyValuation": 85,
+      "color": "emerald",
+      "driveFolderUrl": "https://drive.google.com/drive/u/0/folders",
+      "tasksCount": 5,
+      "completedTasksCount": 3,
+      "createdAt": "2026-10-18T10:00:00Z"
+    },
+    {
+      "id": "proj-3",
+      "name": "Sub-3:30 Marathon & VO2 Max Protocol",
+      "description": "Structured aerobic threshold training, zone 2 pacing, and biometric recovery tracking.",
+      "category": "Health & Habits",
+      "status": "in_progress",
+      "targetHours": 30,
+      "loggedHours": 18,
+      "hourlyValuation": 60,
+      "color": "amber",
+      "tasksCount": 3,
+      "completedTasksCount": 2,
+      "createdAt": "2026-10-20T07:00:00Z"
+    }
+  ],
+  "calendarEvents": [
+    {
+      "id": "cal-1",
+      "title": "Strategic Systems Design & Core Architecture Block",
+      "description": "Deep cognitive sprint on microservices synchronization.",
+      "startTime": "2026-11-01T10:00:00",
+      "endTime": "2026-11-01T11:30:00",
+      "category": "Work/Career",
+      "calendarOverlay": "work",
+      "isGoogleEvent": true,
+      "googleEventId": "gcal-evt-101",
+      "taskId": "task-1"
+    },
+    {
+      "id": "cal-2",
+      "title": "Architecture Sync with Lead Staff Engineer",
+      "description": "Review service interfaces and event schema evolutions.",
+      "startTime": "2026-11-01T13:00:00",
+      "endTime": "2026-11-01T14:00:00",
+      "category": "Work/Career",
+      "calendarOverlay": "work",
+      "isGoogleEvent": true,
+      "googleEventId": "gcal-evt-102"
+    },
+    {
+      "id": "cal-3",
+      "title": "Academic Study: Distributed Consensus & Raft Lab",
+      "description": "Snapshotting algorithms and term transition logic.",
+      "startTime": "2026-11-01T14:30:00",
+      "endTime": "2026-11-01T15:30:00",
+      "category": "Academic/Study",
+      "calendarOverlay": "study",
+      "isGoogleEvent": false,
+      "taskId": "task-2"
+    },
+    {
+      "id": "gcal-evt-1793614366422",
+      "title": "[Work/Career] test",
+      "description": "test",
+      "startTime": "2026-11-02T10:00:00",
+      "endTime": "2026-11-02T10:45:00.000Z",
+      "category": "Work/Career",
+      "isGoogleEvent": true,
+      "googleEventId": "gcal-evt-1793614366422",
+      "taskId": "task-1793614366422-uppn"
+    }
+  ],
+  "timeLogs": [
+    {
+      "id": "test-tl-1793571055765",
+      "taskTitle": "Verify DB Writing Capability",
+      "projectName": "DB Persistence Test Project",
+      "durationSeconds": 1800,
+      "hourlyRate": 100,
+      "calculatedRoi": 50,
+      "efficiencyRate": 95,
+      "energyReported": "High Focus",
+      "startedAt": "2026-11-01T22:10:55.765Z",
+      "endedAt": "2026-11-01T22:10:55.765Z"
+    },
+    {
+      "id": "tl-1",
+      "taskId": "task-1",
+      "taskTitle": "Review System Architecture & Microservice Boundaries",
+      "projectId": "proj-1",
+      "projectName": "Enterprise Microservices & Distributed Core",
+      "durationSeconds": 5400,
+      "hourlyRate": 120,
+      "calculatedRoi": 180,
+      "efficiencyRate": 94,
+      "energyReported": "High Focus",
+      "note": "Deep focus architecture analysis with 0 interruptions.",
+      "startedAt": "2026-11-01T10:00:00Z",
+      "endedAt": "2026-11-01T11:30:00Z"
+    },
+    {
+      "id": "tl-2",
+      "taskId": "task-3",
+      "taskTitle": "Zone 2 Aerobic Base Intervals (6km at 145 BPM)",
+      "projectId": "proj-3",
+      "projectName": "Sub-3:30 Marathon & VO2 Max Protocol",
+      "durationSeconds": 2700,
+      "hourlyRate": 60,
+      "calculatedRoi": 45,
+      "efficiencyRate": 98,
+      "energyReported": "Creative",
+      "note": "Sustained heart rate in target zone.",
+      "startedAt": "2026-11-01T07:30:00Z",
+      "endedAt": "2026-11-01T08:15:00Z"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skill-dist-sys",
+      "name": "Distributed Systems & Architecture",
+      "category": "Systems & Backend",
+      "level": 3,
+      "currentXp": 1650,
+      "requiredXp": 2500,
+      "masteryPct": 66,
+      "icon": "Network",
+      "description": "Raft consensus, CAP theorem, Byzantine fault tolerance, event-driven streaming.",
+      "unlocked": true,
+      "perks": [
+        "+15% XP on Architecture reviews",
+        "Microservice blueprints unlocked"
+      ]
+    },
+    {
+      "id": "skill-ai-eng",
+      "name": "AI Engineering & LLM Systems",
+      "category": "AI & Machine Learning",
+      "level": 2,
+      "currentXp": 980,
+      "requiredXp": 1500,
+      "masteryPct": 65,
+      "icon": "Cpu",
+      "description": "Retrieval Augmented Generation (RAG), Gemini Function Calling, LangGraph agents.",
+      "unlocked": true,
+      "perks": [
+        "+20% Prompt speed boost",
+        "Autonomous agent tooling"
+      ]
+    },
+    {
+      "id": "skill-sec",
+      "name": "Application Security & Cryptography",
+      "category": "Systems & Backend",
+      "level": 2,
+      "currentXp": 600,
+      "requiredXp": 1200,
+      "masteryPct": 50,
+      "icon": "ShieldCheck",
+      "description": "Zero-trust architectures, OAuth2 PKCE, JWT token rotation, cryptographic hashing.",
+      "unlocked": true,
+      "perks": [
+        "Security audit checklist generator"
+      ]
+    },
+    {
+      "id": "skill-biohacking",
+      "name": "Circadian Optimization & Biohacking",
+      "category": "Health & Biology",
+      "level": 4,
+      "currentXp": 2800,
+      "requiredXp": 3500,
+      "masteryPct": 80,
+      "icon": "HeartPulse",
+      "description": "Zone 2 cardio base, cold exposure, sleep latency minimization, deep work pacing.",
+      "unlocked": true,
+      "perks": [
+        "Peak cognitive morning window extended by 45m"
+      ]
+    },
+    {
+      "id": "skill-exec",
+      "name": "Strategic Execution & OKR Dynamics",
+      "category": "Strategic Management",
+      "level": 3,
+      "currentXp": 1950,
+      "requiredXp": 2400,
+      "masteryPct": 81,
+      "icon": "Compass",
+      "description": "High-leverage time management, Eisenhower triage, team velocity acceleration.",
+      "unlocked": true,
+      "perks": [
+        "Burnout detection accuracy +30%"
+      ]
+    }
+  ],
+  "badges": [
+    {
+      "id": "badge-deep-work-titan",
+      "name": "Deep Work Titan",
+      "description": "Logged over 10 hours of uninterrupted High Focus cognitive work.",
+      "icon": "Flame",
+      "category": "Focus",
+      "xpBonus": 250,
+      "unlocked": true,
+      "unlockedAt": "2026-10-25T14:30:00Z"
+    },
+    {
+      "id": "badge-calendar-master",
+      "name": "Temporal Architect",
+      "description": "Maintained 0 calendar schedule conflicts across 3 active calendars.",
+      "icon": "CalendarCheck",
+      "category": "Organization",
+      "xpBonus": 200,
+      "unlocked": true,
+      "unlockedAt": "2026-10-28T09:00:00Z"
+    },
+    {
+      "id": "badge-okr-crusher",
+      "name": "OKR Vanguard",
+      "description": "Achieved 100% on a quarterly milestone key result.",
+      "icon": "Award",
+      "category": "Execution",
+      "xpBonus": 500,
+      "unlocked": true,
+      "unlockedAt": "2026-10-31T18:00:00Z"
+    },
+    {
+      "id": "badge-zero-debt",
+      "name": "Zero Backlog Zen",
+      "description": "Clear all Q1 Urgent & Important tasks in a single sprint.",
+      "icon": "Sparkles",
+      "category": "Mastery",
+      "xpBonus": 350,
+      "unlocked": false
+    }
+  ],
+  "stats": {
+    "focusMinutes": 225,
+    "pomodoroSessions": 7,
+    "totalXp": 4250,
+    "userLevel": 4,
+    "rpgTitle": "Principal Systems Architect",
+    "focusScore": 92,
+    "totalRoiDollars": 1530,
+    "activityHistory": {
+      "2026-07-13": 1,
+      "2026-07-14": 1,
+      "2026-07-15": 0,
+      "2026-07-16": 0,
+      "2026-07-17": 0,
+      "2026-07-18": 0,
+      "2026-07-19": 0,
+      "2026-07-20": 0,
+      "2026-07-21": 1,
+      "2026-07-22": 2,
+      "2026-07-23": 3,
+      "2026-07-24": 4,
+      "2026-07-25": 5,
+      "2026-07-26": 5,
+      "2026-07-27": 5,
+      "2026-07-28": 5,
+      "2026-07-29": 4,
+      "2026-07-30": 3,
+      "2026-07-31": 2,
+      "2026-08-01": 2,
+      "2026-08-02": 1,
+      "2026-08-03": 1,
+      "2026-08-04": 1,
+      "2026-08-05": 1,
+      "2026-08-06": 2,
+      "2026-08-07": 2,
+      "2026-08-08": 3,
+      "2026-08-09": 3,
+      "2026-08-10": 3,
+      "2026-08-11": 3,
+      "2026-08-12": 2,
+      "2026-08-13": 2,
+      "2026-08-14": 1,
+      "2026-08-15": 0,
+      "2026-08-16": 0,
+      "2026-08-17": 0,
+      "2026-08-18": 0,
+      "2026-08-19": 0,
+      "2026-08-20": 0,
+      "2026-08-21": 1,
+      "2026-08-22": 2,
+      "2026-08-23": 3,
+      "2026-08-24": 4,
+      "2026-08-25": 5,
+      "2026-08-26": 5,
+      "2026-08-27": 5,
+      "2026-08-28": 5,
+      "2026-08-29": 4,
+      "2026-08-30": 4,
+      "2026-08-31": 3,
+      "2026-09-01": 2,
+      "2026-09-02": 1,
+      "2026-09-03": 1,
+      "2026-09-04": 1,
+      "2026-09-05": 1,
+      "2026-09-06": 2,
+      "2026-09-07": 2,
+      "2026-09-08": 2,
+      "2026-09-09": 3,
+      "2026-09-10": 3,
+      "2026-09-11": 3,
+      "2026-09-12": 3,
+      "2026-09-13": 2,
+      "2026-09-14": 1,
+      "2026-09-15": 0,
+      "2026-09-16": 0,
+      "2026-09-17": 0,
+      "2026-09-18": 0,
+      "2026-09-19": 0,
+      "2026-09-20": 0,
+      "2026-09-21": 0,
+      "2026-09-22": 1,
+      "2026-09-23": 2,
+      "2026-09-24": 3,
+      "2026-09-25": 4,
+      "2026-09-26": 5,
+      "2026-09-27": 5,
+      "2026-09-28": 5,
+      "2026-09-29": 5,
+      "2026-09-30": 4,
+      "2026-10-01": 3,
+      "2026-10-02": 2,
+      "2026-10-03": 2,
+      "2026-10-04": 1,
+      "2026-10-05": 1,
+      "2026-10-06": 1,
+      "2026-10-07": 1,
+      "2026-10-08": 2,
+      "2026-10-09": 2,
+      "2026-10-10": 3,
+      "2026-10-11": 3,
+      "2026-10-12": 3,
+      "2026-10-13": 3,
+      "2026-10-14": 2,
+      "2026-10-15": 2,
+      "2026-10-16": 1,
+      "2026-10-17": 0,
+      "2026-10-18": 0,
+      "2026-10-19": 0,
+      "2026-10-20": 0,
+      "2026-10-21": 0,
+      "2026-10-22": 0,
+      "2026-10-23": 1,
+      "2026-10-24": 2,
+      "2026-10-25": 3,
+      "2026-10-26": 4,
+      "2026-10-27": 5,
+      "2026-10-28": 5,
+      "2026-10-29": 5,
+      "2026-10-30": 5,
+      "2026-10-31": 5,
+      "2026-11-01": 4
+    }
+  },
+  "googleAuth": {
+    "isConnected": true,
+    "email": "amir.work.vr@gmail.com"
+  }
+}
