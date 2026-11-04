@@ -4,7 +4,10 @@ import bcrypt from 'bcryptjs';
 import { db } from '../db.ts';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'chronos-secret-jwt-key-production-min-32-chars-entropy';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not defined.');
+}
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 function getInitials(name: string): string {

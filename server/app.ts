@@ -1,5 +1,5 @@
+import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
-import dotenv from 'dotenv';
 import authRouter from './routes/authRouter.ts';
 import tasksRouter from './routes/tasksRouter.ts';
 import goalsRouter from './routes/goalsRouter.ts';
@@ -18,8 +18,6 @@ import {
   sanitizeBody,
   createRateLimiter
 } from './middleware/security.ts';
-
-dotenv.config();
 
 export const app = express();
 

@@ -72,6 +72,30 @@
       "initials": "CC",
       "joinedAt": "2026-11-04",
       "personalWorkspaceId": "ws-personal-usr-1793809386570-vpfy"
+    },
+    {
+      "id": "usr-1793816720235-a2ao",
+      "name": "amirkakaie",
+      "email": "amir.work.vr@gmail.com",
+      "passwordHash": "$2b$10$vYB3INlLoSnEVx4JcmMXVOt3oaIjFkSJXKC4NWMT97VDXQMU4aNvC",
+      "role": "Member",
+      "title": "amirwpnfw",
+      "avatarColor": "from-amber-600 to-orange-600",
+      "initials": "AM",
+      "joinedAt": "2026-11-04",
+      "personalWorkspaceId": "ws-personal-usr-1793816720235-a2ao"
+    },
+    {
+      "id": "usr-1793816776871-odmh",
+      "name": "abs",
+      "email": "amir.wolf.vr@gmail.com",
+      "passwordHash": "$2b$10$gYfaoTxA1J95FSu337rweeJl3yQt75gUQTV7cxp5tbD.E60ejUeZa",
+      "role": "Member",
+      "title": "amirlmsvlonwev",
+      "avatarColor": "from-rose-600 to-pink-600",
+      "initials": "AB",
+      "joinedAt": "2026-11-04",
+      "personalWorkspaceId": "ws-personal-usr-1793816776871-odmh"
     }
   ],
   "partitions": {
@@ -286,9 +310,102 @@
         "isConnected": false,
         "email": ""
       }
+    },
+    "usr-1793816720235-a2ao": {
+      "tasks": [],
+      "goals": [
+        {
+          "id": "goal-1793816733189-x4pa",
+          "userId": "usr-1793816720235-a2ao",
+          "title": "efbeberbe",
+          "description": "",
+          "category": "Academic/Study",
+          "timeframe": "quarterly",
+          "targetDate": "2027-02-02",
+          "progressPercent": 0,
+          "keyResults": [],
+          "createdAt": "2026-11-04T18:25:33.189Z"
+        }
+      ],
+      "projects": [
+        {
+          "id": "proj-1793816727283",
+          "userId": "usr-1793816720235-a2ao",
+          "name": "svsgfdgef",
+          "description": "",
+          "category": "Work/Career",
+          "status": "in_progress",
+          "targetHours": 30,
+          "loggedHours": 0,
+          "hourlyValuation": 100,
+          "color": "blue",
+          "driveFolderUrl": "https://drive.google.com/drive/u/0/my-drive",
+          "tasksCount": 0,
+          "completedTasksCount": 0,
+          "createdAt": "2026-11-04T18:25:27.283Z"
+        }
+      ],
+      "calendarEvents": [],
+      "timeLogs": [],
+      "skills": [],
+      "badges": [],
+      "stats": {
+        "focusMinutes": 0,
+        "pomodoroSessions": 0,
+        "totalXp": 0,
+        "userLevel": 1,
+        "rpgTitle": "Novice Pioneer",
+        "focusScore": 100,
+        "totalRoiDollars": 0,
+        "activityHistory": {}
+      },
+      "googleAuth": {
+        "isConnected": false,
+        "email": ""
+      }
+    },
+    "usr-1793816776871-odmh": {
+      "tasks": [],
+      "goals": [],
+      "projects": [],
+      "calendarEvents": [],
+      "timeLogs": [],
+      "skills": [],
+      "badges": [],
+      "stats": {
+        "focusMinutes": 0,
+        "pomodoroSessions": 0,
+        "totalXp": 0,
+        "userLevel": 1,
+        "rpgTitle": "Novice Pioneer",
+        "focusScore": 100,
+        "totalRoiDollars": 0,
+        "activityHistory": {}
+      },
+      "googleAuth": {
+        "isConnected": false,
+        "email": ""
+      }
     }
   },
   "teamProjects": [
+    {
+      "id": "proj-1793816749889",
+      "workspaceId": "ws-team",
+      "ownerId": "usr-1793816720235-a2ao",
+      "ownerEmail": "amir.work.vr@gmail.com",
+      "name": "eveve",
+      "key": "EVE",
+      "description": "",
+      "color": "#6366f1",
+      "icon": "FolderGit2",
+      "memberIds": [
+        "usr-1793816720235-a2ao",
+        "usr-1793816776871-odmh"
+      ],
+      "targetDate": "2021-12-02",
+      "createdAt": "2026-11-04"
+    },
     {
       "id": "proj-1793809386584",
       "workspaceId": "ws-team",
@@ -324,6 +441,24 @@
   ],
   "teamTasks": [
     {
+      "id": "task-1793816825911",
+      "taskNumber": 656,
+      "projectId": "proj-1793816749889",
+      "columnId": "todo",
+      "title": "hiiiiii abs",
+      "description": "",
+      "priority": "medium",
+      "assigneeId": "usr-1793816720235-a2ao",
+      "dueDate": "2026-11-07",
+      "estimatedHours": 8,
+      "subtasks": [],
+      "tags": [],
+      "comments": [],
+      "order": 0,
+      "createdAt": "2026-11-04",
+      "updatedAt": "2026-11-04T18:28:01.272Z"
+    },
+    {
       "id": "task-1793809386600",
       "taskNumber": 852,
       "projectId": "proj-1793809386584",
@@ -357,6 +492,20 @@
     }
   ],
   "teamInvitations": [
+    {
+      "id": "inv-1793816787549",
+      "projectId": "proj-1793816749889",
+      "projectName": "eveve",
+      "projectKey": "EVE",
+      "projectColor": "#6366f1",
+      "invitedEmail": "amir.wolf.vr@gmail.com",
+      "invitedByUserId": "usr-1793816720235-a2ao",
+      "invitedByName": "amirkakaie",
+      "invitedByEmail": "amir.work.vr@gmail.com",
+      "role": "MEMBER",
+      "status": "ACCEPTED",
+      "createdAt": "2026-11-04"
+    },
     {
       "id": "inv-1793809386593",
       "projectId": "proj-1793809386584",
@@ -476,6 +625,36 @@
         }
       ],
       "createdAt": "2026-11-04T16:23:06.570Z"
+    },
+    {
+      "id": "ws-personal-usr-1793816720235-a2ao",
+      "name": "amirkakaie's Personal Space",
+      "slug": "personal-usr-1793816720235-a2ao",
+      "ownerId": "usr-1793816720235-a2ao",
+      "isPersonal": true,
+      "members": [
+        {
+          "userId": "usr-1793816720235-a2ao",
+          "role": "OWNER",
+          "joinedAt": "2026-11-04T18:25:20.237Z"
+        }
+      ],
+      "createdAt": "2026-11-04T18:25:20.237Z"
+    },
+    {
+      "id": "ws-personal-usr-1793816776871-odmh",
+      "name": "abs's Personal Space",
+      "slug": "personal-usr-1793816776871-odmh",
+      "ownerId": "usr-1793816776871-odmh",
+      "isPersonal": true,
+      "members": [
+        {
+          "userId": "usr-1793816776871-odmh",
+          "role": "OWNER",
+          "joinedAt": "2026-11-04T18:26:16.871Z"
+        }
+      ],
+      "createdAt": "2026-11-04T18:26:16.871Z"
     }
   ]
 }
