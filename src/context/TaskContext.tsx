@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import confetti from 'canvas-confetti';
 import { api } from '../services/api.ts';
 import { LocalStore } from '../services/storage.ts';
+import { useAuth } from './AuthContext.tsx';
 import type { 
   Task, 
   GoalOKR, 
@@ -59,19 +60,34 @@ interface TaskContextValue {
 const TaskContext = createContext<TaskContextValue | null>(null);
 
 export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize state immediately from LocalStore for instantaneous first paint
-  const [tasks, setTasks] = useState<Task[]>(() => LocalStore.getTasks());
-  const [goals, setGoals] = useState<GoalOKR[]>(() => LocalStore.getGoals());
-  const [projects, setProjects] = useState<Project[]>(() => LocalStore.getProjects());
-  const [skills, setSkills] = useState<SkillNode[]>(() => LocalStore.getSkills());
-  const [badges, setBadges] = useState<RPGAchievementBadge[]>(() => LocalStore.getBadges());
-  const [timeLogs, setTimeLogs] = useState<TimeLog[]>(() => LocalStore.getTimeLogs());
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => LocalStore.getEvents());
-  const [stats, setStats] = useState<ProductivityStats | null>(() => LocalStore.getStats());
+  const { currentUser } = useAuth();
+  const currentUserId = currentUser?.id;
+
+  // Initialize state immediately from LocalStore scoped to current user
+  const [tasks, setTasks] = useState<Task[]>(() => LocalStore.getTasks(currentUserId));
+  const [goals, setGoals] = useState<GoalOKR[]>(() => LocalStore.getGoals(currentUserId));
+  const [projects, setProjects] = useState<Project[]>(() => LocalStore.getProjects(currentUserId));
+  const [skills, setSkills] = useState<SkillNode[]>(() => LocalStore.getSkills(currentUserId));
+  const [badges, setBadges] = useState<RPGAchievementBadge[]>(() => LocalStore.getBadges(currentUserId));
+  const [timeLogs, setTimeLogs] = useState<TimeLog[]>(() => LocalStore.getTimeLogs(currentUserId));
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => LocalStore.getEvents(currentUserId));
+  const [stats, setStats] = useState<ProductivityStats | null>(() => LocalStore.getStats(currentUserId));
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  // When authenticated user changes (e.g. login, signup, logout), reload partitioned data instantly
+  useEffect(() => {
+    setTasks(LocalStore.getTasks(currentUserId));
+    setGoals(LocalStore.getGoals(currentUserId));
+    setProjects(LocalStore.getProjects(currentUserId));
+    setSkills(LocalStore.getSkills(currentUserId));
+    setBadges(LocalStore.getBadges(currentUserId));
+    setTimeLogs(LocalStore.getTimeLogs(currentUserId));
+    setCalendarEvents(LocalStore.getEvents(currentUserId));
+    setStats(LocalStore.getStats(currentUserId));
+  }, [currentUserId]);
 
   const showToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = `toast-${Date.now()}`;
@@ -89,16 +105,16 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const syncDerivedStats = useCallback((updatedTasks: Task[], updatedLogs: TimeLog[]) => {
     setStats(prev => {
       const derived = LocalStore.deriveStats(updatedTasks, updatedLogs, prev);
-      LocalStore.setStats(derived);
+      LocalStore.setStats(derived, currentUserId);
       return derived;
     });
-  }, []);
+  }, [currentUserId]);
 
   // Background Data Reconciliation with API
   const refreshAllData = useCallback(async () => {
+    if (!currentUserId) return;
     setIsSyncing(true);
     try {
-      // Fetch endpoints independently with resilient fallback so one slow endpoint doesn't fail all
       const [
         tasksRes,
         goalsRes,
@@ -119,37 +135,37 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         api.getStats()
       ]);
 
-      if (tasksRes.status === 'fulfilled' && tasksRes.value.length > 0) {
+      if (tasksRes.status === 'fulfilled') {
         setTasks(tasksRes.value);
-        LocalStore.setTasks(tasksRes.value);
+        LocalStore.setTasks(tasksRes.value, currentUserId);
       }
-      if (goalsRes.status === 'fulfilled' && goalsRes.value.length > 0) {
+      if (goalsRes.status === 'fulfilled') {
         setGoals(goalsRes.value);
-        LocalStore.setGoals(goalsRes.value);
+        LocalStore.setGoals(goalsRes.value, currentUserId);
       }
-      if (projectsRes.status === 'fulfilled' && projectsRes.value.length > 0) {
+      if (projectsRes.status === 'fulfilled') {
         setProjects(projectsRes.value);
-        LocalStore.setProjects(projectsRes.value);
+        LocalStore.setProjects(projectsRes.value, currentUserId);
       }
-      if (skillsRes.status === 'fulfilled' && skillsRes.value.length > 0) {
+      if (skillsRes.status === 'fulfilled') {
         setSkills(skillsRes.value);
-        LocalStore.setSkills(skillsRes.value);
+        LocalStore.setSkills(skillsRes.value, currentUserId);
       }
-      if (badgesRes.status === 'fulfilled' && badgesRes.value.length > 0) {
+      if (badgesRes.status === 'fulfilled') {
         setBadges(badgesRes.value);
-        LocalStore.setBadges(badgesRes.value);
+        LocalStore.setBadges(badgesRes.value, currentUserId);
       }
-      if (timeLogsRes.status === 'fulfilled' && timeLogsRes.value.length > 0) {
+      if (timeLogsRes.status === 'fulfilled') {
         setTimeLogs(timeLogsRes.value);
-        LocalStore.setTimeLogs(timeLogsRes.value);
+        LocalStore.setTimeLogs(timeLogsRes.value, currentUserId);
       }
-      if (eventsRes.status === 'fulfilled' && eventsRes.value.length > 0) {
+      if (eventsRes.status === 'fulfilled') {
         setCalendarEvents(eventsRes.value);
-        LocalStore.setEvents(eventsRes.value);
+        LocalStore.setEvents(eventsRes.value, currentUserId);
       }
       if (statsRes.status === 'fulfilled') {
         setStats(statsRes.value);
-        LocalStore.setStats(statsRes.value);
+        LocalStore.setStats(statsRes.value, currentUserId);
       }
     } catch (err) {
       console.warn('[Chronos Context] Background refresh encountered network error, continuing with local cache:', err);
@@ -157,12 +173,14 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsSyncing(false);
       setIsLoading(false);
     }
-  }, []);
+  }, [currentUserId]);
 
-  // Initial mount: load data from API in background while displaying local cache
+  // Initial mount: load data from API in background if authenticated
   useEffect(() => {
-    refreshAllData();
-  }, [refreshAllData]);
+    if (currentUserId) {
+      refreshAllData();
+    }
+  }, [currentUserId, refreshAllData]);
 
   // ==========================================
   // TASK MUTATIONS (OPTIMISTIC + DUAL WRITE)
@@ -185,7 +203,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const updated = tasks.map(t => (t.id === taskId ? finalTask : t));
       setTasks(updated);
-      LocalStore.setTasks(updated);
+      LocalStore.setTasks(updated, currentUserId);
       syncDerivedStats(updated, timeLogs);
       showToast('Task updated successfully', 'success');
     } else {
@@ -217,7 +235,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const updated = [finalTask, ...tasks];
       setTasks(updated);
-      LocalStore.setTasks(updated);
+      LocalStore.setTasks(updated, currentUserId);
       syncDerivedStats(updated, timeLogs);
       showToast('Task created successfully', 'success');
     }
@@ -234,7 +252,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return finalTask;
-  }, [tasks, timeLogs, syncDerivedStats, showToast]);
+  }, [tasks, timeLogs, syncDerivedStats, showToast, currentUserId]);
 
   const toggleTask = useCallback(async (id: string): Promise<void> => {
     const task = tasks.find(t => t.id === id);
@@ -269,7 +287,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updatedTasks = tasks.map(t => (t.id === id ? updatedTask : t));
     setTasks(updatedTasks);
-    LocalStore.setTasks(updatedTasks);
+    LocalStore.setTasks(updatedTasks, currentUserId);
     syncDerivedStats(updatedTasks, timeLogs);
 
     // Background API Sync
@@ -278,7 +296,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: any) {
       console.warn('[Chronos API] Toggle task async sync failed, saved locally:', err.message);
     }
-  }, [tasks, timeLogs, syncDerivedStats]);
+  }, [tasks, timeLogs, syncDerivedStats, currentUserId]);
 
   const toggleSubtask = useCallback(async (taskId: string, subtaskId: string): Promise<void> => {
     const task = tasks.find(t => t.id === taskId);
@@ -301,7 +319,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updatedTasks = tasks.map(t => (t.id === taskId ? updatedTask : t));
     setTasks(updatedTasks);
-    LocalStore.setTasks(updatedTasks);
+    LocalStore.setTasks(updatedTasks, currentUserId);
     syncDerivedStats(updatedTasks, timeLogs);
 
     // Background API Sync
@@ -310,7 +328,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: any) {
       console.warn('[Chronos API] Toggle subtask async sync failed, saved locally:', err.message);
     }
-  }, [tasks, timeLogs, syncDerivedStats]);
+  }, [tasks, timeLogs, syncDerivedStats, currentUserId]);
 
   const deleteTask = useCallback(async (id: string): Promise<void> => {
     const updatedTasks = tasks.filter(t => t.id !== id);
@@ -318,8 +336,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     setTasks(updatedTasks);
     setCalendarEvents(updatedEvents);
-    LocalStore.setTasks(updatedTasks);
-    LocalStore.setEvents(updatedEvents);
+    LocalStore.setTasks(updatedTasks, currentUserId);
+    LocalStore.setEvents(updatedEvents, currentUserId);
     syncDerivedStats(updatedTasks, timeLogs);
     showToast('Task removed', 'info');
 
@@ -329,7 +347,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: any) {
       console.warn('[Chronos API] Delete task async sync failed, removed locally:', err.message);
     }
-  }, [tasks, calendarEvents, timeLogs, syncDerivedStats, showToast]);
+  }, [tasks, calendarEvents, timeLogs, syncDerivedStats, showToast, currentUserId]);
 
   // ==========================================
   // GOAL MUTATIONS
@@ -348,7 +366,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } as GoalOKR;
       const updated = goals.map(g => (g.id === goalId ? finalGoal : g));
       setGoals(updated);
-      LocalStore.setGoals(updated);
+      LocalStore.setGoals(updated, currentUserId);
       showToast('Goal updated', 'success');
     } else {
       finalGoal = {
@@ -364,7 +382,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       const updated = [finalGoal, ...goals];
       setGoals(updated);
-      LocalStore.setGoals(updated);
+      LocalStore.setGoals(updated, currentUserId);
       showToast('Strategic Goal created', 'success');
     }
 
@@ -379,12 +397,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return finalGoal;
-  }, [goals, showToast]);
+  }, [goals, showToast, currentUserId]);
 
   const deleteGoal = useCallback(async (id: string): Promise<void> => {
     const updated = goals.filter(g => g.id !== id);
     setGoals(updated);
-    LocalStore.setGoals(updated);
+    LocalStore.setGoals(updated, currentUserId);
     showToast('Goal removed', 'info');
 
     try {
@@ -392,7 +410,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: any) {
       console.warn('[Chronos API] Delete goal async sync failed, removed locally:', err.message);
     }
-  }, [goals, showToast]);
+  }, [goals, showToast, currentUserId]);
 
   const updateKeyResult = useCallback(async (goalId: string, krId: string, value: number): Promise<void> => {
     const goal = goals.find(g => g.id === goalId);
@@ -418,14 +436,14 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updatedGoals = goals.map(g => (g.id === goalId ? updatedGoal : g));
     setGoals(updatedGoals);
-    LocalStore.setGoals(updatedGoals);
+    LocalStore.setGoals(updatedGoals, currentUserId);
 
     try {
       await api.updateKeyResult(goalId, krId, value);
     } catch (err: any) {
       console.warn('[Chronos API] Key result async sync failed, saved locally:', err.message);
     }
-  }, [goals]);
+  }, [goals, currentUserId]);
 
   // ==========================================
   // PROJECT MUTATIONS
@@ -440,7 +458,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       finalProject = { ...(existing || {}), ...projectData, id: projId } as Project;
       const updated = projects.map(p => (p.id === projId ? finalProject : p));
       setProjects(updated);
-      LocalStore.setProjects(updated);
+      LocalStore.setProjects(updated, currentUserId);
     } else {
       finalProject = {
         id: projId,
@@ -456,7 +474,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       const updated = [finalProject, ...projects];
       setProjects(updated);
-      LocalStore.setProjects(updated);
+      LocalStore.setProjects(updated, currentUserId);
     }
 
     try {
@@ -470,19 +488,19 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return finalProject;
-  }, [projects]);
+  }, [projects, currentUserId]);
 
   const deleteProject = useCallback(async (id: string): Promise<void> => {
     const updated = projects.filter(p => p.id !== id);
     setProjects(updated);
-    LocalStore.setProjects(updated);
+    LocalStore.setProjects(updated, currentUserId);
 
     try {
       await api.deleteProject(id);
     } catch (err: any) {
       console.warn('[Chronos API] Delete project async sync failed, removed locally:', err.message);
     }
-  }, [projects]);
+  }, [projects, currentUserId]);
 
   // ==========================================
   // TIMELOG & POMODORO MUTATIONS
@@ -499,7 +517,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updatedTasks = tasks.map(t => (t.id === taskId ? updatedTask : t));
     setTasks(updatedTasks);
-    LocalStore.setTasks(updatedTasks);
+    LocalStore.setTasks(updatedTasks, currentUserId);
 
     setStats(prev => {
       if (!prev) return null;
@@ -508,7 +526,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         focusMinutesToday: prev.focusMinutesToday + minutes,
         totalXp: prev.totalXp + minutes * 2
       };
-      LocalStore.setStats(updated);
+      LocalStore.setStats(updated, currentUserId);
       return updated;
     });
 
@@ -519,7 +537,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: any) {
       console.warn('[Chronos API] Record pomodoro async sync failed:', err.message);
     }
-  }, [tasks, showToast]);
+  }, [tasks, showToast, currentUserId]);
 
   const addTimeLog = useCallback(async (logData: Partial<TimeLog>): Promise<TimeLog> => {
     const id = `tl-${Date.now()}`;
@@ -541,7 +559,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updated = [newLog, ...timeLogs];
     setTimeLogs(updated);
-    LocalStore.setTimeLogs(updated);
+    LocalStore.setTimeLogs(updated, currentUserId);
     syncDerivedStats(tasks, updated);
     showToast('Time session recorded with ROI yield', 'success');
 
@@ -552,7 +570,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return newLog;
-  }, [timeLogs, tasks, syncDerivedStats, showToast]);
+  }, [timeLogs, tasks, syncDerivedStats, showToast, currentUserId]);
 
   const trainSkill = useCallback(async (skillId: string, xpAmount = 50): Promise<void> => {
     const updatedSkills = skills.map(s => {
@@ -573,14 +591,14 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     setSkills(updatedSkills);
-    LocalStore.setSkills(updatedSkills);
+    LocalStore.setSkills(updatedSkills, currentUserId);
 
     setStats(prev => {
       if (!prev) return null;
       const totalXp = prev.totalXp + xpAmount;
       const userLevel = Math.floor(Math.sqrt(totalXp / 100)) + 1;
       const updated = { ...prev, totalXp, userLevel };
-      LocalStore.setStats(updated);
+      LocalStore.setStats(updated, currentUserId);
       return updated;
     });
 
@@ -591,7 +609,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: any) {
       console.warn('[Chronos API] Train skill async sync failed:', err.message);
     }
-  }, [skills, showToast]);
+  }, [skills, showToast, currentUserId]);
 
   const contextValue: TaskContextValue = {
     tasks,

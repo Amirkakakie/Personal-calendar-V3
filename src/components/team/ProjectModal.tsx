@@ -57,7 +57,6 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
       description: description.trim(),
       color,
       icon: 'FolderGit2',
-      memberIds: teamMembers.map(m => m.id),
       targetDate: targetDate || undefined
     });
 

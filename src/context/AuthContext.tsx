@@ -1,52 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User, TeamMember } from '../types/team.ts';
+import { setAuthToken, getAuthToken, API_BASE } from '../services/api.ts';
 
-export const INITIAL_DEMO_USERS: (User & { password: string })[] = [
-  {
-    id: 'user-amir',
-    name: 'Amir Rezaei',
-    email: 'amir@acme.dev',
-    password: 'password123',
-    role: 'Admin',
-    title: 'Lead Software Architect',
-    avatarColor: 'from-violet-600 to-indigo-600',
-    initials: 'AR',
-    joinedAt: '2024-01-15'
-  },
-  {
-    id: 'user-sarah',
-    name: 'Sarah Jenkins',
-    email: 'sarah@acme.dev',
-    password: 'password123',
-    role: 'Member',
-    title: 'Senior Product Designer',
-    avatarColor: 'from-emerald-600 to-teal-600',
-    initials: 'SJ',
-    joinedAt: '2024-02-01'
-  },
-  {
-    id: 'user-alex',
-    name: 'Alex Chen',
-    email: 'alex@acme.dev',
-    password: 'password123',
-    role: 'Owner',
-    title: 'VP of Engineering',
-    avatarColor: 'from-sky-600 to-blue-700',
-    initials: 'AC',
-    joinedAt: '2023-11-10'
-  },
-  {
-    id: 'user-elena',
-    name: 'Elena Rostova',
-    email: 'elena@acme.dev',
-    password: 'password123',
-    role: 'Member',
-    title: 'QA & Site Reliability Engineer',
-    avatarColor: 'from-amber-600 to-orange-600',
-    initials: 'ER',
-    joinedAt: '2024-03-20'
-  }
-];
+// Clean empty slate: No preloaded mock accounts
+const SEED_USERS: (User & { password: string })[] = [];
 
 const AUTH_STORAGE_KEY = 'chronos_team_auth_user';
 const USERS_STORAGE_KEY = 'chronos_team_registered_users';
@@ -58,8 +15,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, title?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  switchDemoUser: (userId: string) => void;
-  demoUsers: (User & { password: string })[];
+  findUserByEmail: (email: string) => User | null;
+  getProjectMembers: (memberIds: string[]) => TeamMember[];
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -76,42 +33,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load all registered users or initialize with demo users
+  // Internal helper to access registered users (never exposed to UI directly)
   const getRegisteredUsers = useCallback((): (User & { password: string })[] => {
     try {
       const stored = localStorage.getItem(USERS_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch {
       // ignore
     }
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(INITIAL_DEMO_USERS));
-    return INITIAL_DEMO_USERS;
+    return SEED_USERS;
   }, []);
 
   // Restore authenticated session on mount
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (savedUser) {
+      const token = getAuthToken();
+      if (savedUser && token) {
         const user = JSON.parse(savedUser);
-        if (user && user.id) {
+        if (user && user.id && user.email) {
           setCurrentUser(user);
-          setIsLoading(false);
-          return;
+        }
+      } else if (savedUser && !token) {
+        // Fallback for previous sessions
+        const user = JSON.parse(savedUser);
+        if (user && user.id && user.email) {
+          setCurrentUser(user);
         }
       }
-      // If no session exists, default to logged in as Amir for seamless preview experience
-      const defaultUser = INITIAL_DEMO_USERS[0];
-      const { password, ...safeUser } = defaultUser;
-      setCurrentUser(safeUser);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeUser));
     } catch {
-      const defaultUser = INITIAL_DEMO_USERS[0];
-      const { password, ...safeUser } = defaultUser;
-      setCurrentUser(safeUser);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      setAuthToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -120,20 +75,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(
     async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
       setIsLoading(true);
-      await new Promise(r => setTimeout(r, 350)); // smooth micro-interaction
-
-      const users = getRegisteredUsers();
       const cleanEmail = email.trim().toLowerCase();
+
+      // First attempt backend authentication for cryptographic JWT token
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail, password })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user && data.token) {
+            setAuthToken(data.token);
+            setCurrentUser(data.user);
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+            setIsLoading(false);
+            return { success: true };
+          }
+        } else if (res.status === 401 || res.status === 400) {
+          const errData = await res.json().catch(() => ({}));
+          setIsLoading(false);
+          return { success: false, error: errData.error || 'Invalid email or password.' };
+        }
+      } catch (networkErr) {
+        console.warn('[AuthContext] Backend login request failed, falling back to local credentials:', networkErr);
+      }
+
+      // Local fallback for offline mode
+      const users = getRegisteredUsers();
       const found = users.find(u => u.email.toLowerCase() === cleanEmail);
 
       if (!found) {
         setIsLoading(false);
-        return { success: false, error: 'User with this email not found.' };
+        return { success: false, error: 'No account found with this email address.' };
       }
 
       if (found.password !== password) {
         setIsLoading(false);
-        return { success: false, error: 'Incorrect password. Try "password123".' };
+        return { success: false, error: 'Incorrect password.' };
       }
 
       const { password: _, ...safeUser } = found;
@@ -148,14 +129,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = useCallback(
     async (name: string, email: string, password: string, title?: string): Promise<{ success: boolean; error?: string }> => {
       setIsLoading(true);
-      await new Promise(r => setTimeout(r, 400));
-
       const cleanEmail = email.trim().toLowerCase();
-      const users = getRegisteredUsers();
 
+      // First attempt backend registration for cryptographic JWT token
+      try {
+        const res = await fetch(`${API_BASE}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim(), email: cleanEmail, password, title })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user && data.token) {
+            setAuthToken(data.token);
+            setCurrentUser(data.user);
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+            
+            // Sync with local registered users store
+            const users = getRegisteredUsers();
+            const localUser = { ...data.user, password };
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([...users.filter(u => u.id !== localUser.id), localUser]));
+
+            setIsLoading(false);
+            return { success: true };
+          }
+        } else if (res.status === 400) {
+          const errData = await res.json().catch(() => ({}));
+          setIsLoading(false);
+          return { success: false, error: errData.error || 'Registration failed.' };
+        }
+      } catch (networkErr) {
+        console.warn('[AuthContext] Backend signup request failed, falling back to local store:', networkErr);
+      }
+
+      // Local fallback for offline mode
+      const users = getRegisteredUsers();
       if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
         setIsLoading(false);
-        return { success: false, error: 'An account with this email already exists.' };
+        return { success: false, error: 'An account with this email address already exists.' };
       }
 
       const avatarColors = [
@@ -194,18 +206,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(() => {
     setCurrentUser(null);
+    setAuthToken(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
   }, []);
 
-  const switchDemoUser = useCallback(
-    (userId: string) => {
+  // Secure user lookup by exact email (for project invitation verification only)
+  const findUserByEmail = useCallback(
+    (email: string): User | null => {
+      const clean = email.trim().toLowerCase();
       const users = getRegisteredUsers();
-      const found = users.find(u => u.id === userId);
-      if (found) {
-        const { password: _, ...safeUser } = found;
-        setCurrentUser(safeUser);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeUser));
-      }
+      const match = users.find(u => u.email.toLowerCase() === clean);
+      if (!match) return null;
+      const { password: _, ...safe } = match;
+      return safe;
+    },
+    [getRegisteredUsers]
+  );
+
+  // Get member details exclusively for IDs that belong to a specific authorized project
+  const getProjectMembers = useCallback(
+    (memberIds: string[]): TeamMember[] => {
+      if (!memberIds || memberIds.length === 0) return [];
+      const idSet = new Set(memberIds);
+      const users = getRegisteredUsers();
+      return users
+        .filter(u => idSet.has(u.id))
+        .map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          title: u.title,
+          avatarColor: u.avatarColor,
+          initials: u.initials,
+          isOnline: true
+        }));
     },
     [getRegisteredUsers]
   );
@@ -219,8 +254,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
-        switchDemoUser,
-        demoUsers: INITIAL_DEMO_USERS
+        findUserByEmail,
+        getProjectMembers
       }}
     >
       {children}

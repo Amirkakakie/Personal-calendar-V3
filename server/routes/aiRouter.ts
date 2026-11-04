@@ -20,11 +20,12 @@ router.post('/decompose', async (req: Request, res: Response) => {
   }
 });
 
-// GENERATE daily productivity briefing and tailored schedule
+// GENERATE daily productivity briefing and tailored schedule (user-scoped)
 router.post('/daily-brief', async (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const { energyLevel = 'High' } = req.body;
-  const tasks = db.getTasks();
-  const goals = db.getGoals();
+  const tasks = db.getTasks(userId);
+  const goals = db.getGoals(userId);
 
   try {
     const briefing = await geminiService.generateDailyBriefing(tasks, goals, energyLevel);
@@ -37,13 +38,14 @@ router.post('/daily-brief', async (req: Request, res: Response) => {
 
 // ASK productivity coach
 router.post('/coach', async (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const { message } = req.body;
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ success: false, error: 'Message is required' });
   }
 
-  const tasks = db.getTasks();
-  const stats = db.getProductivityStats();
+  const tasks = db.getTasks(userId);
+  const stats = db.getProductivityStats(userId);
   const contextSummary = `Total Tasks: ${tasks.length}, Completed: ${stats.completedCount}, Streak: ${stats.currentStreakDays} days, Completion Rate: ${stats.completionRate}%, Focus Minutes: ${stats.focusMinutesToday}`;
 
   try {
@@ -55,9 +57,10 @@ router.post('/coach', async (req: Request, res: Response) => {
   }
 });
 
-// PREDICTIVE BURNOUT & 48-HOUR DEADLINE RISK ALERT
-router.get('/burnout-risk', async (_req: Request, res: Response) => {
-  const tasks = db.getTasks();
+// PREDICTIVE BURNOUT & 48-HOUR DEADLINE RISK ALERT (user-scoped)
+router.get('/burnout-risk', async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const tasks = db.getTasks(userId);
   const pending = tasks.filter(t => t.status !== 'completed');
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
@@ -112,14 +115,15 @@ router.get('/burnout-risk', async (_req: Request, res: Response) => {
   });
 });
 
-// DYNAMIC TASK ATOMIZATION (One-click micro-task decomposition)
+// DYNAMIC TASK ATOMIZATION
 router.post('/atomize', async (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const { taskId, taskTitle, category } = req.body;
   let title = taskTitle;
   let cat = category;
 
   if (taskId) {
-    const t = db.getTaskById(taskId);
+    const t = db.getTaskById(taskId, userId);
     if (t) {
       title = t.title;
       cat = t.category;
@@ -133,9 +137,8 @@ router.post('/atomize', async (req: Request, res: Response) => {
   try {
     const result = await geminiService.decomposeGoal(title, 'Atomize this into immediate tactical 15-45 minute execution subtasks', cat);
     
-    // If taskId was provided, optionally append subtasks to the task in db
     if (taskId) {
-      const task = db.getTaskById(taskId);
+      const task = db.getTaskById(taskId, userId);
       if (task) {
         const newSubtasks = (result.subtasks || []).map((st: any, i: number) => ({
           id: `st-atom-${Date.now()}-${i}`,
@@ -145,7 +148,7 @@ router.post('/atomize', async (req: Request, res: Response) => {
         }));
         db.updateTask(taskId, {
           subtasks: [...task.subtasks, ...newSubtasks]
-        });
+        }, userId);
       }
     }
 
@@ -156,8 +159,9 @@ router.post('/atomize', async (req: Request, res: Response) => {
 });
 
 // GET productivity statistics
-router.get('/stats', (_req: Request, res: Response) => {
-  const stats = db.getProductivityStats();
+router.get('/stats', (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const stats = db.getProductivityStats(userId);
   res.json({ success: true, data: stats });
 });
 

@@ -9,7 +9,7 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
-  const { login, switchDemoUser, demoUsers } = useAuth();
+  const { login } = useAuth();
   const { t, direction } = useI18n();
 
   const [email, setEmail] = useState('');
@@ -33,10 +33,6 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
     if (!res.success) {
       setErrorMessage(res.error || (direction === 'rtl' ? 'خطا در ورود به حساب.' : 'Invalid credentials.'));
     }
-  };
-
-  const handleDemoLogin = (userId: string) => {
-    switchDemoUser(userId);
   };
 
   const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
@@ -129,42 +125,6 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
               )}
             </button>
           </form>
-
-          {/* Demo Personas Quick Select */}
-          <div className="mt-8 pt-6 border-t border-neutral-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
-                {t('auth.demoAccountsTitle')}
-              </span>
-            </div>
-            <p className="text-xs text-neutral-400 mb-3">
-              {t('auth.demoAccountsSubtitle')}
-            </p>
-
-            <div className="grid grid-cols-2 gap-2">
-              {demoUsers.map(user => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => handleDemoLogin(user.id)}
-                  className="p-2.5 bg-neutral-950/60 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 rounded-xl transition-all flex items-center gap-2.5 text-start group"
-                >
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${user.avatarColor} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm`}>
-                    {user.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-neutral-200 truncate group-hover:text-white">
-                      {user.name}
-                    </p>
-                    <p className="text-[10px] text-neutral-400 truncate">
-                      {user.title.split(' ')[0]} • {user.role}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Switch to Signup */}
           <div className="mt-6 pt-5 border-t border-neutral-800/60 text-center">

@@ -4,15 +4,17 @@ import type { Project } from '../../src/types/index.ts';
 
 const router = Router();
 
-// GET all projects
-router.get('/', (_req: Request, res: Response) => {
-  const projects = db.getProjects();
+// GET all projects for the authenticated user
+router.get('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const projects = db.getProjects(userId);
   res.json({ success: true, count: projects.length, data: projects });
 });
 
 // GET project by ID
 router.get('/:id', (req: Request, res: Response) => {
-  const projects = db.getProjects();
+  const userId = req.user?.id;
+  const projects = db.getProjects(userId);
   const proj = projects.find(p => p.id === req.params.id);
   if (!proj) {
     return res.status(404).json({ success: false, error: 'Project not found' });
@@ -22,6 +24,7 @@ router.get('/:id', (req: Request, res: Response) => {
 
 // CREATE new project
 router.post('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const body = req.body;
   if (!body.name) {
     return res.status(400).json({ success: false, error: 'Project name is required' });
@@ -29,6 +32,7 @@ router.post('/', (req: Request, res: Response) => {
 
   const newProject: Project = {
     id: `proj-${Date.now()}`,
+    userId,
     name: body.name,
     description: body.description || '',
     category: body.category || 'Work/Career',
@@ -43,13 +47,14 @@ router.post('/', (req: Request, res: Response) => {
     createdAt: new Date().toISOString()
   };
 
-  const saved = db.createProject(newProject);
+  const saved = db.createProject(newProject, userId);
   res.status(201).json({ success: true, data: saved });
 });
 
 // UPDATE project
 router.put('/:id', (req: Request, res: Response) => {
-  const updated = db.updateProject(req.params.id, req.body);
+  const userId = req.user?.id;
+  const updated = db.updateProject(req.params.id, req.body, userId);
   if (!updated) {
     return res.status(404).json({ success: false, error: 'Project not found' });
   }
@@ -58,31 +63,32 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // DELETE project
 router.delete('/:id', (req: Request, res: Response) => {
-  const ok = db.deleteProject(req.params.id);
-  if (!ok) {
+  const userId = req.user?.id;
+  const success = db.deleteProject(req.params.id, userId);
+  if (!success) {
     return res.status(404).json({ success: false, error: 'Project not found' });
   }
-  res.json({ success: true, message: 'Project deleted' });
+  res.json({ success: true, message: 'Project deleted successfully' });
 });
 
-// Generate Google Docs Study/Project Notes Template link
+// GET project Google Doc template
 router.get('/:id/doc-template', (req: Request, res: Response) => {
-  const projects = db.getProjects();
+  const userId = req.user?.id;
+  const projects = db.getProjects(userId);
   const proj = projects.find(p => p.id === req.params.id);
   if (!proj) {
     return res.status(404).json({ success: false, error: 'Project not found' });
   }
 
-  const title = encodeURIComponent(`[Chronos OS] ${proj.name} - Architecture & Study Notes`);
-  // Google Docs template creation link with prefilled title
-  const docUrl = `https://docs.google.com/document/create?title=${title}`;
+  const docTitle = encodeURIComponent(`[Chronos] ${proj.name} - Technical RFC & Architecture`);
+  const templateDocUrl = `https://docs.google.com/document/create?title=${docTitle}`;
 
   res.json({
     success: true,
     data: {
       projectId: proj.id,
       title: proj.name,
-      docTemplateUrl: docUrl
+      docTemplateUrl: templateDocUrl
     }
   });
 });

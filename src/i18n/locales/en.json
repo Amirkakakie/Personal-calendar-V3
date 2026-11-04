@@ -380,7 +380,12 @@
     "projectDescription": "Project Description & Goals",
     "projectColor": "Accent Color",
     "createProject": "Create Project",
-    "searchTasks": "Search by task key, title, or label..."
+    "searchTasks": "Search by task key, title, or label...",
+    "invitationsTitle": "Project Invitations",
+    "pendingInvites": "{{count}} Pending",
+    "noPendingInvites": "No Pending Invitations",
+    "acceptInvite": "Accept & Join",
+    "declineInvite": "Decline"
   },
   "accountMenu": {
     "preferences": "Preferences & Display",

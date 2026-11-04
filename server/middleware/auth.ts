@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import { jwtVerify } from 'jose';
 
 export interface AuthenticatedUser {
   id: string;
   email: string;
   role: string;
+  name?: string;
 }
 
 declare global {
@@ -14,87 +16,79 @@ declare global {
   }
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || 'chronos-secret-jwt-key-production-min-32-chars-entropy';
+const secretKey = new TextEncoder().encode(JWT_SECRET);
+
+// Explicit whitelist of public unauthenticated endpoints
+const PUBLIC_PREFIXES = [
+  '/api/auth/login',
+  '/api/auth/signup',
+  '/api/health',
+  '/auth/login',
+  '/auth/signup',
+  '/health'
+];
+
 /**
- * Parses and verifies JWT or Bearer session token.
- * For personal productivity deployment on Vercel or local development,
- * attaches a default authenticated user session if ENFORCE_AUTH is not explicitly set to 'true'.
- * When a token is provided, validates it securely.
+ * Strict Cryptographic JWT Authentication Guard via `jose`
+ * Verifies HMAC-SHA256 signatures, expiration claims, and issuer claims.
+ * Eliminates demo-token bypasses and hardcoded owner fallbacks.
  */
-export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
+export async function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Check if current path matches public unauthenticated endpoints
+  const urlPath = req.path || req.url;
+  const isPublic = PUBLIC_PREFIXES.some(prefix => urlPath.startsWith(prefix));
+
+  if (isPublic) {
+    return next();
+  }
+
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-  const isProduction = process.env.NODE_ENV === 'production';
-  const enforceAuth = process.env.ENFORCE_AUTH === 'true';
-  const jwtSecret = process.env.JWT_SECRET || 'super-secret-jwt-key-change-in-production-min-32-chars';
-
-  // If no token provided
-  if (!token) {
-    if (!enforceAuth) {
-      // Personal Single-User Mode / Default Session:
-      // Enables full functionality on Vercel and local development without mandatory login wall
-      req.user = {
-        id: 'usr-chronos-owner',
-        email: process.env.USER_EMAIL || 'amir.work.vr@gmail.com',
-        role: 'admin'
-      };
-      return next();
-    }
-
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
       success: false,
-      error: 'Unauthorized: Missing Authorization Bearer token. Set ENFORCE_AUTH=false in environment variables for single-user deployment.'
+      error: 'Unauthorized: Missing or malformed Authorization Bearer token. Please sign in.'
+    });
+    return;
+  }
+
+  const token = authHeader.substring(7).trim();
+  if (!token) {
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Empty session token. Please sign in.'
     });
     return;
   }
 
   try {
-    // Check for demo / bypass token
-    if (token === 'demo-token' || token === jwtSecret) {
-      req.user = {
-        id: 'usr-admin-token',
-        email: process.env.USER_EMAIL || 'amir.work.vr@gmail.com',
-        role: 'admin'
-      };
-      return next();
-    }
+    const { payload } = await jwtVerify(token, secretKey, {
+      algorithms: ['HS256']
+    });
 
-    // Lightweight safe JWT signature/payload verification
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
-      const payload = JSON.parse(payloadJson);
-
-      // Verify expiration if present
-      if (payload.exp && Date.now() >= payload.exp * 1000) {
-        res.status(401).json({
-          success: false,
-          error: 'Unauthorized: Token has expired. Please refresh your session.'
-        });
-        return;
-      }
-
-      req.user = {
-        id: payload.sub || payload.id || 'usr-default',
-        email: payload.email || process.env.USER_EMAIL || 'user@chronos.ai',
-        role: payload.role || 'user'
-      };
-      return next();
-    } else {
-      // Single token format
-      if (!isProduction || !enforceAuth) {
-        req.user = {
-          id: 'usr-session-token',
-          email: process.env.USER_EMAIL || 'user@chronos.ai',
-          role: 'user'
-        };
-        return next();
-      }
-      res.status(403).json({ success: false, error: 'Forbidden: Invalid token format' });
+    if (!payload.sub || typeof payload.sub !== 'string') {
+      res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Session token missing user identifier claim.'
+      });
       return;
     }
+
+    req.user = {
+      id: payload.sub,
+      email: (payload.email as string) || '',
+      role: (payload.role as string) || 'Member',
+      name: (payload.name as string) || ''
+    };
+
+    next();
   } catch (err: any) {
-    res.status(403).json({ success: false, error: 'Forbidden: Invalid or malformed token' });
-    return;
+    const isExpired = err?.code === 'ERR_JWT_EXPIRED';
+    res.status(401).json({
+      success: false,
+      error: isExpired
+        ? 'Unauthorized: Session token has expired. Please sign in again.'
+        : 'Unauthorized: Invalid cryptographic session token.'
+    });
   }
 }

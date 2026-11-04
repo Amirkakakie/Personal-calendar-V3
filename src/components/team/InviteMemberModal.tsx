@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Mail, Briefcase, Shield, AlertCircle } from 'lucide-react';
+import { X, UserPlus, Mail, Shield, AlertCircle, CheckCircle2, FolderGit2 } from 'lucide-react';
 import type { TeamRole } from '../../types/team.ts';
 import { useTeam } from '../../context/TeamContext.tsx';
 import { useI18n } from '../../i18n/I18nContext.tsx';
@@ -10,48 +10,77 @@ interface InviteMemberModalProps {
 }
 
 export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, onClose }) => {
-  const { inviteMember } = useTeam();
+  const { currentProject, sendProjectInvite } = useTeam();
   const { t, direction } = useI18n();
 
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<TeamRole>('Member');
-  const [title, setTitle] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      setError(direction === 'rtl' ? 'نام و ایمیل الزامی است.' : 'Name and email are required.');
+    if (!currentProject) {
+      setFeedback({
+        type: 'error',
+        message: direction === 'rtl' ? 'پروژه‌ای انتخاب نشده است.' : 'No active project selected.'
+      });
       return;
     }
 
-    inviteMember(name, email, role, title || 'Software Engineer');
-    setName('');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setFeedback({
+        type: 'error',
+        message: direction === 'rtl' ? 'لطفاً ایمیل کاربر را وارد کنید.' : 'Please enter an account email address.'
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    const res = sendProjectInvite(currentProject.id, cleanEmail, role);
+    setIsSubmitting(false);
+
+    if (res.success) {
+      setFeedback({
+        type: 'success',
+        message: res.message
+      });
+      setEmail('');
+    } else {
+      setFeedback({
+        type: 'error',
+        message: res.message
+      });
+    }
+  };
+
+  const handleClose = () => {
+    setFeedback(null);
     setEmail('');
-    setTitle('');
-    setError(null);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
       <div 
-        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/40">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-400" />
             <h3 className="text-base font-bold text-white tracking-tight">
-              {t('team.inviteModalTitle')}
+              {direction === 'rtl' ? 'دعوت به پروژه تیمی' : 'Invite Teammate to Project'}
             </h3>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -59,88 +88,113 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <p className="text-xs text-neutral-400">
-            {t('team.inviteModalSubtitle')}
-          </p>
-
-          {error && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-xs text-rose-400">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+          {/* Target Project Pill */}
+          {currentProject && (
+            <div className="p-3 bg-neutral-950/70 border border-neutral-800 rounded-xl flex items-center justify-between text-xs">
+              <span className="text-neutral-400 flex items-center gap-1.5">
+                <FolderGit2 className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{direction === 'rtl' ? 'پروژه مقصد:' : 'Target Project:'}</span>
+              </span>
+              <div className="flex items-center gap-1.5 font-semibold text-neutral-200">
+                <span 
+                  className="w-2.5 h-2.5 rounded-full" 
+                  style={{ backgroundColor: currentProject.color }}
+                />
+                <span>{currentProject.name}</span>
+                <span className="font-mono text-[10px] text-neutral-400">({currentProject.key})</span>
+              </div>
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-              {t('auth.name')} *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder={t('auth.namePlaceholder')}
-              className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500"
-              required
-            />
-          </div>
+          <p className="text-xs text-neutral-400 leading-relaxed">
+            {direction === 'rtl'
+              ? 'برای حفظ حریم خصوصی کامل، دعوت‌نامه‌ها مستقیماً به ایمیل ثبت‌نام‌شده کاربر ارسال می‌شوند و پس از تأیید در صندوق ورودی، دسترسی فعال می‌شود.'
+              : 'To guarantee strict data isolation, invites are sent to registered accounts by email. The recipient must accept via their Inbox to join.'}
+          </p>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-              {t('auth.email')} *
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder={t('auth.emailPlaceholder')}
-              className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-                {t('auth.role')}
-              </label>
-              <select
-                value={role}
-                onChange={e => setRole(e.target.value as TeamRole)}
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
-              >
-                <option value="Admin">{t('team.roleAdmin')}</option>
-                <option value="Member">{t('team.roleMember')}</option>
-                <option value="Viewer">{t('team.roleViewer')}</option>
-              </select>
+          {/* Feedback Banners */}
+          {feedback && (
+            <div 
+              className={`p-3 rounded-xl flex items-start gap-2.5 text-xs ${
+                feedback.type === 'success' 
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300' 
+                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+              }`}
+            >
+              {feedback.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              )}
+              <span className="leading-relaxed">{feedback.message}</span>
             </div>
+          )}
 
-            <div>
-              <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-                {t('auth.jobTitle')}
-              </label>
+          {/* Email Input */}
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
+              {direction === 'rtl' ? 'آدرس ایمیل کاربر *' : 'Registered User Email *'}
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 absolute start-3.5 top-3 text-neutral-500" />
               <input
-                type="text"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="e.g. Senior Dev"
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500"
+                type="email"
+                value={email}
+                onChange={e => {
+                  setEmail(e.target.value);
+                  if (feedback) setFeedback(null);
+                }}
+                placeholder="colleague@company.com"
+                className="w-full ps-10 pe-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500"
+                required
               />
             </div>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              {direction === 'rtl' 
+                ? 'کاربر باید پیش از این در سیستم ثبت‌نام کرده باشد.' 
+                : 'User must already have an account on Chronos.'}
+            </p>
           </div>
 
+          {/* Role Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
+              {direction === 'rtl' ? 'نقش در پروژه' : 'Project Permission Role'}
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Member', 'Admin', 'Viewer'] as TeamRole[]).map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all text-center ${
+                    role === r 
+                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' 
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  {r === 'Admin' ? t('team.roleAdmin') : r === 'Member' ? t('team.roleMember') : t('team.roleViewer')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className="pt-4 flex items-center justify-end gap-2 border-t border-neutral-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-medium transition-colors"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
             >
-              {t('team.sendInvite')}
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>{direction === 'rtl' ? 'ارسال دعوت‌نامه' : 'Send Invitation'}</span>
             </button>
           </div>
         </form>

@@ -4,11 +4,11 @@ import type { GoalOKR } from '../../src/types/index.ts';
 
 const router = Router();
 
-// GET all goals
-router.get('/', (_req: Request, res: Response) => {
-  const goals = db.getGoals();
-  // Calculate dynamic progress percent based on linked tasks and key results
-  const tasks = db.getTasks();
+// GET all goals for the authenticated user
+router.get('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const goals = db.getGoals(userId);
+  const tasks = db.getTasks(userId);
 
   const enriched = goals.map(goal => {
     const linkedTasks = tasks.filter(t => t.goalId === goal.id);
@@ -38,13 +38,15 @@ router.get('/', (_req: Request, res: Response) => {
 
 // CREATE goal
 router.post('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const body = req.body;
   if (!body.title || !body.category) {
     return res.status(400).json({ success: false, error: 'Title and category are required' });
   }
 
   const newGoal: GoalOKR = {
-    id: `goal-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    id: `goal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    userId,
     title: body.title.trim(),
     description: body.description?.trim() || '',
     category: body.category,
@@ -55,13 +57,14 @@ router.post('/', (req: Request, res: Response) => {
     createdAt: new Date().toISOString()
   };
 
-  const created = db.createGoal(newGoal);
+  const created = db.createGoal(newGoal, userId);
   res.status(201).json({ success: true, data: created });
 });
 
 // UPDATE goal
 router.put('/:id', (req: Request, res: Response) => {
-  const updated = db.updateGoal(req.params.id, req.body);
+  const userId = req.user?.id;
+  const updated = db.updateGoal(req.params.id, req.body, userId);
   if (!updated) {
     return res.status(404).json({ success: false, error: 'Goal not found' });
   }
@@ -70,7 +73,8 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // UPDATE Key Result progress
 router.patch('/:id/kr/:krId', (req: Request, res: Response) => {
-  const goals = db.getGoals();
+  const userId = req.user?.id;
+  const goals = db.getGoals(userId);
   const goal = goals.find(g => g.id === req.params.id);
   if (!goal) {
     return res.status(404).json({ success: false, error: 'Goal not found' });
@@ -89,13 +93,14 @@ router.patch('/:id/kr/:krId', (req: Request, res: Response) => {
     return kr;
   });
 
-  const updated = db.updateGoal(req.params.id, { keyResults: updatedKrs });
+  const updated = db.updateGoal(req.params.id, { keyResults: updatedKrs }, userId);
   res.json({ success: true, data: updated });
 });
 
 // DELETE goal
 router.delete('/:id', (req: Request, res: Response) => {
-  const success = db.deleteGoal(req.params.id);
+  const userId = req.user?.id;
+  const success = db.deleteGoal(req.params.id, userId);
   if (!success) {
     return res.status(404).json({ success: false, error: 'Goal not found' });
   }

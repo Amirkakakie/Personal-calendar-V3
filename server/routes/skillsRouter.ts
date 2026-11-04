@@ -3,32 +3,35 @@ import { db } from '../db.ts';
 
 const router = Router();
 
-// GET all skills
-router.get('/', (_req: Request, res: Response) => {
-  const skills = db.getSkills();
+// GET all skills for authenticated user
+router.get('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const skills = db.getSkills(userId);
   res.json({ success: true, count: skills.length, data: skills });
 });
 
-// GET all badges
-router.get('/badges', (_req: Request, res: Response) => {
-  const badges = db.getBadges();
+// GET all badges for authenticated user
+router.get('/badges', (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const badges = db.getBadges(userId);
   res.json({ success: true, count: badges.length, data: badges });
 });
 
 // TRAIN skill / practice session (award XP)
 router.post('/:id/train', (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const { xpAmount = 50 } = req.body;
-  const skills = db.getSkills();
+  const skills = db.getSkills(userId);
   const skill = skills.find(s => s.id === req.params.id);
 
   if (!skill) {
     return res.status(404).json({ success: false, error: 'Skill node not found' });
   }
 
-  db.awardXp(Number(xpAmount), skill.id);
-  const updatedSkills = db.getSkills();
+  db.awardXp(Number(xpAmount), skill.id, userId);
+  const updatedSkills = db.getSkills(userId);
   const updatedSkill = updatedSkills.find(s => s.id === req.params.id);
-  const stats = db.getProductivityStats();
+  const stats = db.getProductivityStats(userId);
 
   res.json({
     success: true,

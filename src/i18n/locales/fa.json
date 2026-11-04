@@ -380,7 +380,12 @@
     "projectDescription": "اهداف و شرح پروژه",
     "projectColor": "رنگ اختصاصی",
     "createProject": "ایجاد پروژه",
-    "searchTasks": "جستجو بر اساس شناسه، عنوان یا برچسب..."
+    "searchTasks": "جستجو بر اساس شناسه، عنوان یا برچسب...",
+    "invitationsTitle": "دعوت‌نامه‌های پروژه",
+    "pendingInvites": "{{count}} دعوت در انتظار",
+    "noPendingInvites": "هیچ دعوت‌نامه‌ای در انتظار نیست",
+    "acceptInvite": "پذیرش و پیوستن",
+    "declineInvite": "رد دعوت"
   },
   "accountMenu": {
     "preferences": "تنظیمات و نمایش",

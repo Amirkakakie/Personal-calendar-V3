@@ -32,15 +32,54 @@ interface TeamBoardViewProps {
 }
 
 export const TeamBoardView: React.FC<TeamBoardViewProps> = ({ onOpenAuthModal }) => {
-  const { workspace, projects, currentProject, setCurrentProjectId, projectTasks, teamMembers } = useTeam();
+  const { projects, currentProject, setCurrentProjectId, projectTasks, teamMembers, myPendingInvites } = useTeam();
   const { currentUser, isAuthenticated } = useAuth();
-  const { t, formatDate, formatNumber } = useI18n();
+  const { t, formatDate, formatNumber, direction } = useI18n();
 
   const [activeTab, setActiveTab] = useState<TeamSubView>('board');
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+
+  // Blank slate empty state when newly registered user has no projects
+  if (!currentProject) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto space-y-4 my-8 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/20 shadow-lg">
+            <FolderGit2 className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              {direction === 'rtl' ? 'فضای کاری تیمی شما خالی است' : 'No Team Projects Yet'}
+            </h3>
+            <p className="text-xs text-neutral-400 max-w-md mx-auto mt-2 leading-relaxed">
+              {direction === 'rtl'
+                ? 'یک پروژه مشارکتی جدید بسازید یا از طریق ایمیل به پروژه‌های همکاران خود ملحق شوید.'
+                : 'Create your first collaborative project board with a unique key prefix, or accept an invitation from teammates in your inbox.'}
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsProjectModalOpen(true)}
+              className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{direction === 'rtl' ? 'ایجاد اولین پروژه' : 'Create First Project'}</span>
+            </button>
+          </div>
+        </div>
+
+        <ProjectModal
+          isOpen={isProjectModalOpen}
+          onClose={() => setIsProjectModalOpen(false)}
+        />
+      </div>
+    );
+  }
 
   const completedCount = projectTasks.filter(t => t.columnId === 'completed').length;
   const totalCount = projectTasks.length;

@@ -50,7 +50,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   onOpenAuthModal,
   onDataRestored
 }) => {
-  const { currentUser, isAuthenticated, logout, demoUsers, switchDemoUser } = useAuth();
+  const { currentUser, isAuthenticated, logout } = useAuth();
   const { locale, setLocale, calendarType, setCalendarType, t, direction, formatNumber } = useI18n();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -164,29 +164,6 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 </div>
                 <p className="text-xs text-neutral-400 truncate">{currentUser.email}</p>
                 <p className="text-[11px] text-neutral-500 truncate mt-0.5">{currentUser.title}</p>
-              </div>
-            </div>
-
-            {/* Quick Persona Switcher Bar */}
-            <div className="mt-3 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-[11px]">
-              <span className="text-neutral-400 font-medium flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-neutral-500" />
-                <span>{t('accountMenu.switchPersona')}:</span>
-              </span>
-              <div className="flex items-center gap-1">
-                {demoUsers.map(u => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => switchDemoUser(u.id)}
-                    title={`${u.name} (${u.role})`}
-                    className={`w-6 h-6 rounded-lg bg-gradient-to-tr ${u.avatarColor} flex items-center justify-center text-[10px] font-bold text-white transition-transform ${
-                      u.id === currentUser.id ? 'ring-2 ring-white scale-110' : 'opacity-60 hover:opacity-100 hover:scale-105'
-                    }`}
-                  >
-                    {u.initials}
-                  </button>
-                ))}
               </div>
             </div>
           </div>

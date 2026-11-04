@@ -22,6 +22,23 @@ export interface TeamMember {
   isOnline?: boolean;
 }
 
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED';
+
+export interface ProjectInvitation {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectKey: string;
+  projectColor: string;
+  invitedEmail: string;
+  invitedByUserId: string;
+  invitedByName: string;
+  invitedByEmail: string;
+  role: TeamRole;
+  status: InvitationStatus;
+  createdAt: string;
+}
+
 export interface TeamWorkspace {
   id: string;
   name: string;
@@ -84,6 +101,8 @@ export interface TeamTask {
 export interface TeamProject {
   id: string;
   workspaceId: string;
+  ownerId: string;
+  ownerEmail: string;
   name: string;
   key: string; // e.g. "FIN", "APP", "SYS"
   description: string;

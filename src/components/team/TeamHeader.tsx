@@ -33,7 +33,7 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
   onOpenInviteModal,
   onOpenProjectModal
 }) => {
-  const { workspace, projects, currentProject, setCurrentProjectId, teamMembers } = useTeam();
+  const { projects, currentProject, setCurrentProjectId, teamMembers } = useTeam();
   const { currentUser, logout } = useAuth();
   const { t, direction } = useI18n();
 
@@ -75,7 +75,7 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 truncate max-w-[140px] sm:max-w-none">
-                {workspace.name}
+                {currentProject ? currentProject.name : (direction === 'rtl' ? 'پروژه‌های تیمی' : 'Team Projects')}
               </p>
             </div>
           </div>
@@ -84,19 +84,30 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
 
           {/* Project Selector Dropdown */}
           <div className="relative" ref={projDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-              className="px-3 py-1.5 bg-neutral-950/70 hover:bg-neutral-800/80 border border-neutral-800 rounded-xl flex items-center gap-2 text-xs font-semibold text-neutral-200 transition-colors"
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: currentProject.color }}
-              />
-              <span className="font-mono text-indigo-400">[{currentProject.key}]</span>
-              <span className="truncate max-w-[120px] sm:max-w-[180px]">{currentProject.name}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-            </button>
+            {currentProject ? (
+              <button
+                type="button"
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                className="px-3 py-1.5 bg-neutral-950/70 hover:bg-neutral-800/80 border border-neutral-800 rounded-xl flex items-center gap-2 text-xs font-semibold text-neutral-200 transition-colors"
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: currentProject.color }}
+                />
+                <span className="font-mono text-indigo-400">[{currentProject.key}]</span>
+                <span className="truncate max-w-[120px] sm:max-w-[180px]">{currentProject.name}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenProjectModal}
+                className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 rounded-xl flex items-center gap-2 text-xs font-semibold text-indigo-300 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{direction === 'rtl' ? 'ایجاد اولین پروژه' : 'Create First Project'}</span>
+              </button>
+            )}
 
             {isProjectDropdownOpen && (
               <div className="absolute start-0 mt-1.5 w-64 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
@@ -121,11 +132,11 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
                           style={{ backgroundColor: proj.color }}
                         />
                         <span className="font-mono text-neutral-400">[{proj.key}]</span>
-                        <span className={`truncate ${proj.id === currentProject.id ? 'text-white font-semibold' : 'text-neutral-300'}`}>
+                        <span className={`truncate ${proj.id === currentProject?.id ? 'text-white font-semibold' : 'text-neutral-300'}`}>
                           {proj.name}
                         </span>
                       </div>
-                      {proj.id === currentProject.id && (
+                      {proj.id === currentProject?.id && (
                         <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       )}
                     </button>

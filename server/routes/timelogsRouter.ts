@@ -4,14 +4,16 @@ import type { TimeLog } from '../../src/types/index.ts';
 
 const router = Router();
 
-// GET all time logs
-router.get('/', (_req: Request, res: Response) => {
-  const logs = db.getTimeLogs();
+// GET all time logs for the authenticated user
+router.get('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const logs = db.getTimeLogs(userId);
   res.json({ success: true, count: logs.length, data: logs });
 });
 
 // LOG completed focus session / stopwatch run
 router.post('/', (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const body = req.body;
   if (!body.durationSeconds || body.durationSeconds <= 0) {
     return res.status(400).json({ success: false, error: 'Valid durationSeconds is required' });
@@ -38,17 +40,17 @@ router.post('/', (req: Request, res: Response) => {
     endedAt: body.endedAt || new Date().toISOString()
   };
 
-  const saved = db.addTimeLog(newLog);
+  const saved = db.addTimeLog(newLog, userId);
 
   // Award XP based on duration (1 XP per 30 seconds of deep work)
   const xpAward = Math.max(10, Math.floor(durationSeconds / 30));
-  db.awardXp(xpAward);
+  db.awardXp(xpAward, undefined, userId);
 
   res.status(201).json({
     success: true,
     data: saved,
     xpAwarded: xpAward,
-    currentStats: db.getProductivityStats()
+    currentStats: db.getProductivityStats(userId)
   });
 });
 

@@ -49,6 +49,8 @@ export const KanbanBoard: React.FC = () => {
   const [quickAddCol, setQuickAddCol] = useState<KanbanColumnId | null>(null);
   const [quickTitle, setQuickTitle] = useState('');
 
+  if (!currentProject) return null;
+
   const handleOpenNewTask = (columnId: KanbanColumnId = 'todo') => {
     setSelectedTask(null);
     setModalDefaultCol(columnId);

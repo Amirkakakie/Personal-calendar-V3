@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
+import authRouter from './routes/authRouter.ts';
 import tasksRouter from './routes/tasksRouter.ts';
 import goalsRouter from './routes/goalsRouter.ts';
 import calendarRouter from './routes/calendarRouter.ts';
@@ -28,8 +29,7 @@ app.set('trust proxy', 1);
 // Ensures /api routes match whether called as /api/tasks or rewritten to /tasks
 app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/assets') && !req.url.startsWith('/@')) {
-    // If route matches one of the known API subpaths, prefix with /api
-    const apiPrefixes = ['/tasks', '/goals', '/calendar', '/ai', '/projects', '/skills', '/timelogs', '/health', '/stats'];
+    const apiPrefixes = ['/auth', '/tasks', '/goals', '/calendar', '/ai', '/projects', '/skills', '/timelogs', '/health', '/stats'];
     if (apiPrefixes.some(prefix => req.url.startsWith(prefix))) {
       req.url = '/api' + req.url;
     }
@@ -62,10 +62,11 @@ const aiRateLimiter = createRateLimiter({
 app.use('/api', globalApiLimiter);
 app.use('/api/ai', aiRateLimiter);
 
-// Authentication Guard on API Endpoints
+// Authentication Guard on API Endpoints (handles public exclusions internally)
 app.use('/api', authenticateToken);
 
 // API Route Handlers
+app.use('/api/auth', authRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/goals', goalsRouter);
 app.use('/api/calendar', calendarRouter);
@@ -80,16 +81,16 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'ok',
     environment: process.env.NODE_ENV || 'development',
     serverless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
-    service: 'Chronos AI Growth & Task Management System',
+    service: 'Chronos Personal & Team Operating System',
     timestamp: new Date().toISOString(),
     geminiEnabled: Boolean(process.env.GEMINI_API_KEY)
   });
 });
 
-// Direct Productivity Stats endpoint
-app.get('/api/stats', (_req: Request, res: Response) => {
+// Direct Productivity Stats endpoint (strictly user-scoped)
+app.get('/api/stats', (req: Request, res: Response) => {
   try {
-    const stats = db.getProductivityStats();
+    const stats = db.getProductivityStats(req.user?.id);
     res.json({ success: true, data: stats });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to calculate stats' });

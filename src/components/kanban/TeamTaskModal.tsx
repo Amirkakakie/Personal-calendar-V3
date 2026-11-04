@@ -88,7 +88,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
     setCommentInput('');
   }, [task, defaultColumnId, currentUser, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentProject) return null;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

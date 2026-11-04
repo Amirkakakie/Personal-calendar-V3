@@ -14,7 +14,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode = 'login'
 }) => {
-  const { login, signup, switchDemoUser, demoUsers, currentUser, logout } = useAuth();
+  const { login, signup, currentUser, logout } = useAuth();
   const { t, direction } = useI18n();
 
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
@@ -72,11 +72,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } else {
       setErrorMessage(res.error || 'Signup failed.');
     }
-  };
-
-  const handleDemoSelect = (userId: string) => {
-    switchDemoUser(userId);
-    onClose();
   };
 
   const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
@@ -235,39 +230,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
             </form>
           )}
-
-          {/* Demo Personas Quick Select */}
-          <div className="mt-5 pt-4 border-t border-neutral-800">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Users className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-300">
-                {t('auth.demoAccountsTitle')}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5">
-              {demoUsers.map(user => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => handleDemoSelect(user.id)}
-                  className="p-2 bg-neutral-950/70 hover:bg-neutral-800 border border-neutral-800 rounded-xl transition-all flex items-center gap-2 text-start group"
-                >
-                  <div className={`w-6 h-6 rounded-md bg-gradient-to-tr ${user.avatarColor} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
-                    {user.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-neutral-200 truncate group-hover:text-white">
-                      {user.name.split(' ')[0]}
-                    </p>
-                    <p className="text-[9px] text-neutral-400 truncate">
-                      {user.role}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Toggle between Login and Signup */}
           <div className="mt-4 pt-3 border-t border-neutral-800/60 text-center">

@@ -24,6 +24,7 @@ export interface SubTask {
 
 export interface Task {
   id: string;
+  userId?: string;
   title: string;
   description?: string;
   category: TaskCategory;
@@ -54,6 +55,7 @@ export interface Task {
 
 export interface Project {
   id: string;
+  userId?: string;
   name: string;
   description: string;
   category: TaskCategory;
@@ -80,6 +82,7 @@ export interface KeyResult {
 
 export interface GoalOKR {
   id: string;
+  userId?: string;
   title: string;
   description: string;
   category: TaskCategory;
@@ -94,6 +97,7 @@ export interface GoalOKR {
 
 export interface CalendarEvent {
   id: string;
+  userId?: string;
   title: string;
   description?: string;
   startTime: string; // ISO string or YYYY-MM-DDTHH:mm
@@ -110,6 +114,7 @@ export interface CalendarEvent {
 
 export interface TimeLog {
   id: string;
+  userId?: string;
   taskId?: string;
   taskTitle?: string;
   projectId?: string;
