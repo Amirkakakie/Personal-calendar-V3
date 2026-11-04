@@ -9,16 +9,12 @@ import type {
   ProjectInvitation
 } from '../types/team.ts';
 import { useAuth } from './AuthContext.tsx';
+import { api } from '../services/api.ts';
 
 const STORAGE_PROJECTS_KEY = 'chronos_secure_team_projects_v3';
 const STORAGE_TASKS_KEY = 'chronos_secure_team_tasks_v3';
 const STORAGE_INVITATIONS_KEY = 'chronos_project_invitations_v3';
 const STORAGE_CURRENT_PROJ_KEY = 'chronos_team_curr_proj_v3';
-
-// Blank slate initial arrays for strict user data isolation
-const DEFAULT_INITIAL_PROJECTS: TeamProject[] = [];
-const DEFAULT_INITIAL_TASKS: TeamTask[] = [];
-const DEFAULT_INITIAL_INVITATIONS: ProjectInvitation[] = [];
 
 interface TeamFilter {
   search: string;
@@ -36,79 +32,36 @@ interface TeamContextType {
   setFilter: React.Dispatch<React.SetStateAction<TeamFilter>>;
   clearFilter: () => void;
   setCurrentProjectId: (id: string) => void;
-  createProject: (project: Omit<TeamProject, 'id' | 'workspaceId' | 'ownerId' | 'ownerEmail' | 'memberIds' | 'createdAt'>) => TeamProject;
-  updateProject: (project: Partial<TeamProject> & { id: string }) => void;
-  deleteProject: (id: string) => void;
-  createTask: (task: Omit<TeamTask, 'id' | 'taskNumber' | 'createdAt' | 'updatedAt' | 'comments'>) => TeamTask | null;
-  updateTask: (task: Partial<TeamTask> & { id: string }) => void;
-  moveTask: (taskId: string, targetColumnId: KanbanColumnId, targetIndex?: number) => void;
-  deleteTask: (taskId: string) => void;
-  addComment: (taskId: string, text: string) => void;
-  toggleSubtask: (taskId: string, subtaskId: string) => void;
-  addSubtask: (taskId: string, title: string) => void;
-  deleteSubtask: (taskId: string, subtaskId: string) => void;
+  createProject: (project: Omit<TeamProject, 'id' | 'workspaceId' | 'ownerId' | 'ownerEmail' | 'memberIds' | 'createdAt'>) => Promise<TeamProject | null>;
+  updateProject: (project: Partial<TeamProject> & { id: string }) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  createTask: (task: Omit<TeamTask, 'id' | 'taskNumber' | 'createdAt' | 'updatedAt' | 'comments'>) => Promise<TeamTask | null>;
+  updateTask: (task: Partial<TeamTask> & { id: string }) => Promise<void>;
+  moveTask: (taskId: string, targetColumnId: KanbanColumnId, targetIndex?: number) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  addComment: (taskId: string, text: string) => Promise<void>;
+  toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  addSubtask: (taskId: string, title: string) => Promise<void>;
+  deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   
   // Explicit Email Invitation System
-  sendProjectInvite: (projectId: string, email: string, role?: TeamRole) => { success: boolean; message: string };
+  sendProjectInvite: (projectId: string, email: string, role?: TeamRole) => Promise<{ success: boolean; message: string }>;
   myPendingInvites: ProjectInvitation[];
-  acceptInvite: (inviteId: string) => void;
-  declineInvite: (inviteId: string) => void;
+  acceptInvite: (inviteId: string) => Promise<void>;
+  declineInvite: (inviteId: string) => Promise<void>;
 }
 
 const TeamContext = createContext<TeamContextType | null>(null);
 
 export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, findUserByEmail, getProjectMembers } = useAuth();
+  const { currentUser, getProjectMembers } = useAuth();
+  const currentUserId = currentUser?.id;
 
-  // All stored projects (filtered by membership for currentUser)
-  const [allProjects, setAllProjects] = useState<TeamProject[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_PROJECTS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {}
-    localStorage.setItem(STORAGE_PROJECTS_KEY, JSON.stringify(DEFAULT_INITIAL_PROJECTS));
-    return DEFAULT_INITIAL_PROJECTS;
-  });
+  const [allProjects, setAllProjects] = useState<TeamProject[]>([]);
+  const [allTasks, setAllTasks] = useState<TeamTask[]>([]);
+  const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
+  const [currentProjectId, setCurrentProjectIdState] = useState<string>('');
 
-  // All stored tasks across projects
-  const [allTasks, setAllTasks] = useState<TeamTask[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_TASKS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {}
-    localStorage.setItem(STORAGE_TASKS_KEY, JSON.stringify(DEFAULT_INITIAL_TASKS));
-    return DEFAULT_INITIAL_TASKS;
-  });
-
-  // All invitations
-  const [invitations, setInvitations] = useState<ProjectInvitation[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_INVITATIONS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {}
-    localStorage.setItem(STORAGE_INVITATIONS_KEY, JSON.stringify(DEFAULT_INITIAL_INVITATIONS));
-    return DEFAULT_INITIAL_INVITATIONS;
-  });
-
-  // Selected Project ID
-  const [currentProjectId, setCurrentProjectIdState] = useState<string>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_CURRENT_PROJ_KEY);
-      if (stored) return stored;
-    } catch {}
-    return '';
-  });
-
-  // Filter state
   const [filter, setFilter] = useState<TeamFilter>({
     search: '',
     assigneeId: undefined,
@@ -116,24 +69,70 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tag: undefined
   });
 
-  // Dual-write to localStorage
+  // Account switching / logout safety: Flush state when user changes
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_PROJECTS_KEY, JSON.stringify(allProjects));
-    } catch {}
-  }, [allProjects]);
+    if (!currentUserId) {
+      setAllProjects([]);
+      setAllTasks([]);
+      setInvitations([]);
+      setCurrentProjectIdState('');
+      return;
+    }
 
-  useEffect(() => {
+    // Load initial user-scoped cached values if present
     try {
-      localStorage.setItem(STORAGE_TASKS_KEY, JSON.stringify(allTasks));
-    } catch {}
-  }, [allTasks]);
+      const projKey = `${STORAGE_PROJECTS_KEY}_${currentUserId}`;
+      const savedProjs = localStorage.getItem(projKey);
+      if (savedProjs) setAllProjects(JSON.parse(savedProjs));
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_INVITATIONS_KEY, JSON.stringify(invitations));
+      const invKey = `${STORAGE_INVITATIONS_KEY}_${currentUserId}`;
+      const savedInvs = localStorage.getItem(invKey);
+      if (savedInvs) setInvitations(JSON.parse(savedInvs));
+
+      const curKey = `${STORAGE_CURRENT_PROJ_KEY}_${currentUserId}`;
+      const savedCur = localStorage.getItem(curKey);
+      if (savedCur) setCurrentProjectIdState(savedCur);
     } catch {}
-  }, [invitations]);
+
+    // Reconcile with backend
+    async function syncBackendTeamData() {
+      try {
+        const [projs, invites] = await Promise.all([
+          api.getTeamProjects().catch(() => []),
+          api.getTeamInvitations().catch(() => [])
+        ]);
+
+        if (Array.isArray(projs)) {
+          setAllProjects(projs);
+          localStorage.setItem(`${STORAGE_PROJECTS_KEY}_${currentUserId}`, JSON.stringify(projs));
+        }
+        if (Array.isArray(invites)) {
+          setInvitations(invites);
+          localStorage.setItem(`${STORAGE_INVITATIONS_KEY}_${currentUserId}`, JSON.stringify(invites));
+        }
+      } catch (e) {
+        console.warn('[TeamContext] Background team sync error:', e);
+      }
+    }
+
+    syncBackendTeamData();
+  }, [currentUserId]);
+
+  // Load project tasks whenever active project changes
+  useEffect(() => {
+    if (!currentUserId || !currentProjectId) return;
+
+    api.getTeamTasks(currentProjectId)
+      .then(tasks => {
+        if (Array.isArray(tasks)) {
+          setAllTasks(prev => {
+            const otherTasks = prev.filter(t => t.projectId !== currentProjectId);
+            return [...otherTasks, ...tasks];
+          });
+        }
+      })
+      .catch(() => {});
+  }, [currentUserId, currentProjectId]);
 
   // STRICT ACCESS CONTROL: Only projects where currentUser is owner or accepted member
   const userProjects = useMemo(() => {
@@ -151,10 +150,12 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const setCurrentProjectId = useCallback((id: string) => {
     setCurrentProjectIdState(id);
-    try {
-      localStorage.setItem(STORAGE_CURRENT_PROJ_KEY, id);
-    } catch {}
-  }, []);
+    if (currentUserId) {
+      try {
+        localStorage.setItem(`${STORAGE_CURRENT_PROJ_KEY}_${currentUserId}`, id);
+      } catch {}
+    }
+  }, [currentUserId]);
 
   // Team members strictly for the current project
   const teamMembers = useMemo(() => {
@@ -202,41 +203,49 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return invitations.filter(inv => inv.invitedEmail.toLowerCase() === myEmail && inv.status === 'PENDING');
   }, [invitations, currentUser]);
 
-  // Project Actions
+  // Project Actions with Backend API Calls
   const createProject = useCallback(
-    (data: Omit<TeamProject, 'id' | 'workspaceId' | 'ownerId' | 'ownerEmail' | 'memberIds' | 'createdAt'>): TeamProject => {
+    async (data: Omit<TeamProject, 'id' | 'workspaceId' | 'ownerId' | 'ownerEmail' | 'memberIds' | 'createdAt'>): Promise<TeamProject | null> => {
       if (!currentUser) throw new Error('Must be authenticated to create a project');
 
-      const newProj: TeamProject = {
-        ...data,
-        id: `proj-${Date.now()}`,
-        workspaceId: 'ws-team',
-        ownerId: currentUser.id,
-        ownerEmail: currentUser.email,
-        memberIds: [currentUser.id], // Owner is initial member
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-
-      setAllProjects(prev => [...prev, newProj]);
-      setCurrentProjectId(newProj.id);
-      return newProj;
+      try {
+        const created = await api.createTeamProject(data);
+        if (created && created.id) {
+          setAllProjects(prev => [created, ...prev]);
+          setCurrentProjectId(created.id);
+          return created;
+        }
+      } catch (err) {
+        console.error('[TeamContext] Failed to create team project on backend:', err);
+      }
+      return null;
     },
     [currentUser, setCurrentProjectId]
   );
 
-  const updateProject = useCallback((data: Partial<TeamProject> & { id: string }) => {
+  const updateProject = useCallback(async (data: Partial<TeamProject> & { id: string }) => {
     setAllProjects(prev => prev.map(p => (p.id === data.id ? { ...p, ...data } : p)));
+    try {
+      await api.updateTeamProject(data.id, data);
+    } catch (err) {
+      console.warn('[TeamContext] Backend update failed:', err);
+    }
   }, []);
 
-  const deleteProject = useCallback((id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
     setAllProjects(prev => prev.filter(p => p.id !== id));
     setAllTasks(prev => prev.filter(t => t.projectId !== id));
     setInvitations(prev => prev.filter(inv => inv.projectId !== id));
+    try {
+      await api.deleteTeamProject(id);
+    } catch (err) {
+      console.warn('[TeamContext] Backend delete failed:', err);
+    }
   }, []);
 
   // Secure Invitation Flow
   const sendProjectInvite = useCallback(
-    (projectId: string, email: string, role: TeamRole = 'Member'): { success: boolean; message: string } => {
+    async (projectId: string, email: string, role: TeamRole = 'Member'): Promise<{ success: boolean; message: string }> => {
       if (!currentUser) return { success: false, message: 'Authentication required.' };
       
       const cleanEmail = email.trim().toLowerCase();
@@ -246,122 +255,86 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, message: 'You cannot invite yourself.' };
       }
 
-      // Verify project exists and currentUser is a member/owner
-      const project = allProjects.find(p => p.id === projectId);
-      if (!project) return { success: false, message: 'Project not found.' };
-
-      if (project.ownerId !== currentUser.id && !project.memberIds.includes(currentUser.id)) {
-        return { success: false, message: 'You do not have permission to invite members to this project.' };
+      try {
+        const res = await api.sendTeamInvite(projectId, cleanEmail, role);
+        if (res.success) {
+          const freshInvites = await api.getTeamInvitations().catch(() => []);
+          setInvitations(freshInvites);
+        }
+        return res;
+      } catch (err: any) {
+        return { success: false, message: err.message || 'Failed to send invitation.' };
       }
-
-      // Check if user with this email exists in registered users
-      const targetUser = findUserByEmail(cleanEmail);
-      if (!targetUser) {
-        return {
-          success: false,
-          message: `No user found with email "${cleanEmail}". They must first create an account on Chronos before receiving project invites.`
-        };
-      }
-
-      // Check if user is already a member
-      if (project.memberIds.includes(targetUser.id)) {
-        return { success: false, message: `${targetUser.name} is already a member of this project.` };
-      }
-
-      // Check if already invited and pending
-      const alreadyPending = invitations.some(
-        inv => inv.projectId === projectId && inv.invitedEmail.toLowerCase() === cleanEmail && inv.status === 'PENDING'
-      );
-      if (alreadyPending) {
-        return { success: false, message: `An invitation is already pending for ${cleanEmail}.` };
-      }
-
-      const newInvite: ProjectInvitation = {
-        id: `inv-${Date.now()}`,
-        projectId: project.id,
-        projectName: project.name,
-        projectKey: project.key,
-        projectColor: project.color,
-        invitedEmail: cleanEmail,
-        invitedByUserId: currentUser.id,
-        invitedByName: currentUser.name,
-        invitedByEmail: currentUser.email,
-        role,
-        status: 'PENDING',
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-
-      setInvitations(prev => [newInvite, ...prev]);
-      return { success: true, message: `Invitation successfully sent to ${targetUser.name} (${cleanEmail}).` };
     },
-    [currentUser, allProjects, findUserByEmail, invitations]
+    [currentUser]
   );
 
   const acceptInvite = useCallback(
-    (inviteId: string) => {
+    async (inviteId: string) => {
       if (!currentUser) return;
-
-      const invite = invitations.find(i => i.id === inviteId);
-      if (!invite || invite.status !== 'PENDING') return;
-
-      // Update invite status to ACCEPTED
-      setInvitations(prev => prev.map(i => (i.id === inviteId ? { ...i, status: 'ACCEPTED' } : i)));
-
-      // Add currentUser to project's memberIds
-      setAllProjects(prev =>
-        prev.map(p =>
-          p.id === invite.projectId
-            ? { ...p, memberIds: [...new Set([...p.memberIds, currentUser.id])] }
-            : p
-        )
-      );
-
-      setCurrentProjectId(invite.projectId);
+      try {
+        await api.respondToTeamInvite(inviteId, true);
+        const [freshProjs, freshInvites] = await Promise.all([
+          api.getTeamProjects().catch(() => []),
+          api.getTeamInvitations().catch(() => [])
+        ]);
+        setAllProjects(freshProjs);
+        setInvitations(freshInvites);
+      } catch (err) {
+        console.error('[TeamContext] Accept invite error:', err);
+      }
     },
-    [currentUser, invitations, setCurrentProjectId]
+    [currentUser]
   );
 
-  const declineInvite = useCallback((inviteId: string) => {
-    setInvitations(prev => prev.map(i => (i.id === inviteId ? { ...i, status: 'DECLINED' } : i)));
-  }, []);
+  const declineInvite = useCallback(
+    async (inviteId: string) => {
+      try {
+        await api.respondToTeamInvite(inviteId, false);
+        const freshInvites = await api.getTeamInvitations().catch(() => []);
+        setInvitations(freshInvites);
+      } catch (err) {
+        console.error('[TeamContext] Decline invite error:', err);
+      }
+    },
+    []
+  );
 
-  // Task Actions
+  // Task Actions with Backend API Calls
   const createTask = useCallback(
-    (data: Omit<TeamTask, 'id' | 'taskNumber' | 'createdAt' | 'updatedAt' | 'comments'>): TeamTask | null => {
+    async (data: Omit<TeamTask, 'id' | 'taskNumber' | 'createdAt' | 'updatedAt' | 'comments'>): Promise<TeamTask | null> => {
       if (!currentUser || !currentProject) return null;
 
-      // Verify user is member of project
-      if (currentProject.ownerId !== currentUser.id && !currentProject.memberIds.includes(currentUser.id)) {
-        return null;
+      try {
+        const created = await api.createTeamTask({
+          ...data,
+          projectId: currentProject.id
+        });
+
+        if (created && created.id) {
+          setAllTasks(prev => [created, ...prev]);
+          return created;
+        }
+      } catch (err) {
+        console.error('[TeamContext] Create task failed:', err);
       }
-
-      const nextNumber = Math.max(0, ...allTasks.filter(t => t.projectId === currentProject.id).map(t => t.taskNumber || 100)) + 1;
-      const now = new Date().toISOString();
-
-      const newTask: TeamTask = {
-        ...data,
-        projectId: currentProject.id,
-        id: `task-${Date.now()}`,
-        taskNumber: nextNumber,
-        comments: [],
-        createdAt: now.split('T')[0],
-        updatedAt: now
-      };
-
-      setAllTasks(prev => [newTask, ...prev]);
-      return newTask;
+      return null;
     },
-    [currentUser, currentProject, allTasks]
+    [currentUser, currentProject]
   );
 
-  const updateTask = useCallback((data: Partial<TeamTask> & { id: string }) => {
-    const now = new Date().toISOString();
+  const updateTask = useCallback(async (data: Partial<TeamTask> & { id: string }) => {
     setAllTasks(prev =>
-      prev.map(t => (t.id === data.id ? { ...t, ...data, updatedAt: now } : t))
+      prev.map(t => (t.id === data.id ? { ...t, ...data, updatedAt: new Date().toISOString() } : t))
     );
+    try {
+      await api.updateTeamTask(data.id, data);
+    } catch (err) {
+      console.warn('[TeamContext] Update task failed:', err);
+    }
   }, []);
 
-  const moveTask = useCallback((taskId: string, targetColumnId: KanbanColumnId, targetIndex?: number) => {
+  const moveTask = useCallback(async (taskId: string, targetColumnId: KanbanColumnId, targetIndex?: number) => {
     setAllTasks(prev => {
       const taskIndex = prev.findIndex(t => t.id === taskId);
       if (taskIndex === -1) return prev;
@@ -376,14 +349,25 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updated[taskIndex] = targetTask;
       return updated;
     });
+
+    try {
+      await api.updateTeamTask(taskId, { columnId: targetColumnId, order: targetIndex });
+    } catch (err) {
+      console.warn('[TeamContext] Move task failed:', err);
+    }
   }, []);
 
-  const deleteTask = useCallback((taskId: string) => {
+  const deleteTask = useCallback(async (taskId: string) => {
     setAllTasks(prev => prev.filter(t => t.id !== taskId));
+    try {
+      await api.deleteTeamTask(taskId);
+    } catch (err) {
+      console.warn('[TeamContext] Delete task failed:', err);
+    }
   }, []);
 
   const addComment = useCallback(
-    (taskId: string, text: string) => {
+    async (taskId: string, text: string) => {
       if (!text.trim() || !currentUser) return;
 
       const newComment = {
@@ -396,56 +380,81 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString()
       };
 
+      const task = allTasks.find(t => t.id === taskId);
+      const updatedComments = [...(task?.comments || []), newComment];
+
       setAllTasks(prev =>
-        prev.map(t =>
-          t.id === taskId
-            ? { ...t, comments: [...(t.comments || []), newComment], updatedAt: new Date().toISOString() }
-            : t
-        )
+        prev.map(t => (t.id === taskId ? { ...t, comments: updatedComments } : t))
       );
+
+      try {
+        await api.updateTeamTask(taskId, { comments: updatedComments });
+      } catch (err) {
+        console.warn('[TeamContext] Add comment failed:', err);
+      }
     },
-    [currentUser]
+    [currentUser, allTasks]
   );
 
-  const toggleSubtask = useCallback((taskId: string, subtaskId: string) => {
-    setAllTasks(prev =>
-      prev.map(t => {
-        if (t.id !== taskId) return t;
-        const subtasks = t.subtasks.map(st =>
-          st.id === subtaskId ? { ...st, completed: !st.completed } : st
-        );
-        return { ...t, subtasks, updatedAt: new Date().toISOString() };
-      })
-    );
-  }, []);
+  const toggleSubtask = useCallback(async (taskId: string, subtaskId: string) => {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
 
-  const addSubtask = useCallback((taskId: string, title: string) => {
+    const subtasks = task.subtasks.map(st =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    );
+
+    setAllTasks(prev =>
+      prev.map(t => (t.id === taskId ? { ...t, subtasks } : t))
+    );
+
+    try {
+      await api.updateTeamTask(taskId, { subtasks });
+    } catch (err) {
+      console.warn('[TeamContext] Toggle subtask failed:', err);
+    }
+  }, [allTasks]);
+
+  const addSubtask = useCallback(async (taskId: string, title: string) => {
     if (!title.trim()) return;
-    setAllTasks(prev =>
-      prev.map(t => {
-        if (t.id !== taskId) return t;
-        const newSubtask = {
-          id: `st-${Date.now()}`,
-          title: title.trim(),
-          completed: false
-        };
-        return { ...t, subtasks: [...t.subtasks, newSubtask], updatedAt: new Date().toISOString() };
-      })
-    );
-  }, []);
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
 
-  const deleteSubtask = useCallback((taskId: string, subtaskId: string) => {
+    const newSubtask = {
+      id: `st-${Date.now()}`,
+      title: title.trim(),
+      completed: false
+    };
+
+    const subtasks = [...task.subtasks, newSubtask];
+
     setAllTasks(prev =>
-      prev.map(t => {
-        if (t.id !== taskId) return t;
-        return {
-          ...t,
-          subtasks: t.subtasks.filter(st => st.id !== subtaskId),
-          updatedAt: new Date().toISOString()
-        };
-      })
+      prev.map(t => (t.id === taskId ? { ...t, subtasks } : t))
     );
-  }, []);
+
+    try {
+      await api.updateTeamTask(taskId, { subtasks });
+    } catch (err) {
+      console.warn('[TeamContext] Add subtask failed:', err);
+    }
+  }, [allTasks]);
+
+  const deleteSubtask = useCallback(async (taskId: string, subtaskId: string) => {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const subtasks = task.subtasks.filter(st => st.id !== subtaskId);
+
+    setAllTasks(prev =>
+      prev.map(t => (t.id === taskId ? { ...t, subtasks } : t))
+    );
+
+    try {
+      await api.updateTeamTask(taskId, { subtasks });
+    } catch (err) {
+      console.warn('[TeamContext] Delete subtask failed:', err);
+    }
+  }, [allTasks]);
 
   const clearFilter = useCallback(() => {
     setFilter({

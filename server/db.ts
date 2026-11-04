@@ -45,16 +45,85 @@ function resolveStoragePath(): { targetFile: string; isServerless: boolean } {
   }
 }
 
+export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+
+export interface WorkspaceMemberRecord {
+  userId: string;
+  role: WorkspaceRole;
+  joinedAt: string;
+}
+
+export interface WorkspaceRecord {
+  id: string;
+  name: string;
+  slug: string;
+  ownerId: string;
+  isPersonal: boolean;
+  members: WorkspaceMemberRecord[];
+  createdAt: string;
+}
+
 export interface UserRecord {
   id: string;
   name: string;
   email: string;
-  password: string;
+  passwordHash: string;
+  password?: string;
   role: string;
   title: string;
   avatarColor: string;
   initials: string;
   joinedAt: string;
+  personalWorkspaceId: string;
+}
+
+export interface TeamProjectRecord {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  ownerEmail: string;
+  name: string;
+  key: string;
+  description: string;
+  color: string;
+  icon: string;
+  memberIds: string[];
+  targetDate?: string;
+  createdAt: string;
+}
+
+export interface TeamTaskRecord {
+  id: string;
+  taskNumber: number;
+  projectId: string;
+  columnId: string;
+  title: string;
+  description?: string;
+  priority: string;
+  assigneeId?: string;
+  dueDate?: string;
+  estimatedHours?: number;
+  subtasks: { id: string; title: string; completed: boolean }[];
+  tags: string[];
+  comments: { id: string; authorId: string; authorName: string; authorInitials: string; authorColor: string; text: string; createdAt: string }[];
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectInvitationRecord {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectKey: string;
+  projectColor: string;
+  invitedEmail: string;
+  invitedByUserId: string;
+  invitedByName: string;
+  invitedByEmail: string;
+  role: WorkspaceRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  createdAt: string;
 }
 
 export interface UserPartition {
@@ -84,16 +153,13 @@ export interface UserPartition {
 export interface DatabaseSchema {
   version: string;
   users: UserRecord[];
+  workspaces: WorkspaceRecord[];
   partitions: Record<string, UserPartition>;
-  teamProjects: any[];
-  teamTasks: any[];
-  teamInvitations: any[];
+  teamProjects: TeamProjectRecord[];
+  teamTasks: TeamTaskRecord[];
+  teamInvitations: ProjectInvitationRecord[];
 }
 
-/**
- * Empty Blank Slate Partition Template
- * Newly registered users or clean workspaces initialize with 100% empty collections
- */
 function createBlankPartition(): UserPartition {
   return {
     tasks: [],
@@ -153,8 +219,9 @@ class Database {
     }
 
     const pristine: DatabaseSchema = {
-      version: '2.0-partitioned',
+      version: '2.1-multi-user-workspaces',
       users: [],
+      workspaces: [],
       partitions: {},
       teamProjects: [],
       teamTasks: [],
@@ -166,6 +233,7 @@ class Database {
 
   private sanitizeParsedData(parsed: any): DatabaseSchema {
     if (!Array.isArray(parsed.users)) parsed.users = [];
+    if (!Array.isArray(parsed.workspaces)) parsed.workspaces = [];
     if (!parsed.partitions || typeof parsed.partitions !== 'object') parsed.partitions = {};
     if (!Array.isArray(parsed.teamProjects)) parsed.teamProjects = [];
     if (!Array.isArray(parsed.teamTasks)) parsed.teamTasks = [];
@@ -197,41 +265,235 @@ class Database {
     return this.data.users.find(u => u.id === id);
   }
 
-  public createUser(user: UserRecord): UserRecord {
-    this.data.users.push(user);
+  public createUser(user: Omit<UserRecord, 'personalWorkspaceId'>): UserRecord {
+    const personalWorkspaceId = `ws-personal-${user.id}`;
+    
+    // Create personal workspace for the user
+    const personalWorkspace: WorkspaceRecord = {
+      id: personalWorkspaceId,
+      name: `${user.name}'s Personal Space`,
+      slug: `personal-${user.id}`,
+      ownerId: user.id,
+      isPersonal: true,
+      members: [{ userId: user.id, role: 'OWNER', joinedAt: new Date().toISOString() }],
+      createdAt: new Date().toISOString()
+    };
+
+    const fullUser: UserRecord = {
+      ...user,
+      personalWorkspaceId
+    };
+
+    this.data.users.push(fullUser);
+    this.data.workspaces.push(personalWorkspace);
+
     if (!this.data.partitions[user.id]) {
       this.data.partitions[user.id] = createBlankPartition();
     }
+
     this.save(this.data);
-    return user;
+    return fullUser;
   }
 
-  // --- TENANT PARTITION ACCESSOR ---
-  private getPartition(userId?: string): UserPartition {
-    const effectiveId = userId || 'usr-anonymous-guest';
-    if (!this.data.partitions[effectiveId]) {
-      this.data.partitions[effectiveId] = createBlankPartition();
+  // --- WORKSPACES & PERMISSIONS ---
+  public getWorkspacesForUser(userId: string): WorkspaceRecord[] {
+    return this.data.workspaces.filter(ws => 
+      ws.ownerId === userId || ws.members.some(m => m.userId === userId)
+    );
+  }
+
+  public getWorkspaceById(workspaceId: string): WorkspaceRecord | undefined {
+    return this.data.workspaces.find(ws => ws.id === workspaceId);
+  }
+
+  public createWorkspace(name: string, ownerId: string): WorkspaceRecord {
+    const id = `ws-team-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const ws: WorkspaceRecord = {
+      id,
+      name: name.trim(),
+      slug: `ws-${Date.now()}`,
+      ownerId,
+      isPersonal: false,
+      members: [{ userId: ownerId, role: 'OWNER', joinedAt: new Date().toISOString() }],
+      createdAt: new Date().toISOString()
+    };
+    this.data.workspaces.push(ws);
+    this.save(this.data);
+    return ws;
+  }
+
+  public isUserInWorkspace(workspaceId: string, userId: string): boolean {
+    const ws = this.getWorkspaceById(workspaceId);
+    if (!ws) return false;
+    return ws.ownerId === userId || ws.members.some(m => m.userId === userId);
+  }
+
+  public getUserWorkspaceRole(workspaceId: string, userId: string): WorkspaceRole | null {
+    const ws = this.getWorkspaceById(workspaceId);
+    if (!ws) return null;
+    if (ws.ownerId === userId) return 'OWNER';
+    const member = ws.members.find(m => m.userId === userId);
+    return member ? member.role : null;
+  }
+
+  // --- TEAM PROJECTS (WORKSPACE & MEMBER SCOPED) ---
+  public getTeamProjectsForUser(userId: string): TeamProjectRecord[] {
+    return this.data.teamProjects.filter(p => 
+      p.ownerId === userId || (Array.isArray(p.memberIds) && p.memberIds.includes(userId))
+    );
+  }
+
+  public getTeamProjectById(projectId: string, userId: string): TeamProjectRecord | undefined {
+    const proj = this.data.teamProjects.find(p => p.id === projectId);
+    if (!proj) return undefined;
+    // Verify membership authorization
+    if (proj.ownerId === userId || (Array.isArray(proj.memberIds) && proj.memberIds.includes(userId))) {
+      return proj;
     }
-    return this.data.partitions[effectiveId];
+    return undefined;
   }
 
-  // --- TASKS (USER SCOPED) ---
-  public getTasks(userId?: string): Task[] {
-    return this.getPartition(userId).tasks;
+  public createTeamProject(proj: TeamProjectRecord): TeamProjectRecord {
+    this.data.teamProjects.unshift(proj);
+    this.save(this.data);
+    return proj;
   }
 
-  public getTaskById(id: string, userId?: string): Task | undefined {
-    return this.getPartition(userId).tasks.find(t => t.id === id);
+  public updateTeamProject(projectId: string, updates: Partial<TeamProjectRecord>, userId: string): TeamProjectRecord | null {
+    const proj = this.getTeamProjectById(projectId, userId);
+    if (!proj) return null;
+    const idx = this.data.teamProjects.findIndex(p => p.id === projectId);
+    if (idx === -1) return null;
+
+    // Disallow altering ownerId
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).ownerId;
+    delete (safeUpdates as any).id;
+
+    this.data.teamProjects[idx] = { ...this.data.teamProjects[idx], ...safeUpdates };
+    this.save(this.data);
+    return this.data.teamProjects[idx];
   }
 
-  public createTask(task: Task, userId?: string): Task {
-    const partition = this.getPartition(userId);
-    partition.tasks.unshift(task);
+  public deleteTeamProject(projectId: string, userId: string): boolean {
+    const proj = this.getTeamProjectById(projectId, userId);
+    if (!proj) return false;
+    // Only owner can delete team project
+    if (proj.ownerId !== userId) return false;
+
+    this.data.teamProjects = this.data.teamProjects.filter(p => p.id !== projectId);
+    this.data.teamTasks = this.data.teamTasks.filter(t => t.projectId !== projectId);
+    this.data.teamInvitations = this.data.teamInvitations.filter(inv => inv.projectId !== projectId);
+    this.save(this.data);
+    return true;
+  }
+
+  // --- TEAM TASKS (PROJECT & MEMBER SCOPED) ---
+  public getTeamTasksForProject(projectId: string, userId: string): TeamTaskRecord[] | null {
+    const proj = this.getTeamProjectById(projectId, userId);
+    if (!proj) return null; // Unauthorized
+    return this.data.teamTasks.filter(t => t.projectId === projectId);
+  }
+
+  public createTeamTask(task: TeamTaskRecord, userId: string): TeamTaskRecord | null {
+    const proj = this.getTeamProjectById(task.projectId, userId);
+    if (!proj) return null;
+    this.data.teamTasks.unshift(task);
     this.save(this.data);
     return task;
   }
 
-  public updateTask(id: string, updates: Partial<Task>, userId?: string): Task | null {
+  public updateTeamTask(taskId: string, updates: Partial<TeamTaskRecord>, userId: string): TeamTaskRecord | null {
+    const idx = this.data.teamTasks.findIndex(t => t.id === taskId);
+    if (idx === -1) return null;
+    const currentTask = this.data.teamTasks[idx];
+
+    // Verify user has access to the task's project
+    const proj = this.getTeamProjectById(currentTask.projectId, userId);
+    if (!proj) return null;
+
+    // Disallow changing taskId or projectId
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).id;
+    delete (safeUpdates as any).projectId;
+
+    this.data.teamTasks[idx] = {
+      ...currentTask,
+      ...safeUpdates,
+      updatedAt: new Date().toISOString()
+    };
+    this.save(this.data);
+    return this.data.teamTasks[idx];
+  }
+
+  public deleteTeamTask(taskId: string, userId: string): boolean {
+    const currentTask = this.data.teamTasks.find(t => t.id === taskId);
+    if (!currentTask) return false;
+    const proj = this.getTeamProjectById(currentTask.projectId, userId);
+    if (!proj) return false;
+
+    this.data.teamTasks = this.data.teamTasks.filter(t => t.id !== taskId);
+    this.save(this.data);
+    return true;
+  }
+
+  // --- PROJECT INVITATIONS ---
+  public getInvitationsForEmail(email: string): ProjectInvitationRecord[] {
+    const clean = email.trim().toLowerCase();
+    return this.data.teamInvitations.filter(inv => 
+      inv.invitedEmail.toLowerCase() === clean && inv.status === 'PENDING'
+    );
+  }
+
+  public createProjectInvitation(inv: ProjectInvitationRecord): ProjectInvitationRecord {
+    this.data.teamInvitations.unshift(inv);
+    this.save(this.data);
+    return inv;
+  }
+
+  public respondToInvitation(inviteId: string, userId: string, userEmail: string, accept: boolean): boolean {
+    const invite = this.data.teamInvitations.find(i => i.id === inviteId);
+    if (!invite || invite.status !== 'PENDING') return false;
+    if (invite.invitedEmail.toLowerCase() !== userEmail.toLowerCase()) return false;
+
+    invite.status = accept ? 'ACCEPTED' : 'DECLINED';
+
+    if (accept) {
+      const proj = this.data.teamProjects.find(p => p.id === invite.projectId);
+      if (proj && !proj.memberIds.includes(userId)) {
+        proj.memberIds.push(userId);
+      }
+    }
+
+    this.save(this.data);
+    return true;
+  }
+
+  // --- TENANT PARTITION ACCESSOR (STRICT USER ISOLATION) ---
+  private getPartition(userId: string): UserPartition {
+    if (!this.data.partitions[userId]) {
+      this.data.partitions[userId] = createBlankPartition();
+    }
+    return this.data.partitions[userId];
+  }
+
+  // --- PERSONAL TASKS (STRICT USER OWNERSHIP) ---
+  public getTasks(userId: string): Task[] {
+    return this.getPartition(userId).tasks;
+  }
+
+  public getTaskById(id: string, userId: string): Task | undefined {
+    return this.getPartition(userId).tasks.find(t => t.id === id);
+  }
+
+  public createTask(task: Task, userId: string): Task {
+    const partition = this.getPartition(userId);
+    partition.tasks.unshift({ ...task, userId });
+    this.save(this.data);
+    return task;
+  }
+
+  public updateTask(id: string, updates: Partial<Task>, userId: string): Task | null {
     const partition = this.getPartition(userId);
     const idx = partition.tasks.findIndex(t => t.id === id);
     if (idx === -1) return null;
@@ -240,9 +502,14 @@ class Database {
     const isNowCompleted = updates.status === 'completed';
     const wasCompleted = current.status === 'completed';
 
+    // Never allow reassigning userId
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).userId;
+    delete (safeUpdates as any).id;
+
     const updated: Task = {
       ...current,
-      ...updates,
+      ...safeUpdates,
       updatedAt: new Date().toISOString()
     };
 
@@ -261,7 +528,7 @@ class Database {
     return updated;
   }
 
-  public deleteTask(id: string, userId?: string): boolean {
+  public deleteTask(id: string, userId: string): boolean {
     const partition = this.getPartition(userId);
     const initialLen = partition.tasks.length;
     partition.tasks = partition.tasks.filter(t => t.id !== id);
@@ -277,8 +544,8 @@ class Database {
     return partition.tasks.length < initialLen;
   }
 
-  // --- PROJECTS (USER SCOPED) ---
-  public getProjects(userId?: string): Project[] {
+  // --- PERSONAL PROJECTS (STRICT USER OWNERSHIP) ---
+  public getProjects(userId: string): Project[] {
     const partition = this.getPartition(userId);
     return partition.projects.map(p => {
       const pTasks = partition.tasks.filter(t => t.projectId === p.id);
@@ -291,23 +558,33 @@ class Database {
     });
   }
 
-  public createProject(project: Project, userId?: string): Project {
-    const partition = this.getPartition(userId);
-    partition.projects.unshift(project);
-    this.save(this.data);
-    return project;
+  public getProjectById(id: string, userId: string): Project | undefined {
+    return this.getPartition(userId).projects.find(p => p.id === id);
   }
 
-  public updateProject(id: string, updates: Partial<Project>, userId?: string): Project | null {
+  public createProject(project: Project, userId: string): Project {
+    const partition = this.getPartition(userId);
+    const securedProject = { ...project, userId };
+    partition.projects.unshift(securedProject);
+    this.save(this.data);
+    return securedProject;
+  }
+
+  public updateProject(id: string, updates: Partial<Project>, userId: string): Project | null {
     const partition = this.getPartition(userId);
     const idx = partition.projects.findIndex(p => p.id === id);
     if (idx === -1) return null;
-    partition.projects[idx] = { ...partition.projects[idx], ...updates };
+
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).userId;
+    delete (safeUpdates as any).id;
+
+    partition.projects[idx] = { ...partition.projects[idx], ...safeUpdates };
     this.save(this.data);
     return partition.projects[idx];
   }
 
-  public deleteProject(id: string, userId?: string): boolean {
+  public deleteProject(id: string, userId: string): boolean {
     const partition = this.getPartition(userId);
     const init = partition.projects.length;
     partition.projects = partition.projects.filter(p => p.id !== id);
@@ -328,14 +605,15 @@ class Database {
     return partition.projects.length < init;
   }
 
-  // --- TIME TRACKING & ROI (USER SCOPED) ---
-  public getTimeLogs(userId?: string): TimeLog[] {
+  // --- TIME TRACKING & ROI (STRICT USER OWNERSHIP) ---
+  public getTimeLogs(userId: string): TimeLog[] {
     return this.getPartition(userId).timeLogs;
   }
 
-  public addTimeLog(log: TimeLog, userId?: string): TimeLog {
+  public addTimeLog(log: TimeLog, userId: string): TimeLog {
     const partition = this.getPartition(userId);
-    partition.timeLogs.unshift(log);
+    const securedLog = { ...log, userId };
+    partition.timeLogs.unshift(securedLog);
     partition.stats.focusMinutes += Math.round(log.durationSeconds / 60);
     partition.stats.totalRoiDollars += log.calculatedRoi;
 
@@ -347,20 +625,20 @@ class Database {
     }
 
     this.save(this.data);
-    return log;
+    return securedLog;
   }
 
-  // --- SKILLS & RPG XP (USER SCOPED) ---
-  public getSkills(userId?: string): SkillNode[] {
+  // --- SKILLS & RPG XP (STRICT USER OWNERSHIP) ---
+  public getSkills(userId: string): SkillNode[] {
     return this.getPartition(userId).skills;
   }
 
-  public getBadges(userId?: string): RPGAchievementBadge[] {
+  public getBadges(userId: string): RPGAchievementBadge[] {
     return this.getPartition(userId).badges;
   }
 
   public awardXp(amount: number, skillId?: string, userId?: string) {
-    if (amount <= 0) return;
+    if (amount <= 0 || !userId) return;
     const partition = this.getPartition(userId);
     partition.stats.totalXp += amount;
     const newLevel = Math.floor(Math.sqrt(partition.stats.totalXp / 100)) + 1;
@@ -384,28 +662,38 @@ class Database {
     }
   }
 
-  // --- GOALS / OKRS (USER SCOPED) ---
-  public getGoals(userId?: string): GoalOKR[] {
+  // --- GOALS / OKRS (STRICT USER OWNERSHIP) ---
+  public getGoals(userId: string): GoalOKR[] {
     return this.getPartition(userId).goals;
   }
 
-  public createGoal(goal: GoalOKR, userId?: string): GoalOKR {
-    const partition = this.getPartition(userId);
-    partition.goals.unshift(goal);
-    this.save(this.data);
-    return goal;
+  public getGoalById(id: string, userId: string): GoalOKR | undefined {
+    return this.getPartition(userId).goals.find(g => g.id === id);
   }
 
-  public updateGoal(id: string, updates: Partial<GoalOKR>, userId?: string): GoalOKR | null {
+  public createGoal(goal: GoalOKR, userId: string): GoalOKR {
+    const partition = this.getPartition(userId);
+    const securedGoal = { ...goal, userId };
+    partition.goals.unshift(securedGoal);
+    this.save(this.data);
+    return securedGoal;
+  }
+
+  public updateGoal(id: string, updates: Partial<GoalOKR>, userId: string): GoalOKR | null {
     const partition = this.getPartition(userId);
     const idx = partition.goals.findIndex(g => g.id === id);
     if (idx === -1) return null;
-    partition.goals[idx] = { ...partition.goals[idx], ...updates };
+
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).userId;
+    delete (safeUpdates as any).id;
+
+    partition.goals[idx] = { ...partition.goals[idx], ...safeUpdates };
     this.save(this.data);
     return partition.goals[idx];
   }
 
-  public deleteGoal(id: string, userId?: string): boolean {
+  public deleteGoal(id: string, userId: string): boolean {
     const partition = this.getPartition(userId);
     const init = partition.goals.length;
     partition.goals = partition.goals.filter(g => g.id !== id);
@@ -419,28 +707,34 @@ class Database {
     return partition.goals.length < init;
   }
 
-  // --- CALENDAR EVENTS (USER SCOPED) ---
-  public getCalendarEvents(userId?: string): CalendarEvent[] {
+  // --- CALENDAR EVENTS (STRICT USER OWNERSHIP) ---
+  public getCalendarEvents(userId: string): CalendarEvent[] {
     return this.getPartition(userId).calendarEvents;
   }
 
-  public addCalendarEvent(event: CalendarEvent, userId?: string): CalendarEvent {
+  public addCalendarEvent(event: CalendarEvent, userId: string): CalendarEvent {
     const partition = this.getPartition(userId);
-    partition.calendarEvents.push(event);
+    const securedEvent = { ...event, userId };
+    partition.calendarEvents.push(securedEvent);
     this.save(this.data);
-    return event;
+    return securedEvent;
   }
 
-  public updateCalendarEvent(id: string, updates: Partial<CalendarEvent>, userId?: string): CalendarEvent | null {
+  public updateCalendarEvent(id: string, updates: Partial<CalendarEvent>, userId: string): CalendarEvent | null {
     const partition = this.getPartition(userId);
     const idx = partition.calendarEvents.findIndex(e => e.id === id || e.googleEventId === id);
     if (idx === -1) return null;
-    partition.calendarEvents[idx] = { ...partition.calendarEvents[idx], ...updates };
+
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).userId;
+    delete (safeUpdates as any).id;
+
+    partition.calendarEvents[idx] = { ...partition.calendarEvents[idx], ...safeUpdates };
     this.save(this.data);
     return partition.calendarEvents[idx];
   }
 
-  public removeCalendarEvent(id: string, userId?: string): boolean {
+  public removeCalendarEvent(id: string, userId: string): boolean {
     const partition = this.getPartition(userId);
     const initLen = partition.calendarEvents.length;
     partition.calendarEvents = partition.calendarEvents.filter(e => e.id !== id && e.googleEventId !== id && e.taskId !== id);
@@ -448,8 +742,8 @@ class Database {
     return partition.calendarEvents.length < initLen;
   }
 
-  // --- STATS & ANALYTICS (USER SCOPED) ---
-  public getProductivityStats(userId?: string): ProductivityStats {
+  // --- STATS & ANALYTICS (STRICT USER OWNERSHIP) ---
+  public getProductivityStats(userId: string): ProductivityStats {
     const partition = this.getPartition(userId);
     const tasks = partition.tasks;
     const completed = tasks.filter(t => t.status === 'completed');
@@ -524,7 +818,7 @@ class Database {
     };
   }
 
-  public recordPomodoro(minutes: number, userId?: string) {
+  public recordPomodoro(minutes: number, userId: string) {
     const partition = this.getPartition(userId);
     partition.stats.focusMinutes += minutes;
     partition.stats.pomodoroSessions += 1;
@@ -534,14 +828,38 @@ class Database {
     this.save(this.data);
   }
 
-  public getGoogleAuth(userId?: string) {
+  public getGoogleAuth(userId: string) {
     return this.getPartition(userId).googleAuth;
   }
 
-  public setGoogleAuth(auth: Partial<UserPartition['googleAuth']>, userId?: string) {
+  public setGoogleAuth(auth: Partial<UserPartition['googleAuth']>, userId: string) {
     const partition = this.getPartition(userId);
     partition.googleAuth = { ...partition.googleAuth, ...auth };
     this.save(this.data);
+  }
+
+  // --- CROSS-RESOURCE VALIDATION HELPERS ---
+  /**
+   * Verifies that the task belongs to the user
+   */
+  public verifyTaskOwnership(taskId: string, userId: string): boolean {
+    return Boolean(this.getTaskById(taskId, userId));
+  }
+
+  /**
+   * Verifies that the project belongs to the user (personal) OR is an authorized team project
+   */
+  public verifyProjectAccess(projectId: string, userId: string): boolean {
+    const isPersonal = Boolean(this.getProjectById(projectId, userId));
+    if (isPersonal) return true;
+    return Boolean(this.getTeamProjectById(projectId, userId));
+  }
+
+  /**
+   * Verifies that the goal belongs to the user
+   */
+  public verifyGoalOwnership(goalId: string, userId: string): boolean {
+    return Boolean(this.getGoalById(goalId, userId));
   }
 }
 

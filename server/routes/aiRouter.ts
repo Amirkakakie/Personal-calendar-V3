@@ -22,7 +22,7 @@ router.post('/decompose', async (req: Request, res: Response) => {
 
 // GENERATE daily productivity briefing and tailored schedule (user-scoped)
 router.post('/daily-brief', async (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { energyLevel = 'High' } = req.body;
   const tasks = db.getTasks(userId);
   const goals = db.getGoals(userId);
@@ -38,7 +38,7 @@ router.post('/daily-brief', async (req: Request, res: Response) => {
 
 // ASK productivity coach
 router.post('/coach', async (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { message } = req.body;
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ success: false, error: 'Message is required' });
@@ -59,7 +59,7 @@ router.post('/coach', async (req: Request, res: Response) => {
 
 // PREDICTIVE BURNOUT & 48-HOUR DEADLINE RISK ALERT (user-scoped)
 router.get('/burnout-risk', async (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const tasks = db.getTasks(userId);
   const pending = tasks.filter(t => t.status !== 'completed');
   const now = new Date();
@@ -117,7 +117,7 @@ router.get('/burnout-risk', async (req: Request, res: Response) => {
 
 // DYNAMIC TASK ATOMIZATION
 router.post('/atomize', async (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { taskId, taskTitle, category } = req.body;
   let title = taskTitle;
   let cat = category;
@@ -160,7 +160,7 @@ router.post('/atomize', async (req: Request, res: Response) => {
 
 // GET productivity statistics
 router.get('/stats', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const stats = db.getProductivityStats(userId);
   res.json({ success: true, data: stats });
 });

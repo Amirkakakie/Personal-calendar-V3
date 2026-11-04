@@ -5,21 +5,21 @@ const router = Router();
 
 // GET all skills for authenticated user
 router.get('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const skills = db.getSkills(userId);
   res.json({ success: true, count: skills.length, data: skills });
 });
 
 // GET all badges for authenticated user
 router.get('/badges', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const badges = db.getBadges(userId);
   res.json({ success: true, count: badges.length, data: badges });
 });
 
 // TRAIN skill / practice session (award XP)
 router.post('/:id/train', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { xpAmount = 50 } = req.body;
   const skills = db.getSkills(userId);
   const skill = skills.find(s => s.id === req.params.id);

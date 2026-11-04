@@ -84,92 +84,115 @@ export function getInitialSeedData() {
   };
 }
 
-function getUserScopedKey(baseKey: string, userId?: string): string {
-  if (!userId) return `${baseKey}_guest`;
+function getUserScopedKey(baseKey: string, userId?: string): string | null {
+  if (!userId) return null;
   return `${baseKey}_${userId}`;
 }
 
 // Storage Operations strictly partitioned by userId
 export const LocalStore = {
   getTasks(userId?: string): Task[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.TASKS, userId);
+    if (!key) return [];
     const cached = getStorageItem<Task[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setTasks(tasks: Task[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.TASKS, userId);
-    setStorageItem(key, tasks);
+    if (key) setStorageItem(key, tasks);
   },
 
   getGoals(userId?: string): GoalOKR[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.GOALS, userId);
+    if (!key) return [];
     const cached = getStorageItem<GoalOKR[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setGoals(goals: GoalOKR[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.GOALS, userId);
-    setStorageItem(key, goals);
+    if (key) setStorageItem(key, goals);
   },
 
   getProjects(userId?: string): Project[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.PROJECTS, userId);
+    if (!key) return [];
     const cached = getStorageItem<Project[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setProjects(projects: Project[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.PROJECTS, userId);
-    setStorageItem(key, projects);
+    if (key) setStorageItem(key, projects);
   },
 
   getSkills(userId?: string): SkillNode[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.SKILLS, userId);
+    if (!key) return [];
     const cached = getStorageItem<SkillNode[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setSkills(skills: SkillNode[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.SKILLS, userId);
-    setStorageItem(key, skills);
+    if (key) setStorageItem(key, skills);
   },
 
   getBadges(userId?: string): RPGAchievementBadge[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.BADGES, userId);
+    if (!key) return [];
     const cached = getStorageItem<RPGAchievementBadge[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setBadges(badges: RPGAchievementBadge[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.BADGES, userId);
-    setStorageItem(key, badges);
+    if (key) setStorageItem(key, badges);
   },
 
   getEvents(userId?: string): CalendarEvent[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.EVENTS, userId);
+    if (!key) return [];
     const cached = getStorageItem<CalendarEvent[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setEvents(events: CalendarEvent[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.EVENTS, userId);
-    setStorageItem(key, events);
+    if (key) setStorageItem(key, events);
   },
 
   getTimeLogs(userId?: string): TimeLog[] {
+    if (!userId) return [];
     const key = getUserScopedKey(KEYS.TIMELOGS, userId);
+    if (!key) return [];
     const cached = getStorageItem<TimeLog[] | null>(key, null);
     if (cached && Array.isArray(cached)) return cached;
     return [];
   },
   setTimeLogs(logs: TimeLog[], userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.TIMELOGS, userId);
-    setStorageItem(key, logs);
+    if (key) setStorageItem(key, logs);
   },
 
   getStats(userId?: string): ProductivityStats {
+    if (!userId) return getBlankStats();
     const key = getUserScopedKey(KEYS.STATS, userId);
+    if (!key) return getBlankStats();
     const cached = getStorageItem<ProductivityStats | null>(key, null);
     if (cached && cached.totalTasks != null) return cached;
     const blank = getBlankStats();
@@ -177,8 +200,9 @@ export const LocalStore = {
     return blank;
   },
   setStats(stats: ProductivityStats, userId?: string): void {
+    if (!userId) return;
     const key = getUserScopedKey(KEYS.STATS, userId);
-    setStorageItem(key, stats);
+    if (key) setStorageItem(key, stats);
   },
 
   /**

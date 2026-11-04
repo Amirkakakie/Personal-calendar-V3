@@ -407,5 +407,92 @@ export const api = {
   async getStats(): Promise<ProductivityStats> {
     const json = await request<{ success: boolean; data: ProductivityStats }>('/stats');
     return json.data;
+  },
+
+  // --- WORKSPACES & TEAM COLLABORATION ---
+  async getWorkspaces(): Promise<any[]> {
+    const json = await request<{ success: boolean; data: any[] }>('/workspaces');
+    return json.data || [];
+  },
+
+  async createWorkspace(name: string): Promise<any> {
+    const json = await request<{ success: boolean; data: any }>('/workspaces', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+    return json.data;
+  },
+
+  async getTeamProjects(): Promise<any[]> {
+    const json = await request<{ success: boolean; data: any[] }>('/team/projects');
+    return json.data || [];
+  },
+
+  async createTeamProject(project: any): Promise<any> {
+    const json = await request<{ success: boolean; data: any }>('/team/projects', {
+      method: 'POST',
+      body: JSON.stringify(project),
+    });
+    return json.data;
+  },
+
+  async updateTeamProject(id: string, updates: any): Promise<any> {
+    const json = await request<{ success: boolean; data: any }>(`/team/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return json.data;
+  },
+
+  async deleteTeamProject(id: string): Promise<void> {
+    await request<{ success: boolean }>(`/team/projects/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getTeamTasks(projectId: string): Promise<any[]> {
+    const json = await request<{ success: boolean; data: any[] }>(`/team/tasks?projectId=${encodeURIComponent(projectId)}`);
+    return json.data || [];
+  },
+
+  async createTeamTask(task: any): Promise<any> {
+    const json = await request<{ success: boolean; data: any }>('/team/tasks', {
+      method: 'POST',
+      body: JSON.stringify(task),
+    });
+    return json.data;
+  },
+
+  async updateTeamTask(id: string, updates: any): Promise<any> {
+    const json = await request<{ success: boolean; data: any }>(`/team/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return json.data;
+  },
+
+  async deleteTeamTask(id: string): Promise<void> {
+    await request<{ success: boolean }>(`/team/tasks/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getTeamInvitations(): Promise<any[]> {
+    const json = await request<{ success: boolean; data: any[] }>('/team/invitations');
+    return json.data || [];
+  },
+
+  async sendTeamInvite(projectId: string, email: string, role?: string): Promise<{ success: boolean; message: string }> {
+    return request<{ success: boolean; message: string }>('/team/invitations', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, email, role }),
+    });
+  },
+
+  async respondToTeamInvite(inviteId: string, accept: boolean): Promise<{ success: boolean; message: string }> {
+    return request<{ success: boolean; message: string }>(`/team/invitations/${inviteId}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ accept }),
+    });
   }
 };

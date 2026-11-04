@@ -4,9 +4,9 @@ import type { Task } from '../../src/types/index.ts';
 
 const router = Router();
 
-// GET all tasks (filtered by user and optional query parameters)
+// GET all tasks (strictly scoped to authenticated user)
 router.get('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { category, status, goalId, search } = req.query;
   let tasks = db.getTasks(userId);
 
@@ -31,28 +31,50 @@ router.get('/', (req: Request, res: Response) => {
   res.json({ success: true, count: tasks.length, data: tasks });
 });
 
-// GET single task
+// GET single task (verifies user ownership)
 router.get('/:id', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const task = db.getTaskById(req.params.id, userId);
   if (!task) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
   res.json({ success: true, data: task });
 });
 
-// CREATE task
+// CREATE task (validates cross-resource ownership: project and goal)
 router.post('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const body = req.body;
   if (!body.title || !body.category) {
     return res.status(400).json({ success: false, error: 'Title and category are required' });
   }
 
+  // Cross-resource ownership check: projectId
+  if (body.projectId) {
+    const hasProjectAccess = db.verifyProjectAccess(body.projectId, userId);
+    if (!hasProjectAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have permission to attach tasks to the specified project.'
+      });
+    }
+  }
+
+  // Cross-resource ownership check: goalId
+  if (body.goalId) {
+    const ownsGoal = db.verifyGoalOwnership(body.goalId, userId);
+    if (!ownsGoal) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not own the referenced goal.'
+      });
+    }
+  }
+
   const id = `task-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const newTask: Task = {
     id,
-    userId,
+    userId, // Server authoritative identity
     title: body.title.trim(),
     description: body.description?.trim() || '',
     category: body.category,
@@ -64,6 +86,7 @@ router.post('/', (req: Request, res: Response) => {
     durationMinutes: Number(body.durationMinutes) || 45,
     subtasks: Array.isArray(body.subtasks) ? body.subtasks : [],
     goalId: body.goalId || undefined,
+    projectId: body.projectId || undefined,
     tags: Array.isArray(body.tags) ? body.tags : [],
     syncedToGoogle: Boolean(body.syncedToGoogle),
     recurrence: body.recurrence || 'none',
@@ -102,12 +125,39 @@ router.post('/', (req: Request, res: Response) => {
   res.status(201).json({ success: true, data: saved });
 });
 
-// UPDATE task
+// UPDATE task (ownership verified, cross-resource checks enforced)
 router.put('/:id', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
+  const existing = db.getTaskById(req.params.id, userId);
+  if (!existing) {
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
+  }
+
+  // Cross-resource check on updated projectId
+  if (req.body.projectId && req.body.projectId !== existing.projectId) {
+    const hasProjectAccess = db.verifyProjectAccess(req.body.projectId, userId);
+    if (!hasProjectAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have permission to attach tasks to the specified project.'
+      });
+    }
+  }
+
+  // Cross-resource check on updated goalId
+  if (req.body.goalId && req.body.goalId !== existing.goalId) {
+    const ownsGoal = db.verifyGoalOwnership(req.body.goalId, userId);
+    if (!ownsGoal) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not own the referenced goal.'
+      });
+    }
+  }
+
   const updated = db.updateTask(req.params.id, req.body, userId);
   if (!updated) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
 
   if (updated.syncedToGoogle && updated.googleCalendarEventId) {
@@ -138,10 +188,10 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // TOGGLE status (todo -> completed or vice versa)
 router.patch('/:id/toggle', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const task = db.getTaskById(req.params.id, userId);
   if (!task) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
 
   const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
@@ -155,10 +205,10 @@ router.patch('/:id/toggle', (req: Request, res: Response) => {
 
 // TOGGLE subtask
 router.patch('/:id/subtask/:subtaskId', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const task = db.getTaskById(req.params.id, userId);
   if (!task) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
 
   const subtasks = task.subtasks.map((st: any) => {
@@ -179,10 +229,10 @@ router.patch('/:id/subtask/:subtaskId', (req: Request, res: Response) => {
 
 // RECORD Pomodoro focus session for task
 router.post('/:id/pomodoro', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const task = db.getTaskById(req.params.id, userId);
   if (!task) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
 
   const minutes = Number(req.body.minutes) || 25;
@@ -194,13 +244,15 @@ router.post('/:id/pomodoro', (req: Request, res: Response) => {
   res.json({ success: true, data: updated, recordedMinutes: minutes });
 });
 
-// DELETE task
+// DELETE task (ownership verified)
 router.delete('/:id', (req: Request, res: Response) => {
-  const userId = req.user?.id;
-  const success = db.deleteTask(req.params.id, userId);
-  if (!success) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+  const userId = req.user!.id;
+  const existing = db.getTaskById(req.params.id, userId);
+  if (!existing) {
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
+
+  db.deleteTask(req.params.id, userId);
   res.json({ success: true, message: 'Task deleted successfully' });
 });
 

@@ -2,9 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { User, TeamMember } from '../types/team.ts';
 import { setAuthToken, getAuthToken, API_BASE } from '../services/api.ts';
 
-// Clean empty slate: No preloaded mock accounts
-const SEED_USERS: (User & { password: string })[] = [];
-
 const AUTH_STORAGE_KEY = 'chronos_team_auth_user';
 const USERS_STORAGE_KEY = 'chronos_team_registered_users';
 
@@ -33,51 +30,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Internal helper to access registered users (never exposed to UI directly)
-  const getRegisteredUsers = useCallback((): (User & { password: string })[] => {
+  const logout = useCallback(() => {
+    setCurrentUser(null);
+    setAuthToken(null);
     try {
-      const stored = localStorage.getItem(USERS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {
-      // ignore
-    }
-    return SEED_USERS;
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch {}
   }, []);
 
-  // Restore authenticated session on mount
+  // Validate server-side session on mount
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+    let isCancelled = false;
+
+    async function validateCurrentSession() {
+      setIsLoading(true);
       const token = getAuthToken();
-      if (savedUser && token) {
-        const user = JSON.parse(savedUser);
-        if (user && user.id && user.email) {
-          setCurrentUser(user);
+
+      if (!token) {
+        if (!isCancelled) {
+          setCurrentUser(null);
+          setIsLoading(false);
         }
-      } else if (savedUser && !token) {
-        // Fallback for previous sessions
-        const user = JSON.parse(savedUser);
-        if (user && user.id && user.email) {
-          setCurrentUser(user);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (!isCancelled && data.success && data.user) {
+            setCurrentUser(data.user);
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+          } else if (!isCancelled) {
+            logout();
+          }
+        } else {
+          // Token is invalid, expired, or user deleted -> purge session
+          if (!isCancelled) {
+            logout();
+          }
+        }
+      } catch (netErr) {
+        console.warn('[AuthContext] Backend session verification unreachable:', netErr);
+        // Offline resilience only with valid stored credentials
+        const savedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (!isCancelled) {
+          if (savedUser) {
+            try {
+              setCurrentUser(JSON.parse(savedUser));
+            } catch {
+              logout();
+            }
+          } else {
+            logout();
+          }
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
         }
       }
-    } catch {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      setAuthToken(null);
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+
+    validateCurrentSession();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [logout]);
 
   const login = useCallback(
     async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
       setIsLoading(true);
       const cleanEmail = email.trim().toLowerCase();
 
-      // First attempt backend authentication for cryptographic JWT token
       try {
         const res = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
@@ -94,36 +125,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(false);
             return { success: true };
           }
-        } else if (res.status === 401 || res.status === 400) {
+        } else {
           const errData = await res.json().catch(() => ({}));
           setIsLoading(false);
           return { success: false, error: errData.error || 'Invalid email or password.' };
         }
-      } catch (networkErr) {
-        console.warn('[AuthContext] Backend login request failed, falling back to local credentials:', networkErr);
-      }
-
-      // Local fallback for offline mode
-      const users = getRegisteredUsers();
-      const found = users.find(u => u.email.toLowerCase() === cleanEmail);
-
-      if (!found) {
+      } catch (networkErr: any) {
         setIsLoading(false);
-        return { success: false, error: 'No account found with this email address.' };
+        return { success: false, error: networkErr.message || 'Unable to connect to authentication service.' };
       }
 
-      if (found.password !== password) {
-        setIsLoading(false);
-        return { success: false, error: 'Incorrect password.' };
-      }
-
-      const { password: _, ...safeUser } = found;
-      setCurrentUser(safeUser);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeUser));
       setIsLoading(false);
-      return { success: true };
+      return { success: false, error: 'Authentication failed.' };
     },
-    [getRegisteredUsers]
+    []
   );
 
   const signup = useCallback(
@@ -131,7 +146,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       const cleanEmail = email.trim().toLowerCase();
 
-      // First attempt backend registration for cryptographic JWT token
       try {
         const res = await fetch(`${API_BASE}/auth/signup`, {
           method: 'POST',
@@ -145,104 +159,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setAuthToken(data.token);
             setCurrentUser(data.user);
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
-            
-            // Sync with local registered users store
-            const users = getRegisteredUsers();
-            const localUser = { ...data.user, password };
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([...users.filter(u => u.id !== localUser.id), localUser]));
-
             setIsLoading(false);
             return { success: true };
           }
-        } else if (res.status === 400) {
+        } else {
           const errData = await res.json().catch(() => ({}));
           setIsLoading(false);
           return { success: false, error: errData.error || 'Registration failed.' };
         }
-      } catch (networkErr) {
-        console.warn('[AuthContext] Backend signup request failed, falling back to local store:', networkErr);
-      }
-
-      // Local fallback for offline mode
-      const users = getRegisteredUsers();
-      if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
+      } catch (networkErr: any) {
         setIsLoading(false);
-        return { success: false, error: 'An account with this email address already exists.' };
+        return { success: false, error: networkErr.message || 'Unable to connect to registration service.' };
       }
 
-      const avatarColors = [
-        'from-violet-600 to-indigo-600',
-        'from-emerald-600 to-teal-600',
-        'from-sky-600 to-blue-700',
-        'from-amber-600 to-orange-600',
-        'from-rose-600 to-pink-600',
-        'from-fuchsia-600 to-purple-600'
-      ];
-      const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
-
-      const newUser: User & { password: string } = {
-        id: `user-${Date.now()}`,
-        name: name.trim(),
-        email: cleanEmail,
-        password,
-        role: 'Member',
-        title: title?.trim() || 'Software Engineer',
-        avatarColor: randomColor,
-        initials: getInitials(name),
-        joinedAt: new Date().toISOString().split('T')[0]
-      };
-
-      const updatedUsers = [...users, newUser];
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-
-      const { password: _, ...safeUser } = newUser;
-      setCurrentUser(safeUser);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeUser));
       setIsLoading(false);
-      return { success: true };
+      return { success: false, error: 'Registration failed.' };
     },
-    [getRegisteredUsers]
+    []
   );
 
-  const logout = useCallback(() => {
-    setCurrentUser(null);
-    setAuthToken(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  }, []);
-
-  // Secure user lookup by exact email (for project invitation verification only)
   const findUserByEmail = useCallback(
     (email: string): User | null => {
       const clean = email.trim().toLowerCase();
-      const users = getRegisteredUsers();
-      const match = users.find(u => u.email.toLowerCase() === clean);
-      if (!match) return null;
-      const { password: _, ...safe } = match;
-      return safe;
+      try {
+        const stored = localStorage.getItem(USERS_STORAGE_KEY);
+        if (stored) {
+          const users = JSON.parse(stored);
+          const match = Array.isArray(users) ? users.find((u: any) => u.email?.toLowerCase() === clean) : null;
+          if (match) {
+            const { password: _, passwordHash: __, ...safe } = match;
+            return safe;
+          }
+        }
+      } catch {}
+      return null;
     },
-    [getRegisteredUsers]
+    []
   );
 
-  // Get member details exclusively for IDs that belong to a specific authorized project
   const getProjectMembers = useCallback(
     (memberIds: string[]): TeamMember[] => {
       if (!memberIds || memberIds.length === 0) return [];
       const idSet = new Set(memberIds);
-      const users = getRegisteredUsers();
-      return users
-        .filter(u => idSet.has(u.id))
-        .map(u => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          role: u.role,
-          title: u.title,
-          avatarColor: u.avatarColor,
-          initials: u.initials,
+      const list: TeamMember[] = [];
+
+      if (currentUser && idSet.has(currentUser.id)) {
+        list.push({
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          role: currentUser.role,
+          title: currentUser.title,
+          avatarColor: currentUser.avatarColor,
+          initials: currentUser.initials,
           isOnline: true
-        }));
+        });
+      }
+
+      return list;
     },
-    [getRegisteredUsers]
+    [currentUser]
   );
 
   return (

@@ -6,17 +6,39 @@ const router = Router();
 
 // GET all time logs for the authenticated user
 router.get('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const logs = db.getTimeLogs(userId);
   res.json({ success: true, count: logs.length, data: logs });
 });
 
-// LOG completed focus session / stopwatch run
+// LOG completed focus session / stopwatch run (cross-resource checks on taskId and projectId)
 router.post('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const body = req.body;
   if (!body.durationSeconds || body.durationSeconds <= 0) {
     return res.status(400).json({ success: false, error: 'Valid durationSeconds is required' });
+  }
+
+  // Cross-resource validation: taskId
+  if (body.taskId) {
+    const ownsTask = db.verifyTaskOwnership(body.taskId, userId);
+    if (!ownsTask) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You cannot attach a time log to a task you do not own.'
+      });
+    }
+  }
+
+  // Cross-resource validation: projectId
+  if (body.projectId) {
+    const hasProjectAccess = db.verifyProjectAccess(body.projectId, userId);
+    if (!hasProjectAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have access to attach time logs to this project.'
+      });
+    }
   }
 
   const durationSeconds = Number(body.durationSeconds);
@@ -26,6 +48,7 @@ router.post('/', (req: Request, res: Response) => {
 
   const newLog: TimeLog = {
     id: `timelog-${Date.now()}`,
+    userId,
     taskId: body.taskId,
     taskTitle: body.taskTitle,
     projectId: body.projectId,

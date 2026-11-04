@@ -20,7 +20,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentProject) {
       setFeedback({
@@ -42,7 +42,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
     setIsSubmitting(true);
     setFeedback(null);
 
-    const res = sendProjectInvite(currentProject.id, cleanEmail, role);
+    const res = await sendProjectInvite(currentProject.id, cleanEmail, role);
     setIsSubmitting(false);
 
     if (res.success) {

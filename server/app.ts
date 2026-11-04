@@ -8,6 +8,7 @@ import aiRouter from './routes/aiRouter.ts';
 import projectsRouter from './routes/projectsRouter.ts';
 import skillsRouter from './routes/skillsRouter.ts';
 import timelogsRouter from './routes/timelogsRouter.ts';
+import workspacesRouter from './routes/workspacesRouter.ts';
 import { db } from './db.ts';
 
 import { authenticateToken } from './middleware/auth.ts';
@@ -29,7 +30,7 @@ app.set('trust proxy', 1);
 // Ensures /api routes match whether called as /api/tasks or rewritten to /tasks
 app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/assets') && !req.url.startsWith('/@')) {
-    const apiPrefixes = ['/auth', '/tasks', '/goals', '/calendar', '/ai', '/projects', '/skills', '/timelogs', '/health', '/stats'];
+    const apiPrefixes = ['/auth', '/workspaces', '/team', '/tasks', '/goals', '/calendar', '/ai', '/projects', '/skills', '/timelogs', '/health', '/stats'];
     if (apiPrefixes.some(prefix => req.url.startsWith(prefix))) {
       req.url = '/api' + req.url;
     }
@@ -74,6 +75,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/skills', skillsRouter);
 app.use('/api/timelogs', timelogsRouter);
+app.use('/api', workspacesRouter);
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -88,9 +90,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // Direct Productivity Stats endpoint (strictly user-scoped)
-app.get('/api/stats', (req: Request, res: Response) => {
+app.get('/api/stats', authenticateToken, (req: Request, res: Response) => {
   try {
-    const stats = db.getProductivityStats(req.user?.id);
+    const stats = db.getProductivityStats(req.user!.id);
     res.json({ success: true, data: stats });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to calculate stats' });

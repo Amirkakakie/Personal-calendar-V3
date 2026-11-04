@@ -6,7 +6,7 @@ const router = Router();
 
 // GET all goals for the authenticated user
 router.get('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const goals = db.getGoals(userId);
   const tasks = db.getTasks(userId);
 
@@ -38,7 +38,7 @@ router.get('/', (req: Request, res: Response) => {
 
 // CREATE goal
 router.post('/', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const body = req.body;
   if (!body.title || !body.category) {
     return res.status(400).json({ success: false, error: 'Title and category are required' });
@@ -63,7 +63,7 @@ router.post('/', (req: Request, res: Response) => {
 
 // UPDATE goal
 router.put('/:id', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const updated = db.updateGoal(req.params.id, req.body, userId);
   if (!updated) {
     return res.status(404).json({ success: false, error: 'Goal not found' });
@@ -73,7 +73,7 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // UPDATE Key Result progress
 router.patch('/:id/kr/:krId', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const goals = db.getGoals(userId);
   const goal = goals.find(g => g.id === req.params.id);
   if (!goal) {
@@ -99,7 +99,7 @@ router.patch('/:id/kr/:krId', (req: Request, res: Response) => {
 
 // DELETE goal
 router.delete('/:id', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const success = db.deleteGoal(req.params.id, userId);
   if (!success) {
     return res.status(404).json({ success: false, error: 'Goal not found' });

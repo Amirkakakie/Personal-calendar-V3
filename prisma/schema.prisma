@@ -90,6 +90,8 @@ model User {
   googleTokenExpiry DateTime?
   googleCalendarId String?      @default("primary")
   
+  passwordHash     String?
+  
   // Relationships
   domains          Domain[]
   goals            GoalOKR[]
@@ -99,6 +101,10 @@ model User {
   skills           UserSkill[]
   badges           UserBadge[]
   calendarEvents   CalendarEvent[]
+  workspaceMembers WorkspaceMember[]
+  ownedProjects    TeamProject[]
+  sentInvites      ProjectInvitation[] @relation("SentInvites")
+  receivedInvites  ProjectInvitation[] @relation("ReceivedInvites")
   
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
@@ -387,4 +393,107 @@ model CalendarEvent {
   @@index([userId, startTime])
   @@index([taskId])
   @@index([googleEventId])
+}
+
+// ----------------------------------------------------------------------------
+// WORKSPACES & TEAM COLLABORATION
+// ----------------------------------------------------------------------------
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Workspace {
+  id          String            @id @default(uuid())
+  name        String
+  type        String            @default("team") // "personal" | "team"
+  ownerId     String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  members     WorkspaceMember[]
+  projects    TeamProject[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model TeamProject {
+  id          String        @id @default(uuid())
+  workspaceId String
+  ownerId     String
+  ownerEmail  String
+  name        String
+  key         String
+  description String?
+  color       String        @default("#6366f1")
+  icon        String        @default("ShieldCheck")
+  targetDate  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  tasks       TeamTask[]
+  invitations ProjectInvitation[]
+
+  @@index([workspaceId])
+  @@index([ownerId])
+}
+
+model TeamTask {
+  id             String      @id @default(uuid())
+  projectId      String
+  taskNumber     Int
+  columnId       String      @default("todo")
+  title          String
+  description    String?
+  priority       String      @default("medium")
+  assigneeId     String?
+  dueDate        String?
+  estimatedHours Float       @default(0)
+  subtasksJson   Json?
+  tagsJson       Json?
+  commentsJson   Json?
+  order          Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  project        TeamProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([columnId])
+}
+
+model ProjectInvitation {
+  id              String        @id @default(uuid())
+  projectId       String
+  invitedEmail    String
+  invitedByUserId String
+  role            WorkspaceRole @default(MEMBER)
+  status          String        @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  createdAt       DateTime      @default(now())
+
+  project         TeamProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedBy       User          @relation("SentInvites", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  recipient       User?         @relation("ReceivedInvites", fields: [invitedEmail], references: [email])
+
+  @@index([invitedEmail])
+  @@index([projectId])
 }

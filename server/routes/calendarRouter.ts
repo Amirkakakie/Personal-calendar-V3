@@ -5,9 +5,9 @@ import type { CalendarEvent, Task } from '../../src/types/index.ts';
 
 const router = Router();
 
-// GET all calendar events combined with scheduled tasks (user-scoped)
+// GET all calendar events combined with scheduled tasks (strictly user-scoped)
 router.get('/events', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { startDate, endDate } = req.query;
   const rawEvents = db.getCalendarEvents(userId);
   const tasks = db.getTasks(userId);
@@ -50,12 +50,23 @@ router.get('/events', (req: Request, res: Response) => {
   res.json({ success: true, count: combined.length, data: combined });
 });
 
-// CREATE manual calendar event
+// CREATE manual calendar event (cross-resource verification on taskId)
 router.post('/events', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const body = req.body;
   if (!body.title || !body.startTime || !body.endTime) {
     return res.status(400).json({ success: false, error: 'Title, startTime, and endTime are required' });
+  }
+
+  // Cross-resource ownership validation on taskId
+  if (body.taskId) {
+    const ownsTask = db.verifyTaskOwnership(body.taskId, userId);
+    if (!ownsTask) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You cannot attach a calendar event to a task you do not own.'
+      });
+    }
   }
 
   const newEvent: CalendarEvent = {
@@ -67,6 +78,7 @@ router.post('/events', (req: Request, res: Response) => {
     endTime: body.endTime,
     category: body.category || 'Work/Career',
     isGoogleEvent: Boolean(body.isGoogleEvent),
+    taskId: body.taskId,
     location: body.location
   };
 
@@ -74,34 +86,42 @@ router.post('/events', (req: Request, res: Response) => {
   res.status(201).json({ success: true, data: saved });
 });
 
-// DELETE calendar event
+// DELETE calendar event (ownership verified)
 router.delete('/events/:id', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const eventId = req.params.id;
 
   if (eventId.startsWith('task-cal-')) {
     const taskId = eventId.replace('task-cal-', '');
+    const ownsTask = db.verifyTaskOwnership(taskId, userId);
+    if (!ownsTask) {
+      return res.status(404).json({ success: false, error: 'Task not found or access denied' });
+    }
     db.updateTask(taskId, { dueDate: undefined as any, dueTime: undefined }, userId);
     return res.json({ success: true, message: 'Scheduled task block cleared from calendar' });
   }
 
-  const success = db.removeCalendarEvent(eventId, userId);
-  if (!success) {
-    return res.status(404).json({ success: false, error: 'Event not found' });
+  // Direct calendar event ownership check
+  const events = db.getCalendarEvents(userId);
+  const exists = events.some(e => e.id === eventId || e.googleEventId === eventId);
+  if (!exists) {
+    return res.status(404).json({ success: false, error: 'Calendar event not found or access denied' });
   }
+
+  db.removeCalendarEvent(eventId, userId);
   res.json({ success: true, message: 'Event deleted' });
 });
 
-// CHECK CONFLICTS for a task (strict interval arithmetic)
+// CHECK CONFLICTS for a task (ownership checked)
 router.post('/check-conflicts', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { taskId, dueDate, dueTime, durationMinutes } = req.body;
   let taskToCheck: Task;
 
   if (taskId) {
     const existing = db.getTaskById(taskId, userId);
     if (!existing) {
-      return res.status(404).json({ success: false, error: 'Task not found' });
+      return res.status(404).json({ success: false, error: 'Task not found or access denied' });
     }
     taskToCheck = {
       ...existing,
@@ -141,7 +161,7 @@ router.post('/check-conflicts', (req: Request, res: Response) => {
 
 // FIND OPTIMAL TIME SLOTS for a task
 router.post('/suggest-slots', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { durationMinutes = 45, targetDate } = req.body;
   const date = targetDate || new Date().toISOString().split('T')[0];
   const events = db.getCalendarEvents(userId);
@@ -155,21 +175,21 @@ router.post('/suggest-slots', (req: Request, res: Response) => {
   res.json({ success: true, date, suggestions });
 });
 
-// GET direct Google Calendar 1-Click web creation URL for a task
+// GET direct Google Calendar 1-Click web creation URL for a task (verifies ownership)
 router.get('/web-link/:taskId', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const task = db.getTaskById(req.params.taskId, userId);
   if (!task) {
-    return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
 
   const webUrl = googleCalendarService.generateGoogleCalendarWebUrl(task);
   res.json({ success: true, url: webUrl });
 });
 
-// EXPORT .ics iCalendar file
+// EXPORT .ics iCalendar file (strictly for authenticated user)
 router.get('/export/ical', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const tasks = db.getTasks(userId);
   const events = db.getCalendarEvents(userId);
   const icsData = googleCalendarService.generateICalendar(tasks, events);
@@ -179,9 +199,9 @@ router.get('/export/ical', (req: Request, res: Response) => {
   res.send(icsData);
 });
 
-// Google OAuth status
+// Google OAuth status (user-scoped)
 router.get('/auth-status', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const auth = db.getGoogleAuth(userId);
   res.json({
     success: true,
@@ -195,7 +215,7 @@ router.get('/auth-status', (req: Request, res: Response) => {
 
 // Update Google OAuth simulation/connection
 router.post('/auth-status', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { isConnected, email } = req.body;
   db.setGoogleAuth({
     isConnected: Boolean(isConnected),
@@ -206,7 +226,7 @@ router.post('/auth-status', (req: Request, res: Response) => {
 
 // BIOLOGICAL ENERGY AUTO-SCHEDULING ENGINE
 router.post('/auto-schedule', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const { targetDate = new Date().toISOString().split('T')[0] } = req.body;
   const tasks = db.getTasks(userId).filter(t => t.status !== 'completed');
   const existingEvents = db.getCalendarEvents(userId);
@@ -289,7 +309,7 @@ router.post('/auto-schedule', (req: Request, res: Response) => {
 
 // REAL-TIME CONFLICT RESOLUTION ENGINE WITH ATOMIC PERSISTENCE
 router.post('/resolve-conflicts', (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = req.user!.id;
   const events = db.getCalendarEvents(userId);
   const sorted = [...events].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { SignJWT } from 'jose';
+import bcrypt from 'bcryptjs';
 import { db } from '../db.ts';
 
 const router = Router();
@@ -35,6 +36,9 @@ router.post('/signup', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'An account with this email address already exists.' });
     }
 
+    // Secure password hashing with bcryptjs (cost factor 10)
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const avatarColors = [
       'from-violet-600 to-indigo-600',
       'from-emerald-600 to-teal-600',
@@ -50,8 +54,8 @@ router.post('/signup', async (req: Request, res: Response) => {
       id,
       name: name.trim(),
       email: cleanEmail,
-      password: password, // Note: In production with live DB, bcrypt hash is used
-      role: 'Member' as const,
+      passwordHash,
+      role: 'Member',
       title: title?.trim() || 'Software Engineer',
       avatarColor: randomColor,
       initials: getInitials(name),
@@ -60,7 +64,7 @@ router.post('/signup', async (req: Request, res: Response) => {
 
     const created = db.createUser(newUser);
 
-    // Cryptographically sign JWT with jose
+    // Cryptographically sign JWT with jose and standard claims
     const token = await new SignJWT({
       sub: created.id,
       email: created.email,
@@ -68,11 +72,13 @@ router.post('/signup', async (req: Request, res: Response) => {
       role: created.role
     })
       .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('chronos-os')
+      .setAudience('chronos-clients')
       .setIssuedAt()
       .setExpirationTime('7d')
       .sign(secretKey);
 
-    const { password: _, ...safeUser } = created;
+    const { passwordHash: _hash, password: _legacy, ...safeUser } = created as any;
     res.status(201).json({
       success: true,
       token,
@@ -97,11 +103,24 @@ router.post('/login', async (req: Request, res: Response) => {
     const user = db.getUserByEmail(cleanEmail);
 
     if (!user) {
-      return res.status(401).json({ success: false, error: 'No account found with this email address.' });
+      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }
 
-    if (user.password !== password) {
-      return res.status(401).json({ success: false, error: 'Incorrect password.' });
+    // Secure verification with bcrypt
+    let isMatch = false;
+    if (user.passwordHash) {
+      isMatch = await bcrypt.compare(password, user.passwordHash);
+    } else if (user.password) {
+      // Legacy fallback and upgrade
+      isMatch = user.password === password;
+      if (isMatch) {
+        user.passwordHash = await bcrypt.hash(password, 10);
+        delete user.password;
+      }
+    }
+
+    if (!isMatch) {
+      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }
 
     // Cryptographically sign JWT with jose
@@ -112,11 +131,13 @@ router.post('/login', async (req: Request, res: Response) => {
       role: user.role
     })
       .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('chronos-os')
+      .setAudience('chronos-clients')
       .setIssuedAt()
       .setExpirationTime('7d')
       .sign(secretKey);
 
-    const { password: _, ...safeUser } = user;
+    const { passwordHash: _hash, password: _legacy, ...safeUser } = user as any;
     res.json({
       success: true,
       token,
@@ -136,23 +157,17 @@ router.get('/me', (req: Request, res: Response) => {
 
   const user = db.getUserById(req.user.id);
   if (!user) {
-    return res.json({
-      success: true,
-      user: {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.email.split('@')[0],
-        role: req.user.role,
-        title: 'Member',
-        avatarColor: 'from-violet-600 to-indigo-600',
-        initials: req.user.email.slice(0, 2).toUpperCase(),
-        joinedAt: new Date().toISOString().split('T')[0]
-      }
-    });
+    return res.status(401).json({ success: false, error: 'User account not found' });
   }
 
-  const { password: _, ...safeUser } = user;
-  res.json({ success: true, user: safeUser });
+  const { passwordHash: _hash, password: _legacy, ...safeUser } = user as any;
+  const workspaces = db.getWorkspacesForUser(user.id);
+
+  res.json({
+    success: true,
+    user: safeUser,
+    workspaces
+  });
 });
 
 export default router;
