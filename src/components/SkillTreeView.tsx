@@ -71,16 +71,15 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* RPG Profile Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-neutral-900 via-neutral-900/90 to-neutral-950 border border-neutral-800 p-6 shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl bg-white/[0.02] border border-white/5 p-6 backdrop-blur-md">
         <div className="absolute top-0 end-0 -mt-10 -me-10 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 start-1/3 -mb-10 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 p-0.5 shadow-lg shadow-indigo-500/10 flex items-center justify-center">
                 <div className="w-full h-full bg-neutral-950 rounded-[14px] flex flex-col items-center justify-center">
-                  <span className="text-[10px] text-neutral-400 font-mono uppercase">{locale === 'fa' ? 'سطح' : 'LVL'}</span>
+                  <span className="text-[9px] text-neutral-500 font-mono uppercase">{locale === 'fa' ? 'سطح' : 'LVL'}</span>
                   <span className="text-2xl font-bold font-mono text-white leading-none">{formatNumber(stats.userLevel)}</span>
                 </div>
               </div>
@@ -91,12 +90,12 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
 
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-white tracking-tight">{stats.rpgTitle}</h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <h2 className="text-lg font-bold text-white tracking-tight">{stats.rpgTitle}</h2>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                   {locale === 'fa' ? 'رتبه استادی' : 'Mastery Tier'}
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-1">
+              <p className="text-[12px] text-neutral-500 mt-1">
                 {locale === 'fa' ? 'کل امتیاز تجربه: ' : 'Total XP: '}
                 <span className="font-mono text-indigo-300 font-semibold">{formatNumber(stats.totalXp)} XP</span>
                 {' • '}
@@ -107,27 +106,27 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl px-4 py-3 min-w-[140px]">
-              <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 min-w-[130px]">
+              <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
                 {locale === 'fa' ? 'ارزش اقتصادی خلق‌شده' : 'Cognitive Value'}
               </div>
-              <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">
+              <div className="text-base font-bold font-mono text-emerald-400 mt-0.5">
                 ${formatNumber(stats.totalRoiGenerated)}
               </div>
             </div>
-            <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl px-4 py-3 min-w-[140px]">
-              <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 min-w-[130px]">
+              <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
                 {locale === 'fa' ? 'امتیاز تمرکز' : 'Focus Efficiency'}
               </div>
-              <div className="text-lg font-bold font-mono text-indigo-400 mt-0.5">
-                {formatNumber(stats.focusScore)} / ۱۰۰
+              <div className="text-base font-bold font-mono text-indigo-400 mt-0.5">
+                {formatNumber(stats.focusScore)} / 100
               </div>
             </div>
           </div>
         </div>
 
         {trainingMessage && (
-          <div className="mt-4 p-3 bg-indigo-950/60 border border-indigo-500/30 rounded-xl text-xs text-indigo-300 flex items-center gap-2 animate-bounce">
+          <div className="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[12px] text-indigo-300 flex items-center gap-2 animate-bounce">
             <Sparkles className="w-4 h-4 text-indigo-400" />
             <span>{trainingMessage}</span>
           </div>
@@ -163,70 +162,55 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
           return (
             <div
               key={skill.id}
-              className="group relative rounded-2xl bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 transition-all p-5 flex flex-col justify-between shadow-sm hover:shadow-md"
+              className="group relative rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all p-5 flex flex-col justify-between hover:bg-white/[0.03]"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700/50">
+                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                       {ICON_MAP[skill.icon] || <Sparkles className="w-6 h-6 text-indigo-400" />}
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                      <h3 className="text-[14px] font-semibold text-white group-hover:text-indigo-300 transition-colors">
                         {skill.name}
                       </h3>
-                      <span className="text-[11px] text-neutral-400 font-medium">
+                      <span className="text-[11px] text-neutral-500 font-medium">
                         {skill.category}
                       </span>
                     </div>
                   </div>
 
-                  <div className="px-2 py-0.5 rounded-md bg-neutral-800 text-[11px] font-mono text-neutral-300 border border-neutral-700">
+                  <div className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-mono text-neutral-400 border border-white/5">
                     {t('skills.level', { level: skill.level })}
                   </div>
                 </div>
 
-                <p className="text-xs text-neutral-400 mt-3 line-clamp-2 leading-relaxed">
+                <p className="text-[12px] text-neutral-500 mt-3 line-clamp-2 leading-relaxed">
                   {skill.description}
                 </p>
 
                 {/* Progress Bar */}
                 <div className="mt-4">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400 mb-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500 mb-1.5">
                     <span>{t('skills.mastery')}</span>
-                    <span className="text-indigo-400 font-semibold">{formatNumber(skill.masteryPct)}% ({formatNumber(skill.currentXp)}/{formatNumber(skill.requiredXp)} XP)</span>
+                    <span className="text-indigo-400 font-semibold">{formatNumber(skill.masteryPct)}%</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"
                       style={{ width: `${Math.min(100, skill.masteryPct)}%` }}
                     />
                   </div>
                 </div>
-
-                {/* Perks unlocked */}
-                {skill.perks && skill.perks.length > 0 && (
-                  <div className="mt-3.5 space-y-1">
-                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">
-                      {t('skills.perks')}
-                    </span>
-                    {skill.perks.map((perk, pIdx) => (
-                      <div key={pIdx} className="text-[11px] text-neutral-300 flex items-center gap-1.5">
-                        <span className="text-amber-400">⚡</span>
-                        <span>{perk}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Action */}
-              <div className="mt-5 pt-3 border-t border-neutral-800/80">
+              <div className="mt-5 pt-3 border-t border-white/5">
                 <button
                   type="button"
                   onClick={() => handleTrainSkill(skill.id)}
                   disabled={isTraining}
-                  className="w-full py-2 px-3 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-300 text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-all hover:border-indigo-500/40"
                 >
                   <Zap className="w-3.5 h-3.5 text-indigo-400" />
                   <span>{isTraining ? t('common.loading') : t('skills.trainSkill')}</span>

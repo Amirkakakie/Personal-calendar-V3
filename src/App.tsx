@@ -40,6 +40,7 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 // Shared Components
 import { Header, WorkspaceMode } from './components/Header.tsx';
+import { Sidebar, NavigationTab } from './components/Sidebar.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 
 // Personal Productivity Hub Components
@@ -75,6 +76,7 @@ type NavigationTab =
   | 'coach';
 
 const STORAGE_WORKSPACE_MODE_KEY = 'chronos_workspace_mode';
+const STORAGE_SIDEBAR_COLLAPSED_KEY = 'chronos_sidebar_collapsed';
 
 function ChronosWorkspace() {
   const { t, direction, formatDate, formatTime, formatNumber } = useI18n();
@@ -89,11 +91,29 @@ function ChronosWorkspace() {
     return 'personal';
   });
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const handleToggleWorkspaceMode = (mode: WorkspaceMode) => {
     setWorkspaceModeState(mode);
     try {
       localStorage.setItem(STORAGE_WORKSPACE_MODE_KEY, mode);
     } catch {}
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem(STORAGE_SIDEBAR_COLLAPSED_KEY, String(next));
+      } catch {}
+      return next;
+    });
   };
 
   // Centralized State from TaskContext (Personal Space)
@@ -135,6 +155,7 @@ function ChronosWorkspace() {
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [isGoogleGuideOpen, setIsGoogleGuideOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Default Stats fallback when null
   const effectiveStats: ProductivityStats = stats || {
@@ -303,47 +324,66 @@ function ChronosWorkspace() {
         }}
       />
 
-      {/* Main Workspace Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex flex-col">
-        {/* ============================================================== */}
-        {/* MODE A: TEAM WORKSPACES (Trello-Style Collaboration)           */}
-        {/* ============================================================== */}
-        {workspaceMode === 'team' ? (
-          <TeamBoardView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
-        ) : (
-          /* ============================================================== */
-          /* MODE B: PERSONAL WORKSPACE (Original Personal Hub)             */
-          /* ============================================================== */
-          <>
-            {/* Top Navigation Tabs */}
-            <nav className="flex items-center gap-1.5 overflow-x-auto pb-4 mb-4 border-b border-neutral-800 scrollbar-none">
-              {navTabs.map(tab => {
-                const Icon = tab.icon;
-                const isActive = currentTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setCurrentTab(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
-                      isActive
-                        ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700/60'
-                        : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-400' : 'text-neutral-500'}`} />
-                    <span>{t(tab.labelKey)}</span>
-                  </button>
-                );
-              })}
-            </nav>
+      <div className="flex-1 flex overflow-hidden">
+        {workspaceMode === 'personal' && (
+          <Sidebar 
+            currentTab={currentTab} 
+            onTabChange={(tab) => {
+              setCurrentTab(tab);
+              setIsMobileNavOpen(false);
+            }} 
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={handleToggleSidebar}
+          />
+        )}
 
-            {/* Syncing or Loading indicator */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-20 text-neutral-400 gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                <span className="text-sm font-medium">{t('dashboard.workspaceLoading')}</span>
-              </div>
-            )}
+        <main className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 ${
+          workspaceMode === 'personal' ? (sidebarCollapsed ? 'lg:ms-16' : 'lg:ms-64') : ''
+        }`}>
+          <div className="max-w-[1200px] mx-auto px-4 lg:px-8 py-8">
+            {workspaceMode === 'team' ? (
+              <TeamBoardView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+            ) : (
+              <div>
+                {/* Mobile Tab Indicator/Trigger */}
+                <div className="lg:hidden mb-6">
+                  <button 
+                    onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+                    className="w-full flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-2xl"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Menu className="w-5 h-5 text-indigo-400" />
+                      <span className="font-bold text-sm capitalize">{currentTab}</span>
+                    </div>
+                    <ArrowRight className={`w-4 h-4 transition-transform ${isMobileNavOpen ? 'rotate-90' : ''}`} />
+                  </button>
+                  
+                  {isMobileNavOpen && (
+                    <div className="mt-2 p-2 bg-neutral-900 border border-neutral-800 rounded-2xl grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2">
+                      {['dashboard', 'tasks', 'projects', 'calendar', 'eisenhower', 'skills', 'stopwatch', 'goals', 'coach'].map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => {
+                            setCurrentTab(tab as NavigationTab);
+                            setIsMobileNavOpen(false);
+                          }}
+                          className={`px-4 py-3 rounded-xl text-xs font-semibold capitalize text-start ${
+                            currentTab === tab ? 'bg-indigo-600 text-white' : 'text-neutral-400 hover:bg-neutral-800'
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {isLoading && (
+                  <div className="flex items-center justify-center py-20 text-neutral-400 gap-3">
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    <span className="text-sm font-medium">{t('dashboard.workspaceLoading')}</span>
+                  </div>
+                )}
 
             {!isLoading && (
               <div className="flex-1 space-y-6">
@@ -486,12 +526,19 @@ function ChronosWorkspace() {
                     </div>
 
                     {/* Habit Heatmap */}
-                    <HabitHeatmap 
-                      activityData={stats?.weeklyActivity}
-                      activityDays={stats?.habitActivityDays}
-                      currentStreak={stats?.currentStreakDays}
-                      bestStreak={stats?.bestStreakDays}
-                    />
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                      <div className="xl:col-span-2">
+                        <HabitHeatmap 
+                          activityData={stats?.weeklyActivity}
+                          activityDays={stats?.habitActivityDays}
+                          currentStreak={stats?.currentStreakDays}
+                          bestStreak={stats?.bestStreakDays}
+                        />
+                      </div>
+                      <div className="space-y-6">
+                        <AICoachPanel onScheduleSlotSelect={(title) => handleOpenNewTask()} />
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -583,9 +630,9 @@ function ChronosWorkspace() {
                 )}
               </div>
             )}
-          </>
-        )}
-      </main>
+          </div>
+        </main>
+      </div>
 
       {/* Global Modals for Personal Hub */}
       <TaskModal

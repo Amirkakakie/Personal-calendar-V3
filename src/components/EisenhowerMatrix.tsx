@@ -119,28 +119,29 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
           return (
             <div
               key={q.id}
-              className={`flex flex-col rounded-2xl border bg-neutral-900/80 p-4 transition-all shadow-sm ${q.borderColor}`}
+              className="flex flex-col rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10"
             >
               {/* Quadrant Header */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-neutral-800/80">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${q.headerBg} shrink-0`}>
-                    {q.title}
-                  </span>
-                  <span className="text-xs text-neutral-400 truncate hidden sm:inline">
-                    {q.subtitle}
-                  </span>
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className={`p-1.5 rounded-lg ${q.headerBg.split(' ')[0]} border border-white/10`}>
+                    <Target className={`w-3.5 h-3.5 ${q.accentColor}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-[13px] font-bold text-neutral-200">{q.title}</h3>
+                    <p className="text-[11px] text-neutral-500">{q.subtitle}</p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-mono text-neutral-400 font-medium">
-                    {formatNumber(completedCount)}/{formatNumber(qTasks.length)}
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-mono font-medium text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full">
+                    {formatNumber(completedCount)} / {formatNumber(qTasks.length)}
                   </span>
                   {onAddTaskToQuadrant && (
                     <button
                       type="button"
                       onClick={() => onAddTaskToQuadrant(q.id)}
-                      className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-all"
                       title={t('common.add')}
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -149,27 +150,11 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                 </div>
               </div>
 
-              {/* Quadrant Subtitle badge for mobile */}
-              <div className="sm:hidden mb-2">
-                <span className="text-[10px] text-neutral-400">
-                  {q.subtitle}
-                </span>
-              </div>
-
               {/* Task list container */}
               <div className="space-y-2 flex-1 min-h-[140px] max-h-[460px] overflow-y-auto pe-1">
                 {qTasks.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-xs text-neutral-600 py-8 gap-2">
+                  <div className="h-full flex flex-col items-center justify-center text-[12px] text-neutral-600 py-8">
                     <span>{t('tasks.noTasksFound')}</span>
-                    {onAddTaskToQuadrant && (
-                      <button
-                        type="button"
-                        onClick={() => onAddTaskToQuadrant(q.id)}
-                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
-                      >
-                        + {t('tasks.newTask')}
-                      </button>
-                    )}
                   </div>
                 ) : (
                   qTasks.map(task => {
@@ -181,11 +166,11 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                         onClick={() => onEditTask(task)}
                         className={`group p-3 rounded-xl border transition-all cursor-pointer ${
                           isDone
-                            ? 'bg-neutral-950/40 border-neutral-850 opacity-60'
-                            : 'bg-neutral-850/80 hover:bg-neutral-800 border-neutral-700/60 shadow-sm'
+                            ? 'bg-white/[0.01] border-white/5 opacity-60'
+                            : 'bg-white/[0.03] hover:bg-white/[0.05] border-white/5 hover:border-white/10'
                         }`}
                       >
-                        <div className="flex items-start gap-2.5">
+                        <div className="flex items-start gap-3">
                           {/* Checkbox */}
                           <button
                             type="button"
@@ -193,10 +178,10 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                               e.stopPropagation();
                               onToggleTask(task.id);
                             }}
-                            className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center transition-colors border shrink-0 ${
+                            className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center transition-all border shrink-0 ${
                               isDone
                                 ? 'bg-emerald-500 border-emerald-500 text-neutral-950'
-                                : 'border-neutral-500 hover:border-neutral-300 bg-neutral-800'
+                                : 'border-white/20 hover:border-indigo-400 bg-white/[0.03]'
                             }`}
                           >
                             {isDone && <Check className="w-3 h-3 stroke-[3]" />}
@@ -204,45 +189,23 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
 
                           {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className={`text-xs font-semibold transition-colors ${
-                                  isDone ? 'line-through text-neutral-500' : 'text-neutral-200'
-                                }`}
-                              >
-                                {task.title}
-                              </span>
-                            </div>
-
-                            {task.description && (
-                              <p className="text-xs text-neutral-400 mt-0.5 line-clamp-1">
-                                {task.description}
-                              </p>
-                            )}
+                            <span
+                              className={`text-[13px] font-medium transition-colors ${
+                                isDone ? 'line-through text-neutral-500' : 'text-neutral-200'
+                              }`}
+                            >
+                              {task.title}
+                            </span>
 
                             {/* Tags and Meta */}
-                            <div className="flex items-center gap-2 mt-2 text-[11px] flex-wrap">
-                              <span className={`px-2 py-0.2 rounded border ${getCategoryBadgeClass(task.category)}`}>
+                            <div className="flex items-center gap-3 mt-2 text-[11px] text-neutral-500 flex-wrap">
+                              <span className={`px-2 py-0.5 rounded-md border ${getCategoryBadgeClass(task.category)}`}>
                                 {getCategoryLabel(task.category)}
                               </span>
 
                               {task.dueDate && (
-                                <span className="flex items-center gap-1 text-neutral-400 font-mono">
-                                  <Clock className="w-3 h-3 text-neutral-500 shrink-0" />
-                                  <span>{formatDate(task.dueDate)} {task.dueTime ? formatTime(task.dueTime) : ''}</span>
-                                </span>
-                              )}
-
-                              {task.syncedToGoogle && (
-                                <span className="flex items-center gap-1 text-blue-400">
-                                  <Calendar className="w-3 h-3 shrink-0" />
-                                  <span>{locale === 'fa' ? 'تقویم گوگل' : 'GCal'}</span>
-                                </span>
-                              )}
-
-                              {task.durationMinutes && (
-                                <span className="text-neutral-500">
-                                  {formatNumber(task.durationMinutes)} {t('common.minutes')}
+                                <span className="flex items-center gap-1 font-mono opacity-70">
+                                  {formatDate(task.dueDate)}
                                 </span>
                               )}
                             </div>
@@ -250,13 +213,13 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
 
                           {/* Action controls */}
                           <div 
-                            className="flex items-center gap-1 opacity-100 sm:opacity-80 sm:hover:opacity-100 transition-opacity shrink-0"
+                            className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
                               type="button"
                               onClick={() => onEditTask(task)}
-                              className="p-1 text-neutral-400 hover:text-white rounded hover:bg-neutral-700 transition-colors"
+                              className="p-1.5 text-neutral-500 hover:text-white rounded-lg hover:bg-white/[0.05]"
                               title={t('common.edit')}
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -265,7 +228,7 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onDeleteTask(task.id)}
-                                className="p-1 text-neutral-400 hover:text-rose-400 rounded hover:bg-neutral-700 transition-colors"
+                                className="p-1.5 text-neutral-500 hover:text-rose-400 rounded-lg hover:bg-white/[0.05]"
                                 title={t('common.delete')}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

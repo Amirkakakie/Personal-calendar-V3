@@ -121,19 +121,19 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
           return (
             <div
               key={project.id}
-              className="group bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-5 flex flex-col justify-between transition-all shadow-md hover:shadow-xl relative"
+              className="group rounded-2xl border border-white/5 bg-white/[0.02] hover:border-white/10 p-5 flex flex-col justify-between transition-all hover:bg-white/[0.03]"
             >
               <div>
                 {/* Meta Top */}
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-neutral-800 text-indigo-300 border border-neutral-700">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-white/5 text-indigo-300 border border-white/5">
                     {getCategoryLabel(project.category)}
                   </span>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleDelete(project.id)}
-                      className="p-1.5 text-neutral-500 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
+                      className="p-1.5 text-neutral-500 hover:text-rose-400 rounded-lg hover:bg-white/[0.05]"
                       title={t('common.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -141,42 +141,42 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                   </div>
                 </div>
 
-                <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors">
+                <h3 className="text-[15px] font-bold text-white group-hover:text-indigo-300 transition-colors">
                   {project.name}
                 </h3>
-                <p className="text-xs text-neutral-400 mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-[12px] text-neutral-500 mt-1.5 line-clamp-2 leading-relaxed">
                   {project.description}
                 </p>
 
                 {/* Progress Bar */}
                 <div className="mt-5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
-                    <span>{progressPct}% {locale === 'fa' ? 'پیشرفت ساعت' : 'hours fulfilled'}</span>
-                    <span className="text-white font-bold">{formatNumber(project.loggedHours)} / {formatNumber(project.targetHours)}h</span>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500">
+                    <span>{progressPct}% fulfilled</span>
+                    <span className="text-neutral-300 font-bold">{formatNumber(project.loggedHours)} / {formatNumber(project.targetHours)}h</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Economic Metric */}
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs bg-neutral-950/60 p-3 rounded-xl border border-neutral-800/80">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs bg-white/[0.02] p-3 rounded-xl border border-white/5">
                   <div>
                     <span className="text-neutral-500 text-[10px] uppercase font-mono block">
-                      {t('projects.hourlyValuation')}
+                      Valuation
                     </span>
-                    <span className="text-white font-mono font-bold mt-0.5 block">
-                      ${formatNumber(project.hourlyValuation)}/{t('common.hours')}
+                    <span className="text-white font-mono font-semibold mt-0.5 block">
+                      ${formatNumber(project.hourlyValuation)}/hr
                     </span>
                   </div>
                   <div>
                     <span className="text-neutral-500 text-[10px] uppercase font-mono block">
-                      {locale === 'fa' ? 'ارزش ثبت‌شده' : 'Yield to Date'}
+                      Yield
                     </span>
-                    <span className="text-emerald-400 font-mono font-bold mt-0.5 block">
+                    <span className="text-emerald-400 font-mono font-semibold mt-0.5 block">
                       ${formatNumber(totalValuation)}
                     </span>
                   </div>
@@ -184,15 +184,15 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
               </div>
 
               {/* Workspace Action Buttons */}
-              <div className="mt-5 pt-3 border-t border-neutral-800/80 flex items-center justify-between gap-2 text-xs">
+              <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between gap-2 text-[12px]">
                 <a
                   href={project.driveFolderUrl || 'https://drive.google.com/drive/u/0/my-drive'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-neutral-400 hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 text-neutral-500 hover:text-white transition-colors"
                 >
                   <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>{t('projects.driveFolder')}</span>
+                  <span>Drive</span>
                 </a>
 
                 <a
@@ -202,8 +202,8 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                   className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>RFC Doc</span>
-                  <ExternalLink className="w-3 h-3 ms-0.5" />
+                  <span>Spec</span>
+                  <ExternalLink className="w-3 h-3 ms-0.5 opacity-70" />
                 </a>
               </div>
             </div>

@@ -100,17 +100,17 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Daily Executive Briefing Generator */}
-      <div className="bg-gradient-to-br from-neutral-900 via-neutral-900 to-indigo-950/40 border border-neutral-800 rounded-2xl p-5 sm:p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-violet-600/20 text-violet-400 border border-violet-500/30">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <BrainCircuit className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-[15px] font-bold text-white flex items-center gap-2">
                 {t('coach.dailyBriefingTitle')}
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-[12px] text-neutral-500">
                 {t('coach.subtitle')}
               </p>
             </div>
@@ -118,46 +118,46 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
 
           {/* Energy Level Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-400 font-medium hidden sm:inline">
+            <span className="text-[11px] text-neutral-500 font-medium hidden sm:inline">
               {t('coach.energyPrompt')}
             </span>
-            <div className="flex bg-neutral-800 p-1 rounded-xl border border-neutral-700">
+            <div className="flex bg-white/[0.03] p-1 rounded-xl border border-white/5">
               <button
                 type="button"
                 onClick={() => setEnergyLevel('High')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                   energyLevel === 'High'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-white/10'
+                    : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
-                <BatteryCharging className="w-3.5 h-3.5 text-emerald-300" />
+                <BatteryCharging className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{t('coach.highEnergy')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setEnergyLevel('Medium')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                   energyLevel === 'Medium'
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-white/10'
+                    : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
-                <BatteryMedium className="w-3.5 h-3.5 text-amber-300" />
+                <BatteryMedium className="w-3.5 h-3.5 text-amber-400" />
                 <span>{t('coach.mediumEnergy')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setEnergyLevel('Low')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                   energyLevel === 'Low'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-white/10'
+                    : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
-                <BatteryLow className="w-3.5 h-3.5 text-rose-300" />
+                <BatteryLow className="w-3.5 h-3.5 text-rose-400" />
                 <span>{t('coach.lowEnergy')}</span>
               </button>
             </div>
@@ -274,34 +274,34 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
       </div>
 
       {/* Interactive Coaching Chat */}
-      <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 sm:p-6 flex flex-col h-[520px]">
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-neutral-800">
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 sm:p-6 flex flex-col h-[520px]">
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/5">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white">{t('coach.chatWithCoach')}</h3>
+            <h3 className="text-[13px] font-bold text-white">{t('coach.chatWithCoach')}</h3>
           </div>
-          <span className="text-[10px] text-neutral-400 font-mono">Gemini Flash OS</span>
+          <span className="text-[10px] text-neutral-500 font-mono">Gemini OS</span>
         </div>
 
         {/* Messages scroll area */}
-        <div className="flex-1 overflow-y-auto space-y-3.5 pe-2">
+        <div className="flex-1 overflow-y-auto space-y-3.5 pe-2 custom-scrollbar">
           {messages.map((m, idx) => {
             const isUser = m.role === 'user';
             return (
               <div
                 key={idx}
-                className={`flex gap-3 text-xs leading-relaxed ${isUser ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-3 text-[13px] leading-relaxed ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isUser && (
-                  <div className="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
                 )}
                 <div
                   className={`p-3.5 rounded-2xl max-w-lg ${
                     isUser
                       ? 'bg-indigo-600 text-white rounded-br-none'
-                      : 'bg-neutral-800 text-neutral-200 border border-neutral-700/60 rounded-bl-none'
+                      : 'bg-white/[0.03] text-neutral-200 border border-white/5 rounded-bl-none'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{m.text}</p>
@@ -311,7 +311,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
           })}
 
           {isSendingChat && (
-            <div className="flex items-center gap-2 text-xs text-neutral-400">
+            <div className="flex items-center gap-2 text-[12px] text-neutral-500">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
               <span>{t('coach.thinking')}</span>
             </div>
@@ -319,14 +319,14 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
         </div>
 
         {/* Suggested Quick Prompts */}
-        <div className="py-2.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none border-t border-neutral-800/80">
+        <div className="py-2.5 flex items-center gap-1.5 overflow-x-auto border-t border-white/5 custom-scrollbar">
           {suggestedPrompts.map((p, idx) => (
             <button
               key={idx}
               onClick={() => {
                 setChatInput(p);
               }}
-              className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-300 text-[11px] whitespace-nowrap border border-neutral-700/60 transition-colors"
+              className="px-2.5 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white text-[11px] whitespace-nowrap border border-white/5 transition-all"
             >
               {p}
             </button>
@@ -340,12 +340,12 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder={t('coach.coachPlaceholder')}
-            className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
+            className="flex-1 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2 text-[13px] text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
           />
           <button
             type="submit"
             disabled={!chatInput.trim() || isSendingChat}
-            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-colors"
+            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-all shadow-lg shadow-indigo-600/20"
             title={t('coach.askBtn')}
           >
             <Send className="w-4 h-4" />

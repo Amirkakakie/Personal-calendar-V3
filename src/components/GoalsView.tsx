@@ -78,36 +78,31 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
           {goals.map(goal => (
             <div
               key={goal.id}
-              className="bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-5 flex flex-col justify-between transition-all"
+              className="rounded-2xl border border-white/5 bg-white/[0.02] hover:border-white/10 p-5 flex flex-col justify-between transition-all"
             >
               <div>
                 {/* Meta Header */}
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getCategoryClass(goal.category)}`}>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${getCategoryClass(goal.category)}`}>
                       {getCategoryLabel(goal.category)}
                     </span>
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 capitalize">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white/5 text-neutral-400 capitalize">
                       {goal.timeframe === 'quarterly' ? t('goals.quarterly') : t('goals.annual')}
                     </span>
-                    {goal.targetDate && (
-                      <span className="text-[10px] text-neutral-500">
-                        {t('goals.targetDate')}: {formatDate(goal.targetDate)}
-                      </span>
-                    )}
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onEditGoal(goal)}
-                      className="p-1 text-neutral-400 hover:text-white rounded hover:bg-neutral-800"
+                      className="p-1.5 text-neutral-500 hover:text-white rounded-lg hover:bg-white/[0.05]"
                       title={t('common.edit')}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => onDeleteGoal(goal.id)}
-                      className="p-1 text-neutral-400 hover:text-rose-400 rounded hover:bg-neutral-800"
+                      className="p-1.5 text-neutral-500 hover:text-rose-400 rounded-lg hover:bg-white/[0.05]"
                       title={t('common.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -116,20 +111,20 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
                 </div>
 
                 {/* Title & Description */}
-                <h3 className="text-base font-bold text-white tracking-tight">{goal.title}</h3>
+                <h3 className="text-[15px] font-semibold text-white tracking-tight">{goal.title}</h3>
                 {goal.description && (
-                  <p className="text-xs text-neutral-400 mt-1">{goal.description}</p>
+                  <p className="text-[12px] text-neutral-500 mt-1 line-clamp-2">{goal.description}</p>
                 )}
 
                 {/* Progress bar */}
                 <div className="mt-4">
-                  <div className="flex justify-between items-center text-xs mb-1">
-                    <span className="text-neutral-400">{t('goals.progress')}</span>
+                  <div className="flex justify-between items-center text-[11px] mb-1.5">
+                    <span className="text-neutral-500 font-medium">{t('goals.progress')}</span>
                     <span className="font-mono font-bold text-indigo-400">{formatNumber(goal.progressPercent || 0)}%</span>
                   </div>
-                  <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                      className="bg-indigo-500 h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"
                       style={{ width: `${goal.progressPercent || 0}%` }}
                     />
                   </div>
@@ -138,14 +133,14 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
                 {/* Key Results */}
                 {goal.keyResults && goal.keyResults.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                       {t('goals.keyResults')}
                     </span>
                     {goal.keyResults.map(kr => (
-                      <div key={kr.id} className="p-2.5 rounded-xl bg-neutral-800/60 border border-neutral-750 text-xs flex items-center justify-between gap-3">
+                      <div key={kr.id} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[12px] flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${kr.completed ? 'text-emerald-400' : 'text-neutral-500'}`} />
-                          <span className={`truncate ${kr.completed ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>
+                          <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${kr.completed ? 'text-emerald-400' : 'text-neutral-600'}`} />
+                          <span className={`truncate ${kr.completed ? 'line-through text-neutral-500' : 'text-neutral-300'}`}>
                             {kr.title}
                           </span>
                         </div>
@@ -154,7 +149,7 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
                             type="number"
                             value={kr.currentValue}
                             onChange={(e) => onUpdateKeyResult(goal.id, kr.id, parseFloat(e.target.value) || 0)}
-                            className="w-12 bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-center text-white"
+                            className="w-12 bg-white/[0.05] border border-white/10 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-indigo-500"
                           />
                           <span>/ {formatNumber(kr.targetValue)} {kr.unit}</span>
                         </div>
@@ -165,12 +160,12 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
               </div>
 
               {/* Action Button: AI Decomposition */}
-              <div className="mt-5 pt-3 border-t border-neutral-800">
+              <div className="mt-5 pt-3 border-t border-white/5">
                 <button
                   onClick={() => onDecomposeGoal(goal.title, goal.category)}
-                  className="w-full py-2 px-3 rounded-xl bg-violet-600/10 hover:bg-violet-600/20 text-violet-300 border border-violet-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-[12px] font-semibold flex items-center justify-center gap-2 transition-all hover:border-indigo-500/40"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                   <span>{t('goals.decomposeWithAi')}</span>
                 </button>
               </div>

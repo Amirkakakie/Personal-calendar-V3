@@ -60,22 +60,19 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
       {/* 4 Metric KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Completion Velocity */}
-        <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 relative overflow-hidden group hover:border-neutral-700 transition-colors">
+        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-neutral-400">{t('stats.completionRate')}</span>
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <CheckCircle2 className="w-4 h-4" />
+            <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">{t('stats.completionRate')}</span>
+            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-white tracking-tight tabular-nums">
               {formatNumber(stats.completionRate)}%
             </span>
-            <span className="text-xs text-neutral-400 tabular-nums">
-              ({formatNumber(stats.completedCount)}/{formatNumber(stats.totalTasks)})
-            </span>
           </div>
-          <div className="w-full bg-neutral-800 h-1.5 rounded-full mt-3 overflow-hidden">
+          <div className="w-full bg-white/5 h-1 rounded-full mt-3 overflow-hidden">
             <div 
               className="bg-indigo-500 h-full rounded-full transition-all duration-500"
               style={{ width: `${stats.completionRate}%` }}
@@ -84,63 +81,49 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         {/* Current & Best Streak */}
-        <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 relative overflow-hidden group hover:border-neutral-700 transition-colors">
+        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-neutral-400">{t('stats.streak')}</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
-              <Flame className="w-4 h-4 fill-amber-400" />
+            <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">{t('stats.streak')}</span>
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+              <Flame className="w-3.5 h-3.5 fill-amber-400/20" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-amber-400 tracking-tight tabular-nums">
-              {formatNumber(stats.currentStreakDays)} <span className="text-sm font-normal text-neutral-400">{t('common.hours') === 'hrs' ? 'days' : 'روز'}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-amber-400 tracking-tight tabular-nums">
+              {formatNumber(stats.currentStreakDays)}
             </span>
-            <span className="text-xs text-neutral-500 tabular-nums">
-              ({t('stats.bestStreak', { days: stats.bestStreakDays })})
-            </span>
+            <span className="text-xs text-neutral-500 font-medium">days</span>
           </div>
-          <p className="text-xs text-neutral-500 mt-2">
-            {locale === 'fa' ? 'زنجیره فعال تداوم روزانه' : 'Active momentum streak'}
-          </p>
         </div>
 
-        {/* Focus Hours / Pomodoro */}
-        <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 relative overflow-hidden group hover:border-neutral-700 transition-colors">
+        {/* Focus Hours */}
+        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-neutral-400">{t('stats.focusTime')}</span>
-            <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400">
-              <Clock className="w-4 h-4" />
+            <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">{t('stats.focusTime')}</span>
+            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400">
+              <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight tabular-nums">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-white tracking-tight tabular-nums">
               {formatDuration(stats.focusMinutesToday)}
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-2">
-            {t('stats.todayFocus', { minutes: stats.focusMinutesToday })}
-          </p>
         </div>
 
-        {/* Google Synced Count */}
-        <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 relative overflow-hidden group hover:border-neutral-700 transition-colors">
+        {/* Synced Events */}
+        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-neutral-400">{t('calendar.title').split(' ')[0]}</span>
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-              <CalendarDays className="w-4 h-4" />
+            <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Synced</span>
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+              <CalendarDays className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-blue-400 tracking-tight tabular-nums">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-blue-400 tracking-tight tabular-nums">
               {formatNumber(stats.syncedToGoogleCount || 0)}
             </span>
-            <span className="text-xs text-neutral-400 tabular-nums">
-              {locale === 'fa' ? 'رویداد در تقویم' : 'scheduled events'}
-            </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-2">
-            {locale === 'fa' ? 'همگام‌سازی ۲ طرفه با تقویم گوگل' : 'Bi-directional sync active'}
-          </p>
         </div>
       </div>
 

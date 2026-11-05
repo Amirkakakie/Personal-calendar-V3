@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.git/
+.cache/
+.turbo/
+*.lock
+*.log
+*.map
+*.min.js
+*.min.css
+data/db.json
+uploads/

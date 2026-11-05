@@ -90,29 +90,29 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header & Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-neutral-900/70 border border-neutral-800 p-6 rounded-2xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-6 backdrop-blur-md">
         <div>
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-lg font-bold text-white tracking-tight">{t('calendar.title')}</h2>
+            <h2 className="text-[15px] font-bold text-white tracking-tight">{t('calendar.title')}</h2>
           </div>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-[12px] text-neutral-500 mt-1">
             {t('calendar.subtitle')}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
-            className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+            className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[12px] font-mono text-white focus:outline-none focus:border-indigo-500/50"
           />
 
           <button
             onClick={handleAutoSchedule}
             disabled={isAutoScheduling}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[12px] font-semibold transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{isAutoScheduling ? t('common.loading') : t('calendar.autoSchedule')}</span>
@@ -121,7 +121,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
           <button
             onClick={handleResolveConflicts}
             disabled={isResolving}
-            className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-neutral-300 border border-white/5 text-[12px] font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span>{isResolving ? t('common.loading') : t('calendar.resolveConflicts')}</span>
@@ -129,7 +129,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
 
           <button
             onClick={handleExportIcal}
-            className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-medium transition-all flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-neutral-300 border border-white/5 text-[12px] font-semibold transition-all flex items-center gap-1.5"
             title={t('calendar.exportIcal')}
           >
             <Download className="w-3.5 h-3.5" />
@@ -237,15 +237,15 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
       </div>
 
       {/* Hourly Schedule View */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-xl">
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-neutral-800">
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 shadow-2xl">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/5">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white tracking-tight">
+            <h3 className="text-[13px] font-bold text-white tracking-tight">
               {locale === 'fa' ? `برنامه زمانی ${formatDate(selectedDate)}` : `Agenda for ${formatDate(selectedDate)}`}
             </h3>
           </div>
-          <span className="text-xs font-mono text-neutral-400">
+          <span className="text-[11px] font-mono text-neutral-500">
             {formatNumber(dayEvents.length)} {locale === 'fa' ? 'رویداد فعال' : 'active events'}
           </span>
         </div>
@@ -259,40 +259,34 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
             });
 
             return (
-              <div key={hour} className="flex items-start gap-4 py-2 border-b border-neutral-800/40">
-                <span className="w-14 text-xs font-mono text-neutral-500 pt-1 shrink-0 text-start">
+              <div key={hour} className="flex items-start gap-4 py-2 border-b border-white/5">
+                <span className="w-14 text-[11px] font-mono text-neutral-500 pt-1 shrink-0 text-start">
                   {formatTime(timeStr)}
                 </span>
 
                 <div className="flex-1 space-y-2">
                   {matchingEvents.length === 0 ? (
-                    <div className="h-6 border border-dashed border-neutral-800/60 rounded-lg flex items-center px-3 text-[11px] text-neutral-600">
+                    <div className="h-6 border border-dashed border-white/5 rounded-lg flex items-center px-3 text-[11px] text-neutral-600">
                       {locale === 'fa' ? 'بازه زمانی آزاد' : 'Available window'}
                     </div>
                   ) : (
                     matchingEvents.map(evt => (
                       <div
                         key={evt.id}
-                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                          evt.category === 'Work/Career'
-                            ? 'bg-blue-950/30 border-blue-500/30 text-blue-200'
-                            : evt.category === 'Academic/Study'
-                            ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
-                            : 'bg-purple-950/30 border-purple-500/30 text-purple-200'
-                        }`}
+                        className="p-3 rounded-xl border border-white/5 bg-white/[0.03] flex items-center justify-between gap-3 transition-all hover:bg-white/[0.05]"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span className={`w-2 h-2 rounded-full shrink-0 ${
                             evt.category === 'Work/Career' ? 'bg-blue-400' : evt.category === 'Academic/Study' ? 'bg-emerald-400' : 'bg-purple-400'
                           }`} />
-                          <span className="text-xs font-bold text-white truncate">{evt.title}</span>
-                          <span className="text-[11px] text-neutral-400 font-mono shrink-0">
+                          <span className="text-[13px] font-bold text-white truncate">{evt.title}</span>
+                          <span className="text-[11px] text-neutral-500 font-mono shrink-0">
                             ({evt.startTime.substring(11, 16)} - {evt.endTime.substring(11, 16)})
                           </span>
                         </div>
 
                         {evt.isGoogleEvent && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0 font-medium">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 shrink-0 font-medium">
                             {locale === 'fa' ? 'تقویم گوگل' : 'Google Cal'}
                           </span>
                         )}

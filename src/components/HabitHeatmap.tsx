@@ -50,49 +50,38 @@ export const HabitHeatmap: React.FC<HabitHeatmapProps> = ({
     }
   });
 
+
   const getColorClass = (count: number) => {
-    if (count === 0) return 'bg-neutral-800/80 hover:ring-1 hover:ring-neutral-500';
-    if (count === 1) return 'bg-emerald-950 text-emerald-300 border border-emerald-800 hover:ring-1 hover:ring-emerald-400';
-    if (count === 2) return 'bg-emerald-800 text-emerald-200 hover:ring-1 hover:ring-emerald-300';
-    if (count <= 4) return 'bg-emerald-600 text-white hover:ring-1 hover:ring-emerald-200';
-    return 'bg-emerald-400 text-neutral-950 font-bold shadow-sm shadow-emerald-400/30';
+    if (count === 0) return 'bg-white/[0.03] hover:bg-white/[0.08]';
+    if (count === 1) return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+    if (count === 2) return 'bg-emerald-500/40 text-emerald-200';
+    if (count <= 4) return 'bg-emerald-500 text-neutral-950';
+    return 'bg-emerald-400 text-neutral-950 shadow-[0_0_8px_rgba(52,211,153,0.5)]';
   };
 
   const totalActions = effectiveData.reduce((acc, curr) => acc + curr.completedCount, 0);
 
   return (
-    <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 sm:p-5">
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-white">
+          <h3 className="text-[13px] font-bold text-white">
             {locale === 'fa' ? 'نقشه حرارتی تداوم عادات و وظایف' : 'Habit & Task Execution Heatmap'}
           </h3>
-          <span className="text-xs text-neutral-400">
-            {locale === 'fa' ? '۱۶ هفته گذشته' : 'Past 16 Weeks'}
-          </span>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1.5 text-neutral-300">
-            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+        <div className="flex items-center gap-4 text-[12px]">
+          <div className="flex items-center gap-1.5 text-neutral-400">
+            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
             <span>
-              {locale === 'fa' ? 'تداوم: ' : 'Streak: '}
-              <strong className="text-amber-400">{formatNumber(currentStreak)} {locale === 'fa' ? 'روز' : 'd'}</strong>
+              Streak: <strong className="text-amber-400 font-mono">{formatNumber(currentStreak)}d</strong>
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-neutral-300">
+          <div className="flex items-center gap-1.5 text-neutral-400">
             <Award className="w-3.5 h-3.5 text-indigo-400" />
             <span>
-              {locale === 'fa' ? 'بهترین: ' : 'Best: '}
-              <strong className="text-indigo-400">{formatNumber(bestStreak)} {locale === 'fa' ? 'روز' : 'd'}</strong>
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-neutral-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>
-              {locale === 'fa' ? 'مجموع: ' : 'Total: '}
-              <strong className="text-emerald-400">{formatNumber(totalActions)} {locale === 'fa' ? 'وظیفه' : 'tasks'}</strong>
+              Best: <strong className="text-indigo-400 font-mono">{formatNumber(bestStreak)}d</strong>
             </span>
           </div>
         </div>
@@ -118,29 +107,26 @@ export const HabitHeatmap: React.FC<HabitHeatmapProps> = ({
       </div>
 
       {/* Footer: Hover tooltip info and Legend */}
-      <div className="flex items-center justify-between text-xs text-neutral-400 mt-3 pt-3 border-t border-neutral-800/80">
+      <div className="flex items-center justify-between text-[11px] text-neutral-500 mt-4 pt-3 border-t border-white/5">
         <div className="min-h-[1.25rem]">
           {hoveredDay ? (
-            <span className="text-neutral-200">
-              <strong className="text-emerald-400">{formatNumber(hoveredDay.completedCount)} {locale === 'fa' ? 'وظیفه' : 'tasks'}</strong>
-              {' '}
-              {locale === 'fa' ? `در ${formatDate(hoveredDay.date)}` : `on ${formatDate(hoveredDay.date)}`}
+            <span className="text-neutral-300">
+              <strong className="text-emerald-400 font-mono">{formatNumber(hoveredDay.completedCount)} tasks</strong> completed on {formatDate(hoveredDay.date)}
             </span>
           ) : (
             <span className="text-neutral-500">
-              {locale === 'fa' ? 'نشانگر را روی هر روز ببرید تا جزئیات مشاهده شود' : 'Hover over any day to see details'}
+              Hover over a square to view details
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-          <span>{locale === 'fa' ? 'کمتر' : 'Less'}</span>
-          <div className="w-3 h-3 rounded-[2px] bg-neutral-800 border border-neutral-700" />
-          <div className="w-3 h-3 rounded-[2px] bg-emerald-950 border border-emerald-800" />
-          <div className="w-3 h-3 rounded-[2px] bg-emerald-800" />
-          <div className="w-3 h-3 rounded-[2px] bg-emerald-600" />
-          <div className="w-3 h-3 rounded-[2px] bg-emerald-400" />
-          <span>{locale === 'fa' ? 'بیشتر' : 'More'}</span>
+        <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
+          <span>Less</span>
+          <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.03]" />
+          <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/20 border border-emerald-500/30" />
+          <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/40" />
+          <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500" />
+          <span>More</span>
         </div>
       </div>
     </div>
