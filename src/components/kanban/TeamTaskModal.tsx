@@ -208,7 +208,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder={t('kanban.titlePlaceholder')}
-              className="w-full px-4 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-base font-medium focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="app-input font-medium"
               required
             />
           </div>
@@ -223,7 +223,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
               <select
                 value={columnId}
                 onChange={e => setColumnId(e.target.value as KanbanColumnId)}
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 {COLUMNS.map(col => (
                   <option key={col.id} value={col.id}>
@@ -241,7 +241,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value as TeamTaskPriority)}
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 <option value="low">{t('kanban.low')}</option>
                 <option value="medium">{t('kanban.medium')}</option>
@@ -258,7 +258,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
               <select
                 value={assigneeId}
                 onChange={e => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 <option value="">{t('kanban.unassigned')}</option>
                 {teamMembers.map(m => (
@@ -280,7 +280,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
                 type="date"
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
+                className="app-input"
               />
             </div>
 
@@ -295,7 +295,7 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
                 value={estimatedHours ?? ''}
                 onChange={e => setEstimatedHours(e.target.value ? Number(e.target.value) : undefined)}
                 placeholder="e.g. 8"
-                className="w-full px-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
+                className="app-input font-mono"
               />
             </div>
           </div>
@@ -513,15 +513,15 @@ export const TeamTaskModal: React.FC<TeamTaskModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-medium transition-colors"
+              className="btn-secondary"
             >
               {t('common.cancel')}
             </button>
             <button
-              type="button"
+              type="submit"
               onClick={handleSave}
               disabled={!title.trim()}
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all"
+              className="btn-primary"
             >
               {t('common.save')}
             </button>

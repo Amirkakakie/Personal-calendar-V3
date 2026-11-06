@@ -185,7 +185,7 @@ export const KanbanBoard: React.FC = () => {
       )}
 
       {/* Kanban Board Columns Container */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4 items-start">
+      <div className="flex overflow-x-auto gap-4 pb-4 items-start min-w-full custom-scrollbar">
         {COLUMNS.map(col => {
           const colTasks = projectTasks.filter(t => t.columnId === col.id);
           const isDraggingOver = dragOverCol === col.id;
@@ -211,7 +211,7 @@ export const KanbanBoard: React.FC = () => {
                   moveTask(taskId, col.id);
                 }
               }}
-              className={`flex flex-col bg-neutral-900/60 border rounded-2xl p-3 min-h-[500px] transition-all duration-150 ${
+              className={`flex flex-col bg-neutral-900/60 border rounded-2xl p-3 min-h-[500px] min-w-[280px] flex-1 shrink-0 xl:min-w-0 transition-all duration-150 ${
                 isDraggingOver
                   ? 'border-indigo-500/80 bg-indigo-950/20 shadow-lg shadow-indigo-500/10'
                   : 'border-neutral-800/80'

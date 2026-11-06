@@ -9,11 +9,13 @@ import {
   CheckCircle, 
   Trash2, 
   FolderOpen,
-  X
+  X,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import type { Project, TaskCategory } from '../types/index.ts';
-import { api } from '../services/api.ts';
 import { useI18n } from '../i18n/I18nContext.tsx';
+import { useTasks } from '../context/TaskContext.tsx';
 import { EmptyState } from './EmptyState.tsx';
 
 interface ProjectsPortfolioViewProps {
@@ -26,6 +28,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
   onRefreshData
 }) => {
   const { t, locale, formatNumber } = useI18n();
+  const { saveProject, deleteProject, showToast } = useTasks();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -34,38 +37,56 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
   const [hourlyValuation, setHourlyValuation] = useState<number>(100);
   const [driveFolderUrl, setDriveFolderUrl] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setErrorMessage(locale === 'fa' ? 'لطفاً نام پروژه را وارد کنید.' : 'Please enter a project name.');
+      return;
+    }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
-      await api.createProject({
-        name: name.trim(),
+      await saveProject({
+        name: trimmedName,
         description: description.trim(),
         category,
         targetHours,
         hourlyValuation,
         driveFolderUrl: driveFolderUrl.trim() || 'https://drive.google.com/drive/u/0/my-drive',
-        status: 'in_progress'
+        status: 'in_progress',
+        loggedHours: 0
       });
 
       setIsModalOpen(false);
       setName('');
       setDescription('');
+      setDriveFolderUrl('');
       onRefreshData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create project:', err);
+      const msg = err.message || (locale === 'fa' ? 'خطا در ایجاد پروژه. لطفاً مجدداً تلاش کنید.' : 'Failed to create project. Please try again.');
+      setErrorMessage(msg);
+      showToast(msg, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm(locale === 'fa' ? 'آیا از حذف این پروژه اطمینان دارید؟ وظایف مرتبط حفظ خواهند شد.' : 'Delete this project? Associated tasks will remain in the backlog.')) {
-      await api.deleteProject(id);
-      onRefreshData();
+    const confirmPrompt = locale === 'fa' 
+      ? 'آیا از حذف این پروژه اطمینان دارید؟ وظایف مرتبط حفظ خواهند شد.' 
+      : 'Delete this project? Associated tasks will remain in the backlog.';
+    if (confirm(confirmPrompt)) {
+      try {
+        await deleteProject(id);
+        onRefreshData();
+      } catch (err: any) {
+        showToast(err.message || 'Failed to delete project', 'error');
+      }
     }
   };
 
@@ -229,23 +250,34 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
               </button>
             </div>
 
+            {errorMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
-                  {t('modals.title')} *
+                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                  {t('modals.title')} <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   placeholder={locale === 'fa' ? 'مثال: معماری میکروسرویس‌های سازمان' : 'e.g. Distributed Core & Kafka Streaming'}
                   value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  onChange={e => {
+                    setName(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  className="app-input"
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                   {t('modals.description')}
                 </label>
                 <textarea
@@ -253,19 +285,21 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                   placeholder={locale === 'fa' ? 'شرح اهداف فنی و خروجی‌های مورد انتظار...' : 'Milestone deliverable objectives and spec...'}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="app-textarea"
+                  disabled={isSubmitting}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                  <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                     {t('modals.category')}
                   </label>
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value as any)}
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="app-select"
+                    disabled={isSubmitting}
                   >
                     <option value="Work/Career">{t('categories.workCareer')}</option>
                     <option value="Academic/Study">{t('categories.academicStudy')}</option>
@@ -275,7 +309,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                  <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                     {t('projects.targetHours')}
                   </label>
                   <input
@@ -283,13 +317,14 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                     min="1"
                     value={targetHours}
                     onChange={e => setTargetHours(Math.max(1, Number(e.target.value)))}
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    className="app-input font-mono"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                   {t('projects.hourlyValuation')} ($/hr)
                 </label>
                 <input
@@ -297,24 +332,33 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                   min="10"
                   value={hourlyValuation}
                   onChange={e => setHourlyValuation(Math.max(10, Number(e.target.value)))}
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  className="app-input font-mono"
+                  disabled={isSubmitting}
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-800">
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-neutral-400 hover:text-white rounded-xl text-xs font-semibold"
+                  disabled={isSubmitting}
+                  className="btn-secondary"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/30"
+                  disabled={isSubmitting || !name.trim()}
+                  className="btn-primary"
                 >
-                  {isSubmitting ? t('common.loading') : t('common.create')}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>{t('common.loading')}</span>
+                    </>
+                  ) : (
+                    <span>{t('common.create')}</span>
+                  )}
                 </button>
               </div>
             </form>

@@ -282,7 +282,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           {/* Title Input */}
           <div>
-            <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
               {t('modals.title')} <span className="text-rose-400">*</span>
             </label>
             <input
@@ -291,38 +291,41 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               required
               placeholder={t('modals.titlePlaceholder')}
               value={title}
+              disabled={isSubmitting}
               onChange={(e) => {
                 setTitle(e.target.value);
                 if (validationError) setValidationError(null);
               }}
-              className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
+              className="app-input"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
               {t('modals.description')}
             </label>
             <textarea
               rows={2}
               placeholder={locale === 'fa' ? 'یادداشت‌ها، منابع و پیش‌نیازها...' : 'Key outcomes, links, or notes...'}
               value={description}
+              disabled={isSubmitting}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
+              className="app-textarea"
             />
           </div>
 
           {/* Category & Priority Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
                 {t('modals.category')}
               </label>
               <select
                 value={category}
+                disabled={isSubmitting}
                 onChange={(e) => setCategory(e.target.value as TaskCategory)}
-                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[13px] text-neutral-300 focus:outline-none focus:border-indigo-500/50"
+                className="app-select"
               >
                 <option value="Work/Career">{t('categories.workCareer')}</option>
                 <option value="Academic/Study">{t('categories.academicStudy')}</option>
@@ -332,13 +335,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
                 {t('modals.priority')}
               </label>
               <select
                 value={priority}
+                disabled={isSubmitting}
                 onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[13px] text-neutral-300 focus:outline-none focus:border-indigo-500/50"
+                className="app-select"
               >
                 <option value="High">{locale === 'fa' ? 'بالا (ضروری)' : 'High (Critical)'}</option>
                 <option value="Medium">{locale === 'fa' ? 'متوسط' : 'Medium'}</option>
@@ -350,28 +354,30 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           {/* Date & Time Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-indigo-400" />
                 <span>{t('modals.dueDate')}</span>
               </label>
               <input
                 type="date"
                 value={dueDate}
+                disabled={isSubmitting}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[13px] text-neutral-300 focus:outline-none focus:border-indigo-500/50"
+                className="app-input"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-indigo-400" />
                 <span>{t('modals.dueTime')}</span>
               </label>
               <input
                 type="time"
                 value={dueTime}
+                disabled={isSubmitting}
                 onChange={(e) => setDueTime(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[13px] text-neutral-300 focus:outline-none focus:border-indigo-500/50"
+                className="app-input"
               />
             </div>
           </div>
@@ -388,7 +394,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     onClose();
                   }
                 }}
-                className="px-3 py-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-[12px] font-semibold transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>{t('common.delete')}</span>
@@ -400,14 +406,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-neutral-400 hover:text-white rounded-xl text-[12px] font-semibold transition-colors"
+                className="btn-secondary"
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[12px] font-semibold shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] flex items-center gap-1.5"
+                className="btn-primary"
               >
                 {isSubmitting ? (
                   <span>{t('common.loading')}</span>

@@ -288,6 +288,54 @@
       "initials": "SI",
       "joinedAt": "2026-11-06",
       "personalWorkspaceId": "ws-personal-usr-1793989736406-mk0n"
+    },
+    {
+      "id": "usr-1793991372799-fkcs",
+      "name": "Alice Architect",
+      "email": "alice_1793991372632@test.local",
+      "passwordHash": "$2b$10$Hmd62ogpxaHD6Hx/95rWRe6/51eRRmTbThLP2wwWkAefwKNv78BIG",
+      "role": "Member",
+      "title": "Software Engineer",
+      "avatarColor": "from-rose-600 to-pink-600",
+      "initials": "AA",
+      "joinedAt": "2026-11-06",
+      "personalWorkspaceId": "ws-personal-usr-1793991372799-fkcs"
+    },
+    {
+      "id": "usr-1793991372920-yk0q",
+      "name": "Bob Engineer",
+      "email": "bob_1793991372632@test.local",
+      "passwordHash": "$2b$10$i839fYvENgGDYr9UpMjXWeMnsBE91cSpd8qEOrd18b/.MgXLqMs4m",
+      "role": "Member",
+      "title": "Software Engineer",
+      "avatarColor": "from-emerald-600 to-teal-600",
+      "initials": "BE",
+      "joinedAt": "2026-11-06",
+      "personalWorkspaceId": "ws-personal-usr-1793991372920-yk0q"
+    },
+    {
+      "id": "usr-1793991373097-f0pt",
+      "name": "Charlie Clean",
+      "email": "charlie_1793991372632@test.local",
+      "passwordHash": "$2b$10$KRQxB9dDsynZtJOWC9x/jeRce5Uzen5pSkjxLSYfnfjAM2cGqnrji",
+      "role": "Member",
+      "title": "Software Engineer",
+      "avatarColor": "from-amber-600 to-orange-600",
+      "initials": "CC",
+      "joinedAt": "2026-11-06",
+      "personalWorkspaceId": "ws-personal-usr-1793991373097-f0pt"
+    },
+    {
+      "id": "usr-1793991373248-xsij",
+      "name": "simple_auth_1793991372632",
+      "email": "simple_auth_1793991372632@test.local",
+      "passwordHash": "$2b$10$Wxts06G4IqhFBhPIZ9LCiueH9QDM1oQY3u2bAmVEa3NcN7Ksm5BGC",
+      "role": "Member",
+      "title": "Software Engineer",
+      "avatarColor": "from-amber-600 to-orange-600",
+      "initials": "SI",
+      "joinedAt": "2026-11-06",
+      "personalWorkspaceId": "ws-personal-usr-1793991373248-xsij"
     }
   ],
   "partitions": {
@@ -520,6 +568,22 @@
         }
       ],
       "projects": [
+        {
+          "id": "proj-1793990836540",
+          "userId": "usr-1793816720235-a2ao",
+          "name": "vsettvbr",
+          "description": "",
+          "category": "Work/Career",
+          "status": "in_progress",
+          "targetHours": 30,
+          "loggedHours": 0,
+          "hourlyValuation": 100,
+          "color": "blue",
+          "driveFolderUrl": "https://drive.google.com/drive/u/0/my-drive",
+          "tasksCount": 0,
+          "completedTasksCount": 0,
+          "createdAt": "2026-11-06T18:47:16.540Z"
+        },
         {
           "id": "proj-1793816727283",
           "userId": "usr-1793816720235-a2ao",
@@ -1057,9 +1121,154 @@
         "isConnected": false,
         "email": ""
       }
+    },
+    "usr-1793991372799-fkcs": {
+      "tasks": [
+        {
+          "id": "task-1793991372930-twje",
+          "userId": "usr-1793991372799-fkcs",
+          "title": "Alice Secret Strategic Plan",
+          "description": "Confidential executive roadmap",
+          "category": "work",
+          "priority": "high",
+          "status": "todo",
+          "eisenhower": "q2_not_urgent_important",
+          "dueDate": "2026-11-06",
+          "durationMinutes": 45,
+          "subtasks": [],
+          "tags": [],
+          "syncedToGoogle": false,
+          "recurrence": "none",
+          "pomodoroSessions": 0,
+          "createdAt": "2026-11-06T18:56:12.930Z",
+          "updatedAt": "2026-11-06T18:56:12.930Z"
+        }
+      ],
+      "goals": [],
+      "projects": [
+        {
+          "id": "proj-1793991372941",
+          "userId": "usr-1793991372799-fkcs",
+          "name": "Alice Classified Initiative",
+          "description": "",
+          "category": "Work/Career",
+          "status": "in_progress",
+          "targetHours": 20,
+          "loggedHours": 0,
+          "hourlyValuation": 100,
+          "color": "#f43f5e",
+          "driveFolderUrl": "https://drive.google.com/drive/u/0/my-drive",
+          "tasksCount": 0,
+          "completedTasksCount": 0,
+          "createdAt": "2026-11-06T18:56:12.941Z"
+        }
+      ],
+      "calendarEvents": [],
+      "timeLogs": [],
+      "skills": [],
+      "badges": [],
+      "stats": {
+        "focusMinutes": 0,
+        "pomodoroSessions": 0,
+        "totalXp": 0,
+        "userLevel": 1,
+        "rpgTitle": "Novice Pioneer",
+        "focusScore": 100,
+        "totalRoiDollars": 0,
+        "activityHistory": {}
+      },
+      "googleAuth": {
+        "isConnected": false,
+        "email": ""
+      }
+    },
+    "usr-1793991372920-yk0q": {
+      "tasks": [],
+      "goals": [],
+      "projects": [],
+      "calendarEvents": [],
+      "timeLogs": [],
+      "skills": [],
+      "badges": [],
+      "stats": {
+        "focusMinutes": 0,
+        "pomodoroSessions": 0,
+        "totalXp": 0,
+        "userLevel": 1,
+        "rpgTitle": "Novice Pioneer",
+        "focusScore": 100,
+        "totalRoiDollars": 0,
+        "activityHistory": {}
+      },
+      "googleAuth": {
+        "isConnected": false,
+        "email": ""
+      }
+    },
+    "usr-1793991373097-f0pt": {
+      "tasks": [],
+      "goals": [],
+      "projects": [],
+      "calendarEvents": [],
+      "timeLogs": [],
+      "skills": [],
+      "badges": [],
+      "stats": {
+        "focusMinutes": 0,
+        "pomodoroSessions": 0,
+        "totalXp": 0,
+        "userLevel": 1,
+        "rpgTitle": "Novice Pioneer",
+        "focusScore": 100,
+        "totalRoiDollars": 0,
+        "activityHistory": {}
+      },
+      "googleAuth": {
+        "isConnected": false,
+        "email": ""
+      }
+    },
+    "usr-1793991373248-xsij": {
+      "tasks": [],
+      "goals": [],
+      "projects": [],
+      "calendarEvents": [],
+      "timeLogs": [],
+      "skills": [],
+      "badges": [],
+      "stats": {
+        "focusMinutes": 0,
+        "pomodoroSessions": 0,
+        "totalXp": 0,
+        "userLevel": 1,
+        "rpgTitle": "Novice Pioneer",
+        "focusScore": 100,
+        "totalRoiDollars": 0,
+        "activityHistory": {}
+      },
+      "googleAuth": {
+        "isConnected": false,
+        "email": ""
+      }
     }
   },
   "teamProjects": [
+    {
+      "id": "proj-1793991373116",
+      "workspaceId": "ws-team",
+      "ownerId": "usr-1793991372799-fkcs",
+      "ownerEmail": "alice_1793991372632@test.local",
+      "name": "Project Orion",
+      "key": "PRO",
+      "description": "Joint spacecraft design",
+      "color": "#6366f1",
+      "icon": "ShieldCheck",
+      "memberIds": [
+        "usr-1793991372799-fkcs",
+        "usr-1793991372920-yk0q"
+      ],
+      "createdAt": "2026-11-06"
+    },
     {
       "id": "proj-1793989736258",
       "workspaceId": "ws-team",
@@ -1160,6 +1369,22 @@
   ],
   "teamTasks": [
     {
+      "id": "task-1793991373146",
+      "taskNumber": 836,
+      "projectId": "proj-1793991373116",
+      "columnId": "todo",
+      "title": "Thermal Shield Stress Test",
+      "description": "",
+      "priority": "high",
+      "estimatedHours": 0,
+      "subtasks": [],
+      "tags": [],
+      "comments": [],
+      "order": 0,
+      "createdAt": "2026-11-06",
+      "updatedAt": "2026-11-06T18:56:13.146Z"
+    },
+    {
       "id": "task-1793989736296",
       "taskNumber": 876,
       "projectId": "proj-1793989736258",
@@ -1211,7 +1436,7 @@
       "id": "task-1793816825911",
       "taskNumber": 656,
       "projectId": "proj-1793816749889",
-      "columnId": "todo",
+      "columnId": "completed",
       "title": "hiiiiii abs",
       "description": "",
       "priority": "medium",
@@ -1223,7 +1448,7 @@
       "comments": [],
       "order": 0,
       "createdAt": "2026-11-04",
-      "updatedAt": "2026-11-04T18:28:01.272Z"
+      "updatedAt": "2026-11-06T18:47:52.391Z"
     },
     {
       "id": "task-1793809386600",
@@ -1259,6 +1484,20 @@
     }
   ],
   "teamInvitations": [
+    {
+      "id": "inv-1793991373131",
+      "projectId": "proj-1793991373116",
+      "projectName": "Project Orion",
+      "projectKey": "PRO",
+      "projectColor": "#6366f1",
+      "invitedEmail": "bob_1793991372632@test.local",
+      "invitedByUserId": "usr-1793991372799-fkcs",
+      "invitedByName": "Alice Architect",
+      "invitedByEmail": "alice_1793991372632@test.local",
+      "role": "MEMBER",
+      "status": "ACCEPTED",
+      "createdAt": "2026-11-06"
+    },
     {
       "id": "inv-1793989736276",
       "projectId": "proj-1793989736258",
@@ -1704,6 +1943,66 @@
         }
       ],
       "createdAt": "2026-11-06T18:28:56.406Z"
+    },
+    {
+      "id": "ws-personal-usr-1793991372799-fkcs",
+      "name": "Alice Architect's Personal Space",
+      "slug": "personal-usr-1793991372799-fkcs",
+      "ownerId": "usr-1793991372799-fkcs",
+      "isPersonal": true,
+      "members": [
+        {
+          "userId": "usr-1793991372799-fkcs",
+          "role": "OWNER",
+          "joinedAt": "2026-11-06T18:56:12.800Z"
+        }
+      ],
+      "createdAt": "2026-11-06T18:56:12.800Z"
+    },
+    {
+      "id": "ws-personal-usr-1793991372920-yk0q",
+      "name": "Bob Engineer's Personal Space",
+      "slug": "personal-usr-1793991372920-yk0q",
+      "ownerId": "usr-1793991372920-yk0q",
+      "isPersonal": true,
+      "members": [
+        {
+          "userId": "usr-1793991372920-yk0q",
+          "role": "OWNER",
+          "joinedAt": "2026-11-06T18:56:12.920Z"
+        }
+      ],
+      "createdAt": "2026-11-06T18:56:12.920Z"
+    },
+    {
+      "id": "ws-personal-usr-1793991373097-f0pt",
+      "name": "Charlie Clean's Personal Space",
+      "slug": "personal-usr-1793991373097-f0pt",
+      "ownerId": "usr-1793991373097-f0pt",
+      "isPersonal": true,
+      "members": [
+        {
+          "userId": "usr-1793991373097-f0pt",
+          "role": "OWNER",
+          "joinedAt": "2026-11-06T18:56:13.097Z"
+        }
+      ],
+      "createdAt": "2026-11-06T18:56:13.097Z"
+    },
+    {
+      "id": "ws-personal-usr-1793991373248-xsij",
+      "name": "simple_auth_1793991372632's Personal Space",
+      "slug": "personal-usr-1793991373248-xsij",
+      "ownerId": "usr-1793991373248-xsij",
+      "isPersonal": true,
+      "members": [
+        {
+          "userId": "usr-1793991373248-xsij",
+          "role": "OWNER",
+          "joinedAt": "2026-11-06T18:56:13.248Z"
+        }
+      ],
+      "createdAt": "2026-11-06T18:56:13.248Z"
     }
   ]
 }

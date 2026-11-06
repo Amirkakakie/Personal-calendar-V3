@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FolderPlus, AlertCircle } from 'lucide-react';
+import { X, FolderPlus, AlertCircle, Loader2 } from 'lucide-react';
 import { useTeam } from '../../context/TeamContext.tsx';
 import { useI18n } from '../../i18n/I18nContext.tsx';
 
@@ -28,6 +28,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
   const [color, setColor] = useState(COLOR_PRESETS[0]);
   const [targetDate, setTargetDate] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -44,27 +45,44 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !key.trim()) {
-      setError(direction === 'rtl' ? 'نام و پیشوند پروژه الزامی هستند.' : 'Project name and key prefix are required.');
+    if (!name.trim()) {
+      setError(direction === 'rtl' ? 'نام پروژه الزامی است.' : 'Project name is required.');
+      return;
+    }
+    if (!key.trim()) {
+      setError(direction === 'rtl' ? 'پیشوند شناسه پروژه الزامی است.' : 'Project key prefix is required.');
       return;
     }
 
-    createProject({
-      name: name.trim(),
-      key: key.trim().toUpperCase(),
-      description: description.trim(),
-      color,
-      icon: 'FolderGit2',
-      targetDate: targetDate || undefined
-    });
-
-    setName('');
-    setKey('');
-    setDescription('');
+    setIsSubmitting(true);
     setError(null);
-    onClose();
+
+    try {
+      const proj = await createProject({
+        name: name.trim(),
+        key: key.trim().toUpperCase(),
+        description: description.trim(),
+        color,
+        icon: 'FolderGit2',
+        targetDate: targetDate || undefined
+      });
+
+      if (proj) {
+        setName('');
+        setKey('');
+        setDescription('');
+        onClose();
+      } else {
+        setError(direction === 'rtl' ? 'خطا در ایجاد پروژه. لطفاً مجدداً تلاش کنید.' : 'Failed to create project. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('[ProjectModal] Create project failed:', err);
+      setError(err.message || (direction === 'rtl' ? 'خطا در ایجاد پروژه.' : 'Failed to create project.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -110,12 +128,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
               value={name}
               onChange={e => handleNameChange(e.target.value)}
               placeholder="e.g. Authentication & Security Engine"
-              className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500"
+              className="app-input"
+              disabled={isSubmitting}
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
                 {t('team.projectKey')} *
@@ -126,7 +145,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
                 value={key}
                 onChange={e => setKey(e.target.value.toUpperCase())}
                 placeholder="e.g. AUTH"
-                className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm font-mono focus:outline-none focus:border-indigo-500"
+                className="app-input font-mono uppercase"
+                disabled={isSubmitting}
                 required
               />
             </div>
@@ -139,7 +159,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
                 type="date"
                 value={targetDate}
                 onChange={e => setTargetDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-indigo-500"
+                className="app-input"
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -153,7 +174,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Scope, architectural objectives, milestones..."
-              className="w-full px-3.5 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-500 text-xs focus:outline-none focus:border-indigo-500 leading-relaxed"
+              className="app-textarea"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -166,6 +188,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
                 <button
                   key={c}
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setColor(c)}
                   style={{ backgroundColor: c }}
                   className={`w-7 h-7 rounded-lg transition-transform ${color === c ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-neutral-900' : 'opacity-80 hover:opacity-100'}`}
@@ -174,19 +197,28 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-2 border-t border-neutral-800">
+          <div className="pt-4 flex items-center justify-end gap-2.5 border-t border-neutral-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-medium transition-colors"
+              disabled={isSubmitting}
+              className="btn-secondary"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all"
+              disabled={isSubmitting || !name.trim() || !key.trim()}
+              className="btn-primary"
             >
-              {t('team.createProject')}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{t('common.loading')}</span>
+                </>
+              ) : (
+                <span>{t('team.createProject')}</span>
+              )}
             </button>
           </div>
         </form>

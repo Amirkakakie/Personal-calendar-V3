@@ -122,7 +122,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
             placeholder={t('tasks.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/[0.03] border border-white/5 rounded-xl ps-9 pe-3.5 py-2 text-[13px] text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
+            className="app-input ps-9"
           />
         </div>
 
@@ -132,7 +132,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           <select
             value={activeCategory}
             onChange={(e) => setActiveCategory(e.target.value)}
-            className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[13px] text-neutral-300 focus:outline-none focus:border-indigo-500/50 hover:bg-white/[0.05] transition-all"
+            className="app-select w-auto"
           >
             <option value="all">{t('tasks.allCategories')}</option>
             <option value="Work/Career">{t('categories.workCareer')}</option>
@@ -145,7 +145,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           <select
             value={activeStatus}
             onChange={(e) => setActiveStatus(e.target.value)}
-            className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[13px] text-neutral-300 focus:outline-none focus:border-indigo-500/50 hover:bg-white/[0.05] transition-all"
+            className="app-select w-auto"
           >
             <option value="all">{t('tasks.allStatus')}</option>
             <option value="todo">{t('tasks.todo')}</option>
@@ -177,7 +177,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           <button
             type="button"
             onClick={onOpenNewTask}
-            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[13px] font-semibold shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="btn-primary"
           >
             <Plus className="w-4 h-4" />
             <span>{t('tasks.newTask')}</span>

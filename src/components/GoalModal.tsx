@@ -174,7 +174,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 flex-1">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
               {t('modals.title')} <span className="text-rose-400">*</span>
             </label>
             <input
@@ -183,38 +183,41 @@ export const GoalModal: React.FC<GoalModalProps> = ({
               required
               placeholder={locale === 'fa' ? 'مثال: تسلط کامل بر معماری سیستم‌های توزیع‌شده...' : 'e.g., Master Distributed Computing Infrastructure...'}
               value={title}
+              disabled={isSubmitting}
               onChange={(e) => {
                 setTitle(e.target.value);
                 if (validationError) setValidationError(null);
               }}
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
+              className="app-input"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
               {t('modals.description')}
             </label>
             <textarea
               rows={2}
               placeholder={locale === 'fa' ? 'تعریف خروجی مطلوب و معیارهای موفقیت...' : 'Strategic significance, prerequisites, or notes...'}
               value={description}
+              disabled={isSubmitting}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
+              className="app-textarea"
             />
           </div>
 
           {/* Category & Timeframe */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
                 {t('modals.category')}
               </label>
               <select
                 value={category}
+                disabled={isSubmitting}
                 onChange={(e) => setCategory(e.target.value as TaskCategory)}
-                className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 <option value="Academic/Study">{t('categories.academicStudy')}</option>
                 <option value="Work/Career">{t('categories.workCareer')}</option>
@@ -224,13 +227,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
                 {locale === 'fa' ? 'افق زمانی' : 'Timeframe'}
               </label>
               <select
                 value={timeframe}
+                disabled={isSubmitting}
                 onChange={(e) => setTimeframe(e.target.value as any)}
-                className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 <option value="quarterly">{locale === 'fa' ? 'سه ماهه (فصلی)' : 'Quarterly'}</option>
                 <option value="monthly">{locale === 'fa' ? 'ماهانه' : 'Monthly'}</option>
@@ -241,14 +245,15 @@ export const GoalModal: React.FC<GoalModalProps> = ({
 
           {/* Target Date */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
               {locale === 'fa' ? 'تاریخ مهلت دستیابی' : 'Target Completion Date'}
             </label>
             <input
               type="date"
               value={targetDate}
+              disabled={isSubmitting}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="app-input"
             />
           </div>
 
@@ -364,14 +369,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-neutral-400 hover:text-white rounded-xl text-xs font-semibold hover:bg-neutral-800 transition-colors disabled:opacity-40"
+                className="btn-secondary"
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+                disabled={isSubmitting || !title.trim()}
+                className="btn-primary"
               >
                 {isSubmitting ? (
                   <>

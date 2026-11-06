@@ -205,22 +205,31 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Project Actions with Backend API Calls
   const createProject = useCallback(
-    async (data: Omit<TeamProject, 'id' | 'workspaceId' | 'ownerId' | 'ownerEmail' | 'memberIds' | 'createdAt'>): Promise<TeamProject | null> => {
+    async (data: Omit<TeamProject, 'id' | 'workspaceId' | 'ownerId' | 'ownerEmail' | 'memberIds' | 'createdAt'>): Promise<TeamProject> => {
       if (!currentUser) throw new Error('Must be authenticated to create a project');
 
       try {
         const created = await api.createTeamProject(data);
         if (created && created.id) {
-          setAllProjects(prev => [created, ...prev]);
+          setAllProjects(prev => {
+            const next = [created, ...prev.filter(p => p.id !== created.id)];
+            if (currentUserId) {
+              try {
+                localStorage.setItem(`${STORAGE_PROJECTS_KEY}_${currentUserId}`, JSON.stringify(next));
+              } catch {}
+            }
+            return next;
+          });
           setCurrentProjectId(created.id);
           return created;
         }
-      } catch (err) {
+        throw new Error('Failed to create team project: Empty response from server');
+      } catch (err: any) {
         console.error('[TeamContext] Failed to create team project on backend:', err);
+        throw err;
       }
-      return null;
     },
-    [currentUser, setCurrentProjectId]
+    [currentUser, currentUserId, setCurrentProjectId]
   );
 
   const updateProject = useCallback(async (data: Partial<TeamProject> & { id: string }) => {

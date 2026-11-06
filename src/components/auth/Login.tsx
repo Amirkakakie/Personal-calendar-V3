@@ -89,7 +89,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={t('auth.emailPlaceholder')}
-                className="w-full px-4 py-2.5 bg-neutral-950/70 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                className="app-input"
                 required
               />
             </div>
@@ -105,7 +105,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder={t('auth.passwordPlaceholder')}
-                className="w-full px-4 py-2.5 bg-neutral-950/70 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                className="app-input"
                 required
               />
             </div>

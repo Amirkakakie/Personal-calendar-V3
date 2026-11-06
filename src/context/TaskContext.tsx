@@ -459,6 +459,18 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = projects.map(p => (p.id === projId ? finalProject : p));
       setProjects(updated);
       LocalStore.setProjects(updated, currentUserId);
+      showToast('Project updated successfully', 'success');
+
+      try {
+        const res = await api.updateProject(projId, projectData);
+        if (res && res.id) {
+          finalProject = res;
+          setProjects(prev => prev.map(p => (p.id === projId ? res : p)));
+          LocalStore.setProjects(projects.map(p => (p.id === projId ? res : p)), currentUserId);
+        }
+      } catch (err: any) {
+        console.warn('[Chronos API] Project update async sync failed, saved locally:', err.message);
+      }
     } else {
       finalProject = {
         id: projId,
@@ -466,41 +478,46 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         description: projectData.description || '',
         category: projectData.category || 'Work/Career',
         status: projectData.status || 'in_progress',
-        targetHours: projectData.targetHours || 20,
+        targetHours: Number(projectData.targetHours) || 20,
         loggedHours: 0,
-        hourlyValuation: projectData.hourlyValuation || 85,
+        hourlyValuation: Number(projectData.hourlyValuation) || 100,
         color: projectData.color || 'blue',
+        driveFolderUrl: projectData.driveFolderUrl || 'https://drive.google.com/drive/u/0/my-drive',
+        tasksCount: 0,
+        completedTasksCount: 0,
         createdAt: new Date().toISOString()
       };
-      const updated = [finalProject, ...projects];
+
+      try {
+        const created = await api.createProject(finalProject);
+        if (created && created.id) {
+          finalProject = created;
+        }
+      } catch (err: any) {
+        console.warn('[Chronos API] Project create async sync failed, saved locally:', err.message);
+      }
+
+      const updated = [finalProject, ...projects.filter(p => p.id !== finalProject.id)];
       setProjects(updated);
       LocalStore.setProjects(updated, currentUserId);
-    }
-
-    try {
-      if (isEdit) {
-        await api.updateProject(projId, projectData);
-      } else {
-        await api.createProject(finalProject);
-      }
-    } catch (err: any) {
-      console.warn('[Chronos API] Project async sync failed, saved locally:', err.message);
+      showToast('Project created successfully', 'success');
     }
 
     return finalProject;
-  }, [projects, currentUserId]);
+  }, [projects, currentUserId, showToast]);
 
   const deleteProject = useCallback(async (id: string): Promise<void> => {
     const updated = projects.filter(p => p.id !== id);
     setProjects(updated);
     LocalStore.setProjects(updated, currentUserId);
+    showToast('Project removed', 'info');
 
     try {
       await api.deleteProject(id);
     } catch (err: any) {
       console.warn('[Chronos API] Delete project async sync failed, removed locally:', err.message);
     }
-  }, [projects, currentUserId]);
+  }, [projects, currentUserId, showToast]);
 
   // ==========================================
   // TIMELOG & POMODORO MUTATIONS
