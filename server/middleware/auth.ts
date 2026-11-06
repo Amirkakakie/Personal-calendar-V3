@@ -55,7 +55,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
 
   const token = authHeader.substring(7).trim();
   try {
-    const { payload } = await jwtVerify(token, secretKey, {
+    const { payload } = await jwtVerify(token, getSecretKey(), {
       algorithms: ['HS256'],
       issuer: 'chronos-os',
       audience: 'chronos-clients'

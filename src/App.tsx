@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Info,
   X,
-  Users
+  Users,
+  Menu
 } from 'lucide-react';
 import { initAuth, googleSignIn, googleSignOut } from './services/googleAuth.ts';
 import type { 
@@ -64,16 +65,6 @@ import { BurnoutAlertBanner } from './components/BurnoutAlertBanner.tsx';
 // Team Collaboration Component
 import { TeamBoardView } from './components/TeamBoardView.tsx';
 
-type NavigationTab = 
-  | 'dashboard' 
-  | 'tasks' 
-  | 'projects'
-  | 'eisenhower' 
-  | 'calendar' 
-  | 'skills' 
-  | 'stopwatch' 
-  | 'goals' 
-  | 'coach';
 
 const STORAGE_WORKSPACE_MODE_KEY = 'chronos_workspace_mode';
 const STORAGE_SIDEBAR_COLLAPSED_KEY = 'chronos_sidebar_collapsed';
@@ -628,6 +619,8 @@ function ChronosWorkspace() {
                     onRefreshTasks={refreshAllData}
                   />
                 )}
+              </div>
+            )}
               </div>
             )}
           </div>
