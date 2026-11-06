@@ -23,8 +23,13 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !email.trim() || !password) {
-      setErrorMessage(direction === 'rtl' ? 'لطفاً تمامی فیلدهای الزامی را تکمیل کنید.' : 'Please fill in all required fields.');
+    if (!email.trim() || !password) {
+      setErrorMessage(direction === 'rtl' ? 'لطفاً ایمیل و رمز عبور را وارد کنید.' : 'Please enter email and password.');
+      return;
+    }
+
+    if (!email.includes('@') || !email.includes('.')) {
+      setErrorMessage(direction === 'rtl' ? 'لطفاً یک آدرس ایمیل معتبر وارد کنید.' : 'Please enter a valid email address.');
       return;
     }
 
@@ -41,7 +46,8 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const res = await signup(name, email, password, jobTitle);
+    const displayName = name.trim() || email.trim().split('@')[0];
+    const res = await signup(displayName, email.trim(), password, jobTitle);
     setIsSubmitting(false);
 
     if (!res.success) {
@@ -92,7 +98,7 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-                {t('auth.name')} *
+                {t('auth.name')} <span className="text-neutral-500 font-normal normal-case">({direction === 'rtl' ? 'اختیاری' : 'optional'})</span>
               </label>
               <input
                 type="text"
@@ -100,7 +106,6 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
                 onChange={e => setName(e.target.value)}
                 placeholder={t('auth.namePlaceholder')}
                 className="w-full px-4 py-2.5 bg-neutral-950/70 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                required
               />
             </div>
 

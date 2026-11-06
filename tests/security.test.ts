@@ -374,8 +374,60 @@ async function runSecurityTestSuite() {
     });
     assert(resCreateTeamTaskB.status === 201, 'User B successfully creates a shared team task');
 
+    // ---------------------------------------------------------
+    // SCENARIO 9: EMAIL & PASSWORD AUTHENTICATION LIFECYCLE
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 9] Simple Email & Password Auth Lifecycle${RESET}`);
+    const simpleEmail = `simple_auth_${ts}@test.local`;
+    const simplePassword = 'SafePassword987!';
+
+    // 1. Create account using only email and password
+    const resSimpleSignup = await fetch(`${BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: simpleEmail, password: simplePassword })
+    });
+    const dataSimpleSignup = await resSimpleSignup.json();
+    assert(resSimpleSignup.status === 201 && dataSimpleSignup.success === true, 'Account created using only Email and Password');
+    assert(typeof dataSimpleSignup.token === 'string' && dataSimpleSignup.token.length > 20, 'JWT token returned on registration');
+    assert(dataSimpleSignup.user?.email === simpleEmail, 'User email persisted correctly');
+    assert(!dataSimpleSignup.user?.password && !dataSimpleSignup.user?.passwordHash, 'Plaintext password and hash never leaked in response');
+
+    // 2. Prevent duplicate account with same email
+    const resDupSignup = await fetch(`${BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: simpleEmail, password: 'AnotherPassword!' })
+    });
+    assert(resDupSignup.status === 400, 'Duplicate account registration rejected with 400 Bad Request');
+
+    // 3. Login with invalid password fails
+    const resBadLogin = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: simpleEmail, password: 'WrongPassword123' })
+    });
+    assert(resBadLogin.status === 401, 'Login with incorrect password rejected with 401 Unauthorized');
+
+    // 4. Login with correct email and password succeeds
+    const resGoodLogin = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: simpleEmail, password: simplePassword })
+    });
+    const dataGoodLogin = await resGoodLogin.json();
+    assert(resGoodLogin.status === 200 && dataGoodLogin.success === true, 'Login with email and password succeeds');
+    const simpleToken = dataGoodLogin.token;
+
+    // 5. Session verification (/api/auth/me) restores user data persistently
+    const resMe = await fetch(`${BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${simpleToken}` }
+    });
+    const dataMe = await resMe.json();
+    assert(resMe.status === 200 && dataMe.user?.email === simpleEmail, 'Session token resolves authenticated user from database');
+
     console.log(`\n${BOLD}${GREEN}======================================================${RESET}`);
-    console.log(`${BOLD}${GREEN}  ALL 8 SECURITY SCENARIOS PASSED WITH ZERO FAILURES! ${RESET}`);
+    console.log(`${BOLD}${GREEN}  ALL 9 SECURITY SCENARIOS PASSED WITH ZERO FAILURES! ${RESET}`);
     console.log(`${BOLD}${GREEN}  Total Assertions: ${passedCount} passed, ${failedCount} failed${RESET}`);
     console.log(`${BOLD}${GREEN}======================================================${RESET}\n`);
   } finally {

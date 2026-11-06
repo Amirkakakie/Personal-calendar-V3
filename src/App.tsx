@@ -43,6 +43,8 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { Header, WorkspaceMode } from './components/Header.tsx';
 import { Sidebar, NavigationTab } from './components/Sidebar.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
+import { Login } from './components/auth/Login.tsx';
+import { Signup } from './components/auth/Signup.tsx';
 
 // Personal Productivity Hub Components
 import { StatsCards } from './components/StatsCards.tsx';
@@ -71,7 +73,8 @@ const STORAGE_SIDEBAR_COLLAPSED_KEY = 'chronos_sidebar_collapsed';
 
 function ChronosWorkspace() {
   const { t, direction, formatDate, formatTime, formatNumber } = useI18n();
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
 
   // Workspace Mode (Personal vs Team)
   const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() => {
@@ -271,6 +274,23 @@ function ChronosWorkspace() {
   ];
 
   const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center text-neutral-400 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+        <span className="text-sm font-medium">{t('dashboard.workspaceLoading')}</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !currentUser) {
+    return authView === 'login' ? (
+      <Login onSwitchToSignup={() => setAuthView('signup')} />
+    ) : (
+      <Signup onSwitchToLogin={() => setAuthView('login')} />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-indigo-500/30">
