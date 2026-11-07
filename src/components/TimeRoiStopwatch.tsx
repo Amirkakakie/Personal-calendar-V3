@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Play, 
   Pause, 
@@ -8,12 +8,16 @@ import {
   CheckCircle, 
   TrendingUp, 
   Sparkles,
-  Flame
+  Flame,
+  Download,
+  Filter,
+  CheckSquare
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Project, Task, TimeLog, ProductivityStats } from '../types/index.ts';
 import { api } from '../services/api.ts';
 import { useI18n } from '../i18n/I18nContext.tsx';
+import { useTasks } from '../context/TaskContext.tsx';
 
 interface TimeRoiStopwatchProps {
   projects: Project[];
@@ -31,6 +35,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
   onRefreshData
 }) => {
   const { t, locale, formatNumber, formatDate } = useI18n();
+  const { showToast } = useTasks();
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [hourlyRate, setHourlyRate] = useState<number>(100);
@@ -41,6 +46,9 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
   const [sessionNote, setSessionNote] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  // Table filter state
+  const [tableProjectFilter, setTableProjectFilter] = useState<string>('all');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -79,6 +87,17 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
   const resetTimer = () => {
     setIsRunning(false);
     setElapsedSeconds(0);
+  };
+
+  const applySprintPreset = (minutes: number) => {
+    setIsRunning(false);
+    setElapsedSeconds(minutes * 60);
+    showToast(
+      locale === 'fa' 
+        ? `تایمر روی ${minutes} دقیقه تنظیم شد` 
+        : `Sprint preset set to ${minutes}m focus session`, 
+      'info'
+    );
   };
 
   const formatClock = (totalSeconds: number) => {
@@ -123,8 +142,8 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
       await api.addTimeLog(newLog);
 
       confetti({
-        particleCount: 80,
-        spread: 80,
+        particleCount: 70,
+        spread: 75,
         origin: { y: 0.6 }
       });
 
@@ -145,29 +164,93 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
     }
   };
 
+  const handleExportCsv = () => {
+    if (timeLogs.length === 0) return;
+    const headers = ['Date', 'Project', 'Task', 'Duration Minutes', 'Hourly Rate', 'ROI Yield USD', 'Energy', 'Efficiency %', 'Note'];
+    const rows = timeLogs.map(l => [
+      l.endedAt.split('T')[0],
+      `"${(l.projectName || '').replace(/"/g, '""')}"`,
+      `"${(l.taskTitle || '').replace(/"/g, '""')}"`,
+      Math.round(l.durationSeconds / 60),
+      l.hourlyRate,
+      l.calculatedRoi.toFixed(2),
+      l.energyReported,
+      l.efficiencyRate,
+      `"${(l.note || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `chronos-roi-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Exported ROI logs to CSV', 'success');
+  };
+
   const totalLogsHours = timeLogs.reduce((acc, l) => acc + l.durationSeconds / 3600, 0);
   const totalLogsRoi = timeLogs.reduce((acc, l) => acc + l.calculatedRoi, 0);
 
+  const filteredLogs = useMemo(() => {
+    if (tableProjectFilter === 'all') return timeLogs;
+    return timeLogs.filter(l => l.projectId === tableProjectFilter);
+  }, [timeLogs, tableProjectFilter]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div>
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Clock className="w-5 h-5 text-indigo-400" />
-          {t('stopwatch.title')}
-        </h2>
-        <p className="text-xs text-neutral-400">
-          {t('stopwatch.subtitle')}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+              <Clock className="w-4 h-4" />
+            </div>
+            <h2 className="text-base font-bold text-white tracking-tight">
+              {t('stopwatch.title')}
+            </h2>
+          </div>
+          <p className="text-xs text-neutral-400 mt-1">
+            {t('stopwatch.subtitle')}
+          </p>
+        </div>
+
+        {/* Quick Sprint Presets */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] font-mono text-neutral-500 hidden sm:inline me-1">Presets:</span>
+          {[
+            { label: '25m Pomodoro', mins: 25 },
+            { label: '50m Deep Work', mins: 50 },
+            { label: '90m Ultradian', mins: 90 },
+          ].map(p => (
+            <button
+              key={p.mins}
+              type="button"
+              onClick={() => applySprintPreset(p.mins)}
+              className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-[11px] font-mono transition-colors"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Main Stopwatch Interface */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+      <div className={`bg-neutral-900 border rounded-2xl p-6 sm:p-8 shadow-xl transition-all duration-300 ${
+        isRunning ? 'border-emerald-500/40 shadow-emerald-500/5' : 'border-neutral-800'
+      }`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Digital Timer Display & Live Counter */}
           <div className="lg:col-span-7 flex flex-col items-center justify-center text-center space-y-5">
             <div className="relative">
-              <div className="text-5xl sm:text-7xl font-extrabold font-mono text-white drop-shadow-md tabular-nums" dir="ltr">
+              {/* Pulse glow ring when timer is actively ticking */}
+              {isRunning && (
+                <div className="absolute inset-0 -m-4 rounded-3xl bg-emerald-500/10 animate-pulse pointer-events-none" />
+              )}
+              <div className="text-5xl sm:text-7xl font-extrabold font-mono text-white drop-shadow-md tabular-nums tracking-tight" dir="ltr">
                 {formatClock(elapsedSeconds)}
               </div>
               <div className="text-xs font-mono text-neutral-400 mt-2 uppercase tracking-widest">
@@ -247,7 +330,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
               <select
                 value={selectedProjectId}
                 onChange={e => handleProjectChange(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 <option value="">{locale === 'fa' ? '-- بدون پروژه (عمومی) --' : '-- No Project (General) --'}</option>
                 {projects.map(p => (
@@ -266,7 +349,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
               <select
                 value={selectedTaskId}
                 onChange={e => setSelectedTaskId(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="app-select"
               >
                 <option value="">{locale === 'fa' ? '-- جلسه آزاد بدون وظیفه خاص --' : '-- Unlinked Sprint --'}</option>
                 {tasks
@@ -291,7 +374,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                     type="number"
                     value={hourlyRate}
                     onChange={e => setHourlyRate(Math.max(10, Number(e.target.value)))}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl ps-7 pe-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    className="app-input ps-7 font-mono"
                   />
                 </div>
               </div>
@@ -303,7 +386,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                 <select
                   value={energyBand}
                   onChange={e => setEnergyBand(e.target.value as any)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="app-select"
                 >
                   <option value="High Focus">{t('energyLevels.highFocus')}</option>
                   <option value="Creative">{t('energyLevels.creative')}</option>
@@ -316,7 +399,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <div>
               <div className="flex items-center justify-between text-[11px] font-medium text-neutral-300 mb-1">
                 <span>{locale === 'fa' ? 'سنجش راندمان تمرکز' : 'Focus Efficiency Rating'}</span>
-                <span className="font-mono text-indigo-400">{formatNumber(efficiencyRate)}%</span>
+                <span className="font-mono text-indigo-400 font-bold">{formatNumber(efficiencyRate)}%</span>
               </div>
               <input
                 type="range"
@@ -335,7 +418,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                 placeholder={locale === 'fa' ? 'در این بازه چه کاری انجام دادید؟ (مثال: پیاده‌سازی اینترسپتور gRPC)' : 'What did you execute in this sprint? (e.g. Implemented gRPC interceptor)'}
                 value={sessionNote}
                 onChange={e => setSessionNote(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 placeholder:text-neutral-600"
+                className="app-input placeholder:text-neutral-600"
               />
             </div>
           </div>
@@ -349,7 +432,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <div className="text-xs text-neutral-400 font-medium">
               {locale === 'fa' ? 'کل ساعت کار عمیق' : 'Logged Deep Work'}
             </div>
-            <div className="text-xl font-bold font-mono text-white mt-1">
+            <div className="text-xl font-bold font-mono text-white mt-1 tabular-nums">
               {formatNumber(Number(totalLogsHours.toFixed(1)))} {t('common.hours')}
             </div>
           </div>
@@ -363,7 +446,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <div className="text-xs text-neutral-400 font-medium">
               {locale === 'fa' ? 'کل ارزش دلاری خلق‌شده' : 'Total ROI Valuation'}
             </div>
-            <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+            <div className="text-xl font-bold font-mono text-emerald-400 mt-1 tabular-nums">
               ${formatNumber(Math.round(totalLogsRoi))}
             </div>
           </div>
@@ -377,7 +460,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <div className="text-xs text-neutral-400 font-medium">
               {t('stats.totalXp')}
             </div>
-            <div className="text-xl font-bold font-mono text-purple-400 mt-1">
+            <div className="text-xl font-bold font-mono text-purple-400 mt-1 tabular-nums">
               {formatNumber(stats.totalXp)} XP
             </div>
           </div>
@@ -389,21 +472,50 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
 
       {/* Recent Focus Logs Table */}
       <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-white tracking-tight">
               {t('stopwatch.loggedToday')}
             </h3>
           </div>
-          <span className="text-xs font-mono text-neutral-500">
-            {formatNumber(timeLogs.length)} {locale === 'fa' ? 'جلسه ثبت‌شده' : 'total sessions'}
-          </span>
+
+          <div className="flex items-center gap-2">
+            {/* Filter by Project */}
+            {projects.length > 0 && (
+              <select
+                value={tableProjectFilter}
+                onChange={e => setTableProjectFilter(e.target.value)}
+                className="px-2.5 py-1 bg-neutral-950 border border-neutral-800 rounded-lg text-neutral-300 text-xs focus:outline-none"
+              >
+                <option value="all">{locale === 'fa' ? 'همه پروژه‌ها' : 'All Projects'}</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            )}
+
+            {timeLogs.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors"
+                title="Export CSV"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>CSV</span>
+              </button>
+            )}
+
+            <span className="text-xs font-mono text-neutral-500 ms-1">
+              {formatNumber(filteredLogs.length)} {locale === 'fa' ? 'جلسه' : 'logs'}
+            </span>
+          </div>
         </div>
 
-        {timeLogs.length === 0 ? (
+        {filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-neutral-500 text-xs">
-            {locale === 'fa' ? 'هنوز جلسه‌ای ثبت نشده است. از تایمر بالا برای شروع استفاده کنید.' : 'No time logs recorded yet. Start the stopwatch above to track your billable & study ROI.'}
+            {locale === 'fa' ? 'هیچ جلسه‌ای در این فیلتر ثبت نشده است.' : 'No time logs found matching the filter.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -419,8 +531,8 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                   <th className="py-3 px-6 text-end">{locale === 'fa' ? 'تاریخ' : 'Date'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-800/60 text-xs font-mono">
-                {timeLogs.slice(0, 10).map(log => {
+              <tbody className="divide-y divide-neutral-800/60 text-xs font-mono tabular-nums">
+                {filteredLogs.slice(0, 15).map(log => {
                   const mins = Math.round(log.durationSeconds / 60);
                   return (
                     <tr key={log.id} className="hover:bg-neutral-800/30 transition-colors">
@@ -465,3 +577,4 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
     </div>
   );
 };
+

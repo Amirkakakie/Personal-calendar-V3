@@ -50,82 +50,101 @@ export const HabitHeatmap: React.FC<HabitHeatmapProps> = ({
     }
   });
 
-
   const getColorClass = (count: number) => {
-    if (count === 0) return 'bg-white/[0.03] hover:bg-white/[0.08]';
-    if (count === 1) return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-    if (count === 2) return 'bg-emerald-500/40 text-emerald-200';
-    if (count <= 4) return 'bg-emerald-500 text-neutral-950';
-    return 'bg-emerald-400 text-neutral-950 shadow-[0_0_8px_rgba(52,211,153,0.5)]';
+    if (count === 0) return 'bg-neutral-850 hover:bg-neutral-800 border border-neutral-800/80';
+    if (count === 1) return 'bg-emerald-950/60 border border-emerald-500/30 hover:border-emerald-400';
+    if (count === 2) return 'bg-emerald-600/50 border border-emerald-500/50 hover:bg-emerald-500/60';
+    if (count <= 4) return 'bg-emerald-500 border border-emerald-400 hover:brightness-110 shadow-sm';
+    return 'bg-emerald-400 border border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.45)] hover:brightness-110';
   };
+
+  const dayLabels = locale === 'fa' 
+    ? ['ش', '', 'د', '', 'چ', '', 'ج'] 
+    : ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
 
   const totalActions = effectiveData.reduce((acc, curr) => acc + curr.completedCount, 0);
 
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+    <div className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur-md shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-[13px] font-bold text-white">
+          <h3 className="text-sm font-bold text-white tracking-tight">
             {locale === 'fa' ? 'نقشه حرارتی تداوم عادات و وظایف' : 'Habit & Task Execution Heatmap'}
           </h3>
+          <span className="text-[11px] font-mono text-neutral-400 px-2 py-0.5 rounded-full bg-neutral-800 border border-neutral-700">
+            {formatNumber(totalActions)} {locale === 'fa' ? 'فعالیت کل' : 'actions'}
+          </span>
         </div>
 
-        <div className="flex items-center gap-4 text-[12px]">
+        <div className="flex items-center gap-4 text-xs font-mono">
           <div className="flex items-center gap-1.5 text-neutral-400">
             <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
             <span>
-              Streak: <strong className="text-amber-400 font-mono">{formatNumber(currentStreak)}d</strong>
+              Streak: <strong className="text-amber-400">{formatNumber(currentStreak)}d</strong>
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-neutral-400">
             <Award className="w-3.5 h-3.5 text-indigo-400" />
             <span>
-              Best: <strong className="text-indigo-400 font-mono">{formatNumber(bestStreak)}d</strong>
+              Best: <strong className="text-indigo-400">{formatNumber(bestStreak)}d</strong>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Grid container with horizontal scroll for mobile */}
-      <div className="overflow-x-auto pb-2">
-        <div className="inline-flex gap-1.5">
-          {weeks.map((week, weekIdx) => (
-            <div key={`week-${weekIdx}`} className="flex flex-col gap-1.5">
-              {week.map(day => (
-                <div
-                  key={day.date}
-                  onMouseEnter={() => setHoveredDay(day)}
-                  onMouseLeave={() => setHoveredDay(null)}
-                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[3px] transition-all cursor-pointer ${getColorClass(day.completedCount)}`}
-                  title={`${formatDate(day.date)}: ${formatNumber(day.completedCount)} completed`}
-                />
-              ))}
-            </div>
-          ))}
+      {/* Grid container with day label column and horizontal scroll for mobile */}
+      <div className="overflow-x-auto pb-2 custom-scrollbar">
+        <div className="inline-flex gap-2 items-start">
+          {/* Day of week labels */}
+          <div className="flex flex-col gap-1.5 pt-0.5 text-[9px] font-mono text-neutral-500 select-none">
+            {dayLabels.map((label, idx) => (
+              <span key={idx} className="h-3.5 sm:h-4 flex items-center justify-center w-5">
+                {label}
+              </span>
+            ))}
+          </div>
+
+          {/* Week columns */}
+          <div className="inline-flex gap-1.5">
+            {weeks.map((week, weekIdx) => (
+              <div key={`week-${weekIdx}`} className="flex flex-col gap-1.5">
+                {week.map(day => (
+                  <div
+                    key={day.date}
+                    onMouseEnter={() => setHoveredDay(day)}
+                    onMouseLeave={() => setHoveredDay(null)}
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] transition-all cursor-pointer ${getColorClass(day.completedCount)}`}
+                    title={`${formatDate(day.date)}: ${formatNumber(day.completedCount)} completed`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Footer: Hover tooltip info and Legend */}
-      <div className="flex items-center justify-between text-[11px] text-neutral-500 mt-4 pt-3 border-t border-white/5">
-        <div className="min-h-[1.25rem]">
+      <div className="flex items-center justify-between text-xs text-neutral-400 mt-4 pt-3 border-t border-neutral-800">
+        <div className="min-h-[1.25rem] text-xs">
           {hoveredDay ? (
-            <span className="text-neutral-300">
+            <span>
               <strong className="text-emerald-400 font-mono">{formatNumber(hoveredDay.completedCount)} tasks</strong> completed on {formatDate(hoveredDay.date)}
             </span>
           ) : (
             <span className="text-neutral-500">
-              Hover over a square to view details
+              {locale === 'fa' ? 'برای مشاهده جزئیات روی خانه‌ها بروید' : 'Hover over any square to view daily momentum'}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
+        <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-mono">
           <span>Less</span>
-          <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.03]" />
-          <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/20 border border-emerald-500/30" />
-          <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/40" />
-          <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500" />
+          <div className="w-2.5 h-2.5 rounded-[3px] bg-neutral-850 border border-neutral-800" />
+          <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-950/60 border border-emerald-500/30" />
+          <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-600/50" />
+          <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-500" />
+          <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-400" />
           <span>More</span>
         </div>
       </div>

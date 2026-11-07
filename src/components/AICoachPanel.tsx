@@ -10,11 +10,15 @@ import {
   AlertTriangle, 
   Clock, 
   CheckCircle,
-  MessageSquare
+  MessageSquare,
+  Copy,
+  Check,
+  RotateCcw
 } from 'lucide-react';
 import { api } from '../services/api.ts';
 import type { AIProductivityBrief, Task } from '../types/index.ts';
 import { useI18n } from '../i18n/I18nContext.tsx';
+import { useTasks } from '../context/TaskContext.tsx';
 
 interface AICoachPanelProps {
   tasks?: Task[];
@@ -26,9 +30,11 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
   onScheduleSlotSelect
 }) => {
   const { t, locale } = useI18n();
+  const { showToast } = useTasks();
   const [energyLevel, setEnergyLevel] = useState<'High' | 'Medium' | 'Low'>('High');
   const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
   const [brief, setBrief] = useState<AIProductivityBrief | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Initial greeting based on locale
   const initialGreeting = locale === 'fa'
@@ -50,18 +56,20 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
     try {
       const data = await api.getDailyBrief(energyLevel);
       setBrief(data);
+      showToast(locale === 'fa' ? 'گزارش راهبردی روزانه تولید شد' : 'Executive daily brief generated', 'success');
     } catch (err) {
       console.error('Failed to generate daily brief:', err);
+      showToast('Failed to connect to AI Coach service', 'error');
     } finally {
       setIsGeneratingBrief(false);
     }
   };
 
-  const handleSendChat = async (e?: React.FormEvent) => {
+  const handleSendChat = async (e?: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault();
-    if (!chatInput.trim() || isSendingChat) return;
+    const userText = (customText || chatInput).trim();
+    if (!userText || isSendingChat) return;
 
-    const userText = chatInput.trim();
     setChatInput('');
     setMessages((prev) => [...prev, { role: 'user', text: userText }]);
     setIsSendingChat(true);
@@ -85,6 +93,18 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
     }
   };
 
+  const handleCopyText = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    showToast(locale === 'fa' ? 'پاسخ کپی شد' : 'Advice copied to clipboard', 'info');
+    setTimeout(() => setCopiedIndex(null), 2500);
+  };
+
+  const handleResetChat = () => {
+    setMessages([{ role: 'assistant', text: initialGreeting }]);
+    setChatInput('');
+  };
+
   const suggestedPrompts = locale === 'fa' ? [
     'چطور روی وظایف سنگین بخش ۲ آیزنهاور تمرکز کنم و اهمال‌کاری را کنار بگذارم؟',
     'آیا حجم کاری فعلی من خطر فرسودگی دارد؟ بررسی و پیشنهاد بده.',
@@ -98,19 +118,19 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* Daily Executive Briefing Generator */}
-      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-6 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <BrainCircuit className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-[15px] font-bold text-white flex items-center gap-2">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
                 {t('coach.dailyBriefingTitle')}
               </h2>
-              <p className="text-[12px] text-neutral-500">
+              <p className="text-xs text-neutral-400">
                 {t('coach.subtitle')}
               </p>
             </div>
@@ -121,7 +141,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
             <span className="text-[11px] text-neutral-500 font-medium hidden sm:inline">
               {t('coach.energyPrompt')}
             </span>
-            <div className="flex bg-white/[0.03] p-1 rounded-xl border border-white/5">
+            <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800">
               <button
                 type="button"
                 onClick={() => setEnergyLevel('High')}
@@ -195,7 +215,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
         {brief && (
           <div className="mt-6 pt-5 border-t border-neutral-800 space-y-5 animate-fadeIn">
             {/* Executive Summary & Quote */}
-            <div className="bg-neutral-850/80 border border-neutral-750 rounded-xl p-4">
+            <div className="bg-neutral-950/60 border border-neutral-800 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-violet-300 uppercase tracking-wider">
                   {locale === 'fa' ? 'خلاصه راهبردی روزانه' : 'Executive State Summary'}
@@ -226,8 +246,8 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {brief.strategicAdvice.map((advice, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-neutral-800/60 border border-neutral-750 text-xs text-neutral-300 leading-relaxed">
-                      <div className="flex items-center gap-2 mb-1 text-emerald-400 font-semibold">
+                    <div key={idx} className="p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800 text-xs text-neutral-300 leading-relaxed">
+                      <div className="flex items-center gap-2 mb-1.5 text-emerald-400 font-semibold">
                         <CheckCircle className="w-3.5 h-3.5" />
                         <span>{locale === 'fa' ? `راهبرد ${idx + 1}` : `Directive ${idx + 1}`}</span>
                       </div>
@@ -246,9 +266,9 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
                 </h4>
                 <div className="space-y-2">
                   {brief.recommendedSchedule.map((item, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-neutral-800/80 border border-neutral-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div key={idx} className="p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                       <div className="flex items-center gap-3">
-                        <span className="px-2 py-1 rounded bg-neutral-900 border border-neutral-700 font-mono text-indigo-300 font-medium">
+                        <span className="px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 font-mono text-indigo-300 font-semibold text-xs">
                           {item.timeSlot}
                         </span>
                         <div>
@@ -258,8 +278,9 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
                       </div>
                       {onScheduleSlotSelect && (
                         <button
+                          type="button"
                           onClick={() => onScheduleSlotSelect(item.suggestedTaskTitle || '', item.timeSlot)}
-                          className="self-end sm:self-auto px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-[11px] font-medium transition-colors"
+                          className="self-end sm:self-auto px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold transition-colors border border-indigo-500/30"
                         >
                           {locale === 'fa' ? 'قفل در تقویم' : 'Lock in Calendar'}
                         </button>
@@ -274,13 +295,23 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
       </div>
 
       {/* Interactive Coaching Chat */}
-      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 sm:p-6 flex flex-col h-[520px]">
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/5">
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 sm:p-6 flex flex-col h-[520px]">
+        <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-neutral-800">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-[13px] font-bold text-white">{t('coach.chatWithCoach')}</h3>
+            <h3 className="text-sm font-bold text-white">{t('coach.chatWithCoach')}</h3>
           </div>
-          <span className="text-[10px] text-neutral-500 font-mono">Gemini OS</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-neutral-500 font-mono">Gemini AI</span>
+            <button
+              type="button"
+              onClick={handleResetChat}
+              className="p-1 text-neutral-500 hover:text-neutral-300 rounded transition-colors"
+              title="Reset conversation"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Messages scroll area */}
@@ -290,28 +321,43 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
             return (
               <div
                 key={idx}
-                className={`flex gap-3 text-[13px] leading-relaxed ${isUser ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-3 text-xs leading-relaxed ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isUser && (
-                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
                 )}
                 <div
-                  className={`p-3.5 rounded-2xl max-w-lg ${
+                  className={`group relative p-3.5 rounded-2xl max-w-lg ${
                     isUser
                       ? 'bg-indigo-600 text-white rounded-br-none'
-                      : 'bg-white/[0.03] text-neutral-200 border border-white/5 rounded-bl-none'
+                      : 'bg-neutral-950/80 text-neutral-200 border border-neutral-800 rounded-bl-none shadow-sm'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{m.text}</p>
+                  <p className="whitespace-pre-wrap leading-relaxed">{m.text}</p>
+                  
+                  {!isUser && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(m.text, idx)}
+                      className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white transition-all"
+                      title="Copy advice"
+                    >
+                      {copiedIndex === idx ? (
+                        <Check className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
 
           {isSendingChat && (
-            <div className="flex items-center gap-2 text-[12px] text-neutral-500">
+            <div className="flex items-center gap-2 text-xs text-neutral-500">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
               <span>{t('coach.thinking')}</span>
             </div>
@@ -319,14 +365,13 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
         </div>
 
         {/* Suggested Quick Prompts */}
-        <div className="py-2.5 flex items-center gap-1.5 overflow-x-auto border-t border-white/5 custom-scrollbar">
+        <div className="py-2.5 flex items-center gap-1.5 overflow-x-auto border-t border-neutral-800 custom-scrollbar">
           {suggestedPrompts.map((p, idx) => (
             <button
               key={idx}
-              onClick={() => {
-                setChatInput(p);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-neutral-400 hover:text-white text-[11px] whitespace-nowrap border border-white/5 transition-all"
+              type="button"
+              onClick={() => handleSendChat(undefined, p)}
+              className="px-2.5 py-1 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white text-[11px] whitespace-nowrap border border-neutral-800 transition-all shrink-0"
             >
               {p}
             </button>
@@ -340,12 +385,12 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder={t('coach.coachPlaceholder')}
-            className="flex-1 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2 text-[13px] text-white placeholder-neutral-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
+            className="app-input"
           />
           <button
             type="submit"
             disabled={!chatInput.trim() || isSendingChat}
-            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-all shadow-lg shadow-indigo-600/20"
+            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-all shadow-lg shadow-indigo-600/20 shrink-0"
             title={t('coach.askBtn')}
           >
             <Send className="w-4 h-4" />
@@ -355,3 +400,4 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
     </div>
   );
 };
+

@@ -30,6 +30,7 @@ interface HeaderProps {
   onExportIcal: () => void;
   onOpenAuthModal?: () => void;
   onDataRestored?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -45,9 +46,10 @@ export const Header: React.FC<HeaderProps> = ({
   onGoogleSignOut,
   onExportIcal,
   onOpenAuthModal,
-  onDataRestored
+  onDataRestored,
+  onOpenCommandPalette
 }) => {
-  const { t, formatNumber, direction } = useI18n();
+  const { t, formatNumber, direction, locale } = useI18n();
   const { myPendingInvites } = useTeam();
   const [isInboxOpen, setIsInboxOpen] = useState(false);
 
@@ -94,19 +96,21 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center: Command Search */}
-        <div className="hidden lg:flex flex-1 max-w-md relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 group-focus-within:text-indigo-400 transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Search or jump to..." 
-            className="w-full bg-white/[0.03] border border-white/5 rounded-lg py-1.5 pl-9 pr-12 text-[11px] text-neutral-300 placeholder:text-neutral-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
-          />
+        {/* Center: Command Search Button */}
+        <button
+          type="button"
+          onClick={onOpenCommandPalette}
+          className="hidden lg:flex flex-1 max-w-md relative group items-center text-start"
+        >
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 group-hover:text-indigo-400 transition-colors pointer-events-none" />
+          <div className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-neutral-700 rounded-lg py-1.5 pl-9 pr-12 text-[11px] text-neutral-400 transition-all cursor-pointer">
+            {locale === 'fa' ? 'جستجو یا پرش سریع...' : 'Search or jump to...'}
+          </div>
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/10 bg-neutral-900 text-[9px] text-neutral-500 font-mono select-none">
             <Command className="w-2.5 h-2.5" />
             <span>K</span>
           </div>
-        </div>
+        </button>
 
         {/* Right Side: Actions */}
         <div className="flex items-center gap-3">
