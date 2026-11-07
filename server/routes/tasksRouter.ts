@@ -235,7 +235,12 @@ router.post('/:id/pomodoro', (req: Request, res: Response) => {
     return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }
 
-  const minutes = Number(req.body.minutes) || 25;
+  // Safe bounds: 1 to 180 minutes per session
+  const parsedMin = Number(req.body.minutes);
+  const minutes = (!isNaN(parsedMin) && parsedMin > 0)
+    ? Math.min(180, Math.max(1, Math.floor(parsedMin)))
+    : 25;
+
   db.recordPomodoro(minutes, userId);
   const updated = db.updateTask(req.params.id, {
     pomodoroSessions: (task.pomodoroSessions || 0) + 1

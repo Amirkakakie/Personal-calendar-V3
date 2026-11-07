@@ -58,7 +58,16 @@ const aiRateLimiter = createRateLimiter({
   message: 'AI synthesis rate limit reached. Please wait a moment before trying again.'
 });
 
+// Authentication Rate Limiter: 15 attempts per minute (brute-force defense)
+const authRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 15,
+  message: 'Too many authentication attempts. Please wait one minute before trying again.'
+});
+
 app.use('/api', globalApiLimiter);
+app.use('/api/auth/login', authRateLimiter);
+app.use('/api/auth/signup', authRateLimiter);
 app.use('/api/ai', aiRateLimiter);
 
 // Authentication Guard on API Endpoints (handles public exclusions internally)

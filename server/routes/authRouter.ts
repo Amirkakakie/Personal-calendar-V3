@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express';
 import { SignJWT } from 'jose';
 import bcrypt from 'bcryptjs';
 import { db } from '../db.ts';
+import { getJwtSecret } from '../middleware/auth.ts';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'chronos-dev-secret-key-production-min-32-chars-entropy-2026';
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+
+// Constant-time dummy hash for timing attack mitigation
+const DUMMY_HASH = '$2a$10$wK1m3rV35fR.Zl2mR1z99eYwJzXN4oT7p6Q0sK9t2u4v6w8x0y2z4';
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -13,6 +15,10 @@ function getInitials(name: string): string {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
   return name.slice(0, 2).toUpperCase();
+}
+
+function getSigningKey(): Uint8Array {
+  return new TextEncoder().encode(getJwtSecret());
 }
 
 // POST /api/auth/signup
@@ -24,8 +30,9 @@ router.post('/signup', async (req: Request, res: Response) => {
     if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
       return res.status(400).json({ success: false, error: 'Valid email address is required' });
     }
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+    // Enforce robust password length (minimum 8 characters)
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -58,7 +65,7 @@ router.post('/signup', async (req: Request, res: Response) => {
       email: cleanEmail,
       passwordHash,
       role: 'Member',
-      title: title?.trim() || 'Software Engineer',
+      title: (title && typeof title === 'string') ? title.trim() : 'Software Engineer',
       avatarColor: randomColor,
       initials: getInitials(displayName),
       joinedAt: new Date().toISOString().split('T')[0]
@@ -78,7 +85,7 @@ router.post('/signup', async (req: Request, res: Response) => {
       .setAudience('chronos-clients')
       .setIssuedAt()
       .setExpirationTime('7d')
-      .sign(secretKey);
+      .sign(getSigningKey());
 
     const { passwordHash: _hash, password: _legacy, ...safeUser } = created as any;
     res.status(201).json({
@@ -97,7 +104,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
     }
 
@@ -105,6 +112,8 @@ router.post('/login', async (req: Request, res: Response) => {
     const user = db.getUserByEmail(cleanEmail);
 
     if (!user) {
+      // Execute dummy comparison to mitigate timing attacks on account enumeration
+      await bcrypt.compare(password, DUMMY_HASH);
       return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }
 
@@ -137,7 +146,7 @@ router.post('/login', async (req: Request, res: Response) => {
       .setAudience('chronos-clients')
       .setIssuedAt()
       .setExpirationTime('7d')
-      .sign(secretKey);
+      .sign(getSigningKey());
 
     const { passwordHash: _hash, password: _legacy, ...safeUser } = user as any;
     res.json({

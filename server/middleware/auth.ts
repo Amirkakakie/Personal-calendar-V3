@@ -17,30 +17,48 @@ declare global {
   }
 }
 
-function getSecretKey(): Uint8Array {
-  const JWT_SECRET = process.env.JWT_SECRET || 'chronos-dev-secret-key-production-min-32-chars-entropy-2026';
-  return new TextEncoder().encode(JWT_SECRET);
+import crypto from 'crypto';
+import path from 'path';
+
+let ephemeralProdSecret: string | null = null;
+export function getJwtSecret(): string {
+  if (process.env.JWT_SECRET) {
+    return process.env.JWT_SECRET;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    if (!ephemeralProdSecret) {
+      ephemeralProdSecret = crypto.randomBytes(32).toString('hex');
+      console.warn('[Security Warning] JWT_SECRET was not provided in production environment! Generated ephemeral cryptographically secure secret.');
+    }
+    return ephemeralProdSecret;
+  }
+  return 'chronos-dev-secret-key-production-min-32-chars-entropy-2026';
 }
 
-// Whitelisted public endpoints that do not require an active JWT session
-const PUBLIC_PREFIXES = [
+function getSecretKey(): Uint8Array {
+  return new TextEncoder().encode(getJwtSecret());
+}
+
+// Whitelisted public endpoints with strict, exact-path resolution (prevents path traversal / substring bypass)
+const EXACT_PUBLIC_PATHS = new Set([
   '/api/auth/login',
   '/api/auth/signup',
   '/api/health',
   '/auth/login',
   '/auth/signup',
   '/health'
-];
+]);
 
 /**
  * Strict Cryptographic JWT Authentication Guard via `jose`
  * Verifies HMAC-SHA256 signatures, expiration, issuer ('chronos-os'), and audience ('chronos-clients').
  */
 export async function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const urlPath = req.path || req.url;
-  const isPublic = PUBLIC_PREFIXES.some(prefix => urlPath.startsWith(prefix));
+  // Normalize path and eliminate path traversal / query string bypasses
+  const fullPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.path || req.url);
+  const normalizedPath = path.posix.normalize(fullPath.split('?')[0]);
 
-  if (isPublic) {
+  if (EXACT_PUBLIC_PATHS.has(normalizedPath) || EXACT_PUBLIC_PATHS.has(path.posix.normalize(req.path))) {
     return next();
   }
 

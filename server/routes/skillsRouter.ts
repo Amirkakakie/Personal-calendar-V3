@@ -20,7 +20,10 @@ router.get('/badges', (req: Request, res: Response) => {
 // TRAIN skill / practice session (award XP)
 router.post('/:id/train', (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { xpAmount = 50 } = req.body;
+  const rawXp = Number(req.body.xpAmount);
+  // Safe bounds: 1 to 250 XP per training action
+  const xpAmount = (!isNaN(rawXp) && rawXp > 0) ? Math.min(250, Math.max(1, Math.floor(rawXp))) : 50;
+
   const skills = db.getSkills(userId);
   const skill = skills.find(s => s.id === req.params.id);
 
@@ -28,7 +31,7 @@ router.post('/:id/train', (req: Request, res: Response) => {
     return res.status(404).json({ success: false, error: 'Skill node not found' });
   }
 
-  db.awardXp(Number(xpAmount), skill.id, userId);
+  db.awardXp(xpAmount, skill.id, userId);
   const updatedSkills = db.getSkills(userId);
   const updatedSkill = updatedSkills.find(s => s.id === req.params.id);
   const stats = db.getProductivityStats(userId);

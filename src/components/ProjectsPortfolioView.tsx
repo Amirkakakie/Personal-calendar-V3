@@ -367,7 +367,11 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                 {/* Workspace Action Links */}
                 <div className="mt-5 pt-3.5 border-t border-neutral-800 flex items-center justify-between gap-2 text-xs">
                   <a
-                    href={project.driveFolderUrl || 'https://drive.google.com/drive/u/0/my-drive'}
+                    href={
+                      project.driveFolderUrl && /^https?:\/\//i.test(project.driveFolderUrl)
+                        ? project.driveFolderUrl
+                        : 'https://drive.google.com/drive/u/0/my-drive'
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-neutral-400 hover:text-white transition-colors"

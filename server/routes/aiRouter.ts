@@ -7,12 +7,18 @@ const router = Router();
 // DECOMPOSE goal into actionable tasks
 router.post('/decompose', async (req: Request, res: Response) => {
   const { goalTitle, context, category } = req.body;
-  if (!goalTitle || typeof goalTitle !== 'string') {
+  if (!goalTitle || typeof goalTitle !== 'string' || !goalTitle.trim()) {
     return res.status(400).json({ success: false, error: 'goalTitle is required' });
   }
 
+  if (goalTitle.length > 300) {
+    return res.status(400).json({ success: false, error: 'goalTitle must not exceed 300 characters' });
+  }
+
+  const safeContext = (context && typeof context === 'string') ? context.slice(0, 1000) : undefined;
+
   try {
-    const result = await geminiService.decomposeGoal(goalTitle.trim(), context, category);
+    const result = await geminiService.decomposeGoal(goalTitle.trim(), safeContext, category);
     res.json({ success: true, data: result });
   } catch (error: any) {
     console.error('Goal decomposition route failed:', error);
@@ -40,8 +46,12 @@ router.post('/daily-brief', async (req: Request, res: Response) => {
 router.post('/coach', async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const { message } = req.body;
-  if (!message || typeof message !== 'string') {
+  if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ success: false, error: 'Message is required' });
+  }
+
+  if (message.length > 1000) {
+    return res.status(400).json({ success: false, error: 'Message must not exceed 1000 characters' });
   }
 
   const tasks = db.getTasks(userId);
@@ -130,9 +140,11 @@ router.post('/atomize', async (req: Request, res: Response) => {
     }
   }
 
-  if (!title) {
+  if (!title || typeof title !== 'string') {
     return res.status(400).json({ success: false, error: 'taskId or taskTitle is required' });
   }
+
+  const cleanTitle = title.trim().slice(0, 300);
 
   try {
     const result = await geminiService.decomposeGoal(title, 'Atomize this into immediate tactical 15-45 minute execution subtasks', cat);

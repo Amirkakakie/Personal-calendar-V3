@@ -21,6 +21,15 @@ router.get('/:id', (req: Request, res: Response) => {
   res.json({ success: true, data: proj });
 });
 
+function sanitizeDriveUrl(url?: string): string {
+  if (!url || typeof url !== 'string') return 'https://drive.google.com/drive/u/0/my-drive';
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return 'https://drive.google.com/drive/u/0/my-drive';
+}
+
 // CREATE new personal project (assigns server-verified userId)
 router.post('/', (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -40,7 +49,7 @@ router.post('/', (req: Request, res: Response) => {
     loggedHours: Number(body.loggedHours) || 0,
     hourlyValuation: Number(body.hourlyValuation) || 100,
     color: body.color || 'blue',
-    driveFolderUrl: body.driveFolderUrl || 'https://drive.google.com/drive/u/0/my-drive',
+    driveFolderUrl: sanitizeDriveUrl(body.driveFolderUrl),
     tasksCount: 0,
     completedTasksCount: 0,
     createdAt: new Date().toISOString()
@@ -58,7 +67,12 @@ router.put('/:id', (req: Request, res: Response) => {
     return res.status(404).json({ success: false, error: 'Project not found or access denied' });
   }
 
-  const updated = db.updateProject(req.params.id, req.body, userId);
+  const safeUpdates = { ...req.body };
+  if (safeUpdates.driveFolderUrl) {
+    safeUpdates.driveFolderUrl = sanitizeDriveUrl(safeUpdates.driveFolderUrl);
+  }
+
+  const updated = db.updateProject(req.params.id, safeUpdates, userId);
   if (!updated) {
     return res.status(404).json({ success: false, error: 'Project not found or access denied' });
   }

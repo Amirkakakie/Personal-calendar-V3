@@ -41,10 +41,17 @@ router.post('/', (req: Request, res: Response) => {
     }
   }
 
-  const durationSeconds = Number(body.durationSeconds);
-  const hourlyRate = Number(body.hourlyRate) || 85;
+  const rawDuration = Number(body.durationSeconds);
+  if (isNaN(rawDuration) || rawDuration <= 0 || rawDuration > 86400) {
+    return res.status(400).json({ success: false, error: 'Valid durationSeconds (between 1 and 86400) is required' });
+  }
+
+  const durationSeconds = Math.floor(rawDuration);
+  const rawRate = Number(body.hourlyRate);
+  const hourlyRate = (!isNaN(rawRate) && rawRate >= 0) ? Math.min(10000, rawRate) : 85;
   const calculatedRoi = Number(((durationSeconds / 3600) * hourlyRate).toFixed(2));
-  const efficiencyRate = Number(body.efficiencyRate) || 90;
+  const rawEfficiency = Number(body.efficiencyRate);
+  const efficiencyRate = (!isNaN(rawEfficiency) && rawEfficiency >= 0) ? Math.min(100, Math.max(1, rawEfficiency)) : 90;
 
   const newLog: TimeLog = {
     id: `timelog-${Date.now()}`,
@@ -65,8 +72,8 @@ router.post('/', (req: Request, res: Response) => {
 
   const saved = db.addTimeLog(newLog, userId);
 
-  // Award XP based on duration (1 XP per 30 seconds of deep work)
-  const xpAward = Math.max(10, Math.floor(durationSeconds / 30));
+  // Award XP based on duration (1 XP per 30 seconds of deep work, capped at 300 XP per session)
+  const xpAward = Math.min(300, Math.max(10, Math.floor(durationSeconds / 30)));
   db.awardXp(xpAward, undefined, userId);
 
   res.status(201).json({

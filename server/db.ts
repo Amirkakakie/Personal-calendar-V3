@@ -88,6 +88,7 @@ export interface TeamProjectRecord {
   color: string;
   icon: string;
   memberIds: string[];
+  memberRoles?: Record<string, WorkspaceRole>;
   targetDate?: string;
   createdAt: string;
 }
@@ -353,7 +354,21 @@ class Database {
     return undefined;
   }
 
+  public getProjectRole(projectId: string, userId: string): WorkspaceRole | null {
+    const proj = this.data.teamProjects.find(p => p.id === projectId);
+    if (!proj) return null;
+    if (proj.ownerId === userId) return 'OWNER';
+    if (proj.memberRoles && proj.memberRoles[userId]) return proj.memberRoles[userId];
+    if (Array.isArray(proj.memberIds) && proj.memberIds.includes(userId)) return 'MEMBER';
+    return null;
+  }
+
   public createTeamProject(proj: TeamProjectRecord): TeamProjectRecord {
+    if (!proj.memberRoles) {
+      proj.memberRoles = { [proj.ownerId]: 'OWNER' };
+    } else {
+      proj.memberRoles[proj.ownerId] = 'OWNER';
+    }
     this.data.teamProjects.unshift(proj);
     this.save(this.data);
     return proj;
@@ -362,13 +377,22 @@ class Database {
   public updateTeamProject(projectId: string, updates: Partial<TeamProjectRecord>, userId: string): TeamProjectRecord | null {
     const proj = this.getTeamProjectById(projectId, userId);
     if (!proj) return null;
+    
+    // Only OWNER and ADMIN can update team project settings
+    const role = this.getProjectRole(projectId, userId);
+    if (role !== 'OWNER' && role !== 'ADMIN') {
+      return null;
+    }
+
     const idx = this.data.teamProjects.findIndex(p => p.id === projectId);
     if (idx === -1) return null;
 
-    // Disallow altering ownerId
+    // Disallow altering ownerId, id, memberIds, or memberRoles directly via standard update
     const safeUpdates = { ...updates };
     delete (safeUpdates as any).ownerId;
     delete (safeUpdates as any).id;
+    delete (safeUpdates as any).memberIds;
+    delete (safeUpdates as any).memberRoles;
 
     this.data.teamProjects[idx] = { ...this.data.teamProjects[idx], ...safeUpdates };
     this.save(this.data);
@@ -376,7 +400,7 @@ class Database {
   }
 
   public deleteTeamProject(projectId: string, userId: string): boolean {
-    const proj = this.getTeamProjectById(projectId, userId);
+    const proj = this.data.teamProjects.find(p => p.id === projectId);
     if (!proj) return false;
     // Only owner can delete team project
     if (proj.ownerId !== userId) return false;
@@ -388,7 +412,7 @@ class Database {
     return true;
   }
 
-  // --- TEAM TASKS (PROJECT & MEMBER SCOPED) ---
+  // --- TEAM TASKS (PROJECT & MEMBER SCOPED WITH RBAC) ---
   public getTeamTasksForProject(projectId: string, userId: string): TeamTaskRecord[] | null {
     const proj = this.getTeamProjectById(projectId, userId);
     if (!proj) return null; // Unauthorized
@@ -398,6 +422,11 @@ class Database {
   public createTeamTask(task: TeamTaskRecord, userId: string): TeamTaskRecord | null {
     const proj = this.getTeamProjectById(task.projectId, userId);
     if (!proj) return null;
+    
+    // VIEWER role cannot create tasks
+    const role = this.getProjectRole(task.projectId, userId);
+    if (role === 'VIEWER') return null;
+
     this.data.teamTasks.unshift(task);
     this.save(this.data);
     return task;
@@ -412,10 +441,15 @@ class Database {
     const proj = this.getTeamProjectById(currentTask.projectId, userId);
     if (!proj) return null;
 
-    // Disallow changing taskId or projectId
+    // VIEWER role cannot update tasks
+    const role = this.getProjectRole(currentTask.projectId, userId);
+    if (role === 'VIEWER') return null;
+
+    // Disallow changing taskId, projectId, or overwriting comments directly via updateTeamTask
     const safeUpdates = { ...updates };
     delete (safeUpdates as any).id;
     delete (safeUpdates as any).projectId;
+    delete (safeUpdates as any).comments;
 
     this.data.teamTasks[idx] = {
       ...currentTask,
@@ -432,9 +466,48 @@ class Database {
     const proj = this.getTeamProjectById(currentTask.projectId, userId);
     if (!proj) return false;
 
+    // VIEWER role cannot delete tasks
+    const role = this.getProjectRole(currentTask.projectId, userId);
+    if (role === 'VIEWER') return false;
+
     this.data.teamTasks = this.data.teamTasks.filter(t => t.id !== taskId);
     this.save(this.data);
     return true;
+  }
+
+  public addTeamTaskComment(
+    taskId: string, 
+    comment: { authorId: string; authorName: string; authorInitials: string; authorColor: string; text: string }, 
+    userId: string
+  ): TeamTaskRecord | null {
+    const idx = this.data.teamTasks.findIndex(t => t.id === taskId);
+    if (idx === -1) return null;
+    const currentTask = this.data.teamTasks[idx];
+
+    const proj = this.getTeamProjectById(currentTask.projectId, userId);
+    if (!proj) return null;
+
+    // VIEWER role cannot add comments
+    const role = this.getProjectRole(currentTask.projectId, userId);
+    if (role === 'VIEWER') return null;
+
+    const newComment = {
+      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      authorId: userId,
+      authorName: comment.authorName,
+      authorInitials: comment.authorInitials,
+      authorColor: comment.authorColor,
+      text: comment.text.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    if (!Array.isArray(currentTask.comments)) {
+      currentTask.comments = [];
+    }
+    currentTask.comments.push(newComment);
+    currentTask.updatedAt = new Date().toISOString();
+    this.save(this.data);
+    return currentTask;
   }
 
   // --- PROJECT INVITATIONS ---
@@ -460,8 +533,15 @@ class Database {
 
     if (accept) {
       const proj = this.data.teamProjects.find(p => p.id === invite.projectId);
-      if (proj && !proj.memberIds.includes(userId)) {
-        proj.memberIds.push(userId);
+      if (proj) {
+        if (!Array.isArray(proj.memberIds)) proj.memberIds = [];
+        if (!proj.memberIds.includes(userId)) {
+          proj.memberIds.push(userId);
+        }
+        if (!proj.memberRoles) {
+          proj.memberRoles = { [proj.ownerId]: 'OWNER' };
+        }
+        proj.memberRoles[userId] = invite.role || 'MEMBER';
       }
     }
 

@@ -397,7 +397,12 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       try {
-        await api.updateTeamTask(taskId, { comments: updatedComments });
+        const res = await api.addTeamTaskComment(taskId, text.trim());
+        if (res && Array.isArray(res.comments)) {
+          setAllTasks(prev =>
+            prev.map(t => (t.id === taskId ? { ...t, comments: res.comments } : t))
+          );
+        }
       } catch (err) {
         console.warn('[TeamContext] Add comment failed:', err);
       }

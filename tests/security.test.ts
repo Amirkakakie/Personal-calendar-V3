@@ -426,8 +426,337 @@ async function runSecurityTestSuite() {
     const dataMe = await resMe.json();
     assert(resMe.status === 200 && dataMe.user?.email === simpleEmail, 'Session token resolves authenticated user from database');
 
+    // ---------------------------------------------------------
+    // SCENARIO 10: STRICT CORS HOSTNAME & MALICIOUS ORIGIN REJECTION
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 10] Strict CORS Hostname & Malicious Origin Defense${RESET}`);
+    // 1. Attacker on spoofed localhost subdomain
+    const resCorsFakeLocal = await fetch(`${BASE_URL}/health`, {
+      headers: { Origin: 'https://localhost.attacker.com' }
+    });
+    const allowOriginFake = resCorsFakeLocal.headers.get('access-control-allow-origin');
+    assert(
+      allowOriginFake !== 'https://localhost.attacker.com',
+      'CORS guard rejects spoofed localhost subdomain (https://localhost.attacker.com)'
+    );
+
+    // 2. Attacker on fake vercel domain prefix
+    const resCorsFakeVercel = await fetch(`${BASE_URL}/health`, {
+      headers: { Origin: 'https://evil-vercel.app' }
+    });
+    const allowOriginVercel = resCorsFakeVercel.headers.get('access-control-allow-origin');
+    assert(
+      allowOriginVercel !== 'https://evil-vercel.app',
+      'CORS guard rejects illegitimate vercel domain prefix (https://evil-vercel.app)'
+    );
+
+    // 3. Legitimate localhost
+    const resCorsGood = await fetch(`${BASE_URL}/health`, {
+      headers: { Origin: 'http://localhost:3000' }
+    });
+    assert(
+      resCorsGood.headers.get('access-control-allow-origin') === 'http://localhost:3000',
+      'CORS guard allows genuine localhost origin'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 11: PATH TRAVERSAL AUTHENTICATION BYPASS DEFENSE
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 11] Path Traversal Authentication Guard Bypass Defense${RESET}`);
+    // Path traversal attempting to masquerade as /api/auth/login to bypass auth
+    const resTraversal = await fetch(`${BASE_URL}/auth/login/../tasks`);
+    assert(
+      resTraversal.status === 401,
+      'Path traversal attempt (/api/auth/login/../tasks) strictly blocked with 401 Unauthorized'
+    );
+
+    const resFakePublic = await fetch(`${BASE_URL}/auth/loginfake`);
+    assert(
+      resFakePublic.status === 401,
+      'Prefix substring attempt (/api/auth/loginfake) strictly blocked with 401 Unauthorized'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 12: ROLE-BASED ACCESS CONTROL (RBAC) ENFORCEMENT
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 12] Role-Based Access Control (RBAC) Enforcement${RESET}`);
+    // User A invites User C as VIEWER to Project Orion
+    const resInviteViewer = await fetch(`${BASE_URL}/team/invitations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        projectId: teamProjId,
+        email: userCEmail,
+        role: 'VIEWER'
+      })
+    });
+    const dataInviteViewer = await resInviteViewer.json();
+    assert(resInviteViewer.status === 201, 'User A successfully invites User C as VIEWER');
+
+    // User C accepts invite
+    const resAcceptViewer = await fetch(`${BASE_URL}/team/invitations/${dataInviteViewer.data.id}/respond`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenC}`
+      },
+      body: JSON.stringify({ accept: true })
+    });
+    assert(resAcceptViewer.status === 200, 'User C accepts VIEWER invitation');
+
+    // User C (VIEWER) tries to create task in Project Orion -> 403 Forbidden
+    const resViewerCreateTask = await fetch(`${BASE_URL}/team/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenC}`
+      },
+      body: JSON.stringify({
+        projectId: teamProjId,
+        title: 'Viewer Unauthorized Task Creation'
+      })
+    });
+    assert(
+      resViewerCreateTask.status === 403,
+      'VIEWER role is blocked from creating tasks in team project (403 Forbidden)'
+    );
+
+    // User B (MEMBER) attempts to invite another user as OWNER -> Privilege escalation blocked
+    const resMemberEscalate = await fetch(`${BASE_URL}/team/invitations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenB}`
+      },
+      body: JSON.stringify({
+        projectId: teamProjId,
+        email: `hacker_${ts}@test.local`,
+        role: 'OWNER'
+      })
+    });
+    assert(
+      resMemberEscalate.status === 403,
+      'Non-owner/admin MEMBER is blocked from sending invitations or escalating privileges (403 Forbidden)'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 13: ACCOUNT ENUMERATION DEFENSE
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 13] Account Enumeration Defense in Invitation API${RESET}`);
+    // Owner invites an unregistered email -> Invitation created cleanly without leaking account non-existence
+    const ghostEmail = `nonexistent_ghost_${ts}@external-partner.com`;
+    const resInviteGhost = await fetch(`${BASE_URL}/team/invitations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        projectId: teamProjId,
+        email: ghostEmail,
+        role: 'MEMBER'
+      })
+    });
+    const dataInviteGhost = await resInviteGhost.json();
+    assert(
+      resInviteGhost.status === 201 && dataInviteGhost.success === true,
+      'Invitation dispatched without disclosing whether account previously existed'
+    );
+    assert(
+      !dataInviteGhost.message?.includes('No account exists'),
+      'API message never reveals account existence or non-existence'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 14: SERVER-AUTHORITATIVE COMMENTING & SPOOFING DEFENSE
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 14] Server-Authoritative Commenting & Identity Spoofing Defense${RESET}`);
+    // Fetch a team task created earlier by User B
+    const resGetTeamTasks = await fetch(`${BASE_URL}/team/tasks?projectId=${teamProjId}`, {
+      headers: { Authorization: `Bearer ${tokenB}` }
+    });
+    const dataTeamTasks = await resGetTeamTasks.json();
+    const targetTeamTaskId = dataTeamTasks.data[0].id;
+
+    // User B adds comment via dedicated server-authoritative route
+    const resAddComment = await fetch(`${BASE_URL}/team/tasks/${targetTeamTaskId}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenB}`
+      },
+      body: JSON.stringify({ text: 'Peer review completed. Ready for thermal testing.' })
+    });
+    const dataAddComment = await resAddComment.json();
+    assert(resAddComment.status === 201, 'Comment recorded via server-authoritative endpoint');
+    const recordedComment = dataAddComment.data.comments.find((c: any) => c.text.includes('Peer review'));
+    assert(
+      recordedComment.authorId === userB.id,
+      'Comment author ID is strictly stamped by server from authenticated JWT (cannot be spoofed)'
+    );
+
+    // User B attempts to overwrite comments array via PUT /api/team/tasks/:id
+    const resSpoofComments = await fetch(`${BASE_URL}/team/tasks/${targetTeamTaskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenB}`
+      },
+      body: JSON.stringify({
+        comments: [{ authorName: 'Alice (CEO)', text: 'Forged CEO comment', authorId: userA.id }]
+      })
+    });
+    const dataSpoofComments = await resSpoofComments.json();
+    const hasForgedComment = dataSpoofComments.data?.comments?.some((c: any) => c.text === 'Forged CEO comment');
+    assert(
+      !hasForgedComment,
+      'Mass assignment overwrite of comments array is stripped and blocked by backend'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 15: STORED XSS MITIGATION IN PROJECT URLS
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 15] Stored XSS Mitigation in Project URLs${RESET}`);
+    const resXssProj = await fetch(`${BASE_URL}/projects`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        name: 'XSS Injection Test Project',
+        driveFolderUrl: 'javascript:alert(document.cookie)'
+      })
+    });
+    const dataXssProj = await resXssProj.json();
+    assert(resXssProj.status === 201, 'Project created');
+    assert(
+      !dataXssProj.data.driveFolderUrl.includes('javascript:'),
+      'Server sanitizes malicious javascript: URI and replaces with safe default URL'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 16: PROTOTYPE POLLUTION DEFENSE
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 16] Prototype Pollution Defense in Request Body Sanitizer${RESET}`);
+    await fetch(`${BASE_URL}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({
+        title: 'Safe Task Name',
+        category: 'Work/Career',
+        __proto__: { injectedAdmin: true }
+      })
+    });
+    assert(
+      (Object.prototype as any).injectedAdmin === undefined,
+      'Prototype pollution attempt stripped and Object.prototype remains clean'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 17: PASSWORD SECURITY & PRESERVATION
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 17] Password Complexity & Special Character Preservation${RESET}`);
+    // 1. Password under 8 characters rejected
+    const resShortPass = await fetch(`${BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: `weak_${ts}@test.local`, password: 'short' })
+    });
+    assert(resShortPass.status === 400, 'Password shorter than 8 characters is rejected with 400 Bad Request');
+
+    // 2. Password with < and > special characters preserved without corruption
+    const complexEmail = `special_chars_${ts}@test.local`;
+    const complexPassword = 'Str0ng<P@ss>123!';
+    const resSpecialPass = await fetch(`${BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: complexEmail, password: complexPassword })
+    });
+    assert(resSpecialPass.status === 201, 'User registered with password containing HTML brackets < and >');
+
+    // Login with exact password succeeds (confirming sanitizeBody did not mangle the password)
+    const resLoginSpecial = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: complexEmail, password: complexPassword })
+    });
+    assert(resLoginSpecial.status === 200, 'Login succeeds with exact special-character password');
+
+    // ---------------------------------------------------------
+    // SCENARIO 18: INPUT BOUNDS CHECKING & RESOURCE EXHAUSTION
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 18] Input Bounds Checking & Resource Exhaustion Defense${RESET}`);
+    // 1. Pomodoro minutes clamped
+    const resBoundPomodoro = await fetch(`${BASE_URL}/tasks/${taskAId}/pomodoro`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({ minutes: 99999999 })
+    });
+    const dataBoundPomodoro = await resBoundPomodoro.json();
+    assert(
+      dataBoundPomodoro.recordedMinutes <= 180,
+      'Absurd Pomodoro duration is clamped to maximum allowable session length (180 min)'
+    );
+
+    // 2. Timelog duration bounded
+    const resBoundTimelog = await fetch(`${BASE_URL}/timelogs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({ durationSeconds: 99999999 })
+    });
+    assert(
+      resBoundTimelog.status === 400,
+      'Absurd time log duration (> 86400s) rejected with 400 Bad Request'
+    );
+
+    // 3. AI Coach message length bounded
+    const oversizedMessage = 'A'.repeat(2500);
+    const resAiOversized = await fetch(`${BASE_URL}/ai/coach`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenA}`
+      },
+      body: JSON.stringify({ message: oversizedMessage })
+    });
+    assert(
+      resAiOversized.status === 400,
+      'Oversized AI coach message (> 1000 chars) rejected with 400 Bad Request'
+    );
+
+    // ---------------------------------------------------------
+    // SCENARIO 19: AUTHENTICATION BRUTE-FORCE RATE LIMITING
+    // ---------------------------------------------------------
+    console.log(`\n${BOLD}[SCENARIO 19] Authentication Brute-Force Rate Limiting${RESET}`);
+    let hitRateLimit = false;
+    for (let i = 0; i < 20; i++) {
+      const resRateLimit = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: simpleEmail, password: 'WrongPasswordEveryTime!' })
+      });
+      if (resRateLimit.status === 429) {
+        hitRateLimit = true;
+        break;
+      }
+    }
+    assert(hitRateLimit, 'Brute-force authentication attempts throttled with HTTP 429 Too Many Requests');
+
     console.log(`\n${BOLD}${GREEN}======================================================${RESET}`);
-    console.log(`${BOLD}${GREEN}  ALL 9 SECURITY SCENARIOS PASSED WITH ZERO FAILURES! ${RESET}`);
+    console.log(`${BOLD}${GREEN}  ALL 19 SECURITY SCENARIOS PASSED WITH ZERO FAILURES!${RESET}`);
     console.log(`${BOLD}${GREEN}  Total Assertions: ${passedCount} passed, ${failedCount} failed${RESET}`);
     console.log(`${BOLD}${GREEN}======================================================${RESET}\n`);
   } finally {

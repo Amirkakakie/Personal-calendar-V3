@@ -39,6 +39,17 @@ router.post('/team/projects', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Project name is required' });
   }
 
+  // Multi-tenant check: if workspaceId is provided, verify user is an authorized member
+  if (body.workspaceId && body.workspaceId !== 'ws-team') {
+    const hasWorkspaceAccess = db.isUserInWorkspace(body.workspaceId, userId);
+    if (!hasWorkspaceAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have permission to attach projects to the specified workspace.'
+      });
+    }
+  }
+
   const id = `proj-${Date.now()}`;
   const key = body.key?.trim().toUpperCase() || body.name.trim().substring(0, 3).toUpperCase();
 
@@ -52,7 +63,8 @@ router.post('/team/projects', (req: Request, res: Response) => {
     description: body.description?.trim() || '',
     color: body.color || '#6366f1',
     icon: body.icon || 'ShieldCheck',
-    memberIds: [userId], // Owner is initial member
+    memberIds: [userId],
+    memberRoles: { [userId]: 'OWNER' },
     targetDate: body.targetDate,
     createdAt: new Date().toISOString().split('T')[0]
   };
@@ -61,10 +73,23 @@ router.post('/team/projects', (req: Request, res: Response) => {
   res.status(201).json({ success: true, data: created });
 });
 
-// PUT /api/team/projects/:id - Update team project
+// PUT /api/team/projects/:id - Update team project (OWNER or ADMIN only)
 router.put('/team/projects/:id', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const projectId = req.params.id;
+
+  const project = db.getTeamProjectById(projectId, userId);
+  if (!project) {
+    return res.status(404).json({ success: false, error: 'Team project not found or access denied' });
+  }
+
+  const userRole = db.getProjectRole(projectId, userId);
+  if (userRole !== 'OWNER' && userRole !== 'ADMIN') {
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden: Only project owners and administrators can modify project settings.'
+    });
+  }
 
   const updated = db.updateTeamProject(projectId, req.body, userId);
   if (!updated) {
@@ -79,9 +104,18 @@ router.delete('/team/projects/:id', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const projectId = req.params.id;
 
+  const project = db.getTeamProjectById(projectId, userId);
+  if (!project) {
+    return res.status(404).json({ success: false, error: 'Team project not found or access denied' });
+  }
+
+  if (project.ownerId !== userId) {
+    return res.status(403).json({ success: false, error: 'Forbidden: Only the project owner can delete this project.' });
+  }
+
   const success = db.deleteTeamProject(projectId, userId);
   if (!success) {
-    return res.status(403).json({ success: false, error: 'Only project owner can delete this team project' });
+    return res.status(403).json({ success: false, error: 'Failed to delete team project.' });
   }
 
   res.json({ success: true, message: 'Team project deleted successfully' });
@@ -104,13 +138,21 @@ router.get('/team/tasks', (req: Request, res: Response) => {
   res.json({ success: true, count: tasks.length, data: tasks });
 });
 
-// POST /api/team/tasks - Create task in a team project
+// POST /api/team/tasks - Create task in a team project (Non-viewers only)
 router.post('/team/tasks', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const body = req.body;
 
   if (!body.projectId || !body.title) {
     return res.status(400).json({ success: false, error: 'projectId and title are required' });
+  }
+
+  const role = db.getProjectRole(body.projectId, userId);
+  if (!role) {
+    return res.status(403).json({ success: false, error: 'Access denied: not an authorized member of this project' });
+  }
+  if (role === 'VIEWER') {
+    return res.status(403).json({ success: false, error: 'Forbidden: Viewers have read-only access and cannot create tasks.' });
   }
 
   const id = `task-${Date.now()}`;
@@ -137,16 +179,29 @@ router.post('/team/tasks', (req: Request, res: Response) => {
 
   const created = db.createTeamTask(newTask, userId);
   if (!created) {
-    return res.status(403).json({ success: false, error: 'Access denied: not an authorized member of this project' });
+    return res.status(403).json({ success: false, error: 'Failed to create team task.' });
   }
 
   res.status(201).json({ success: true, data: created });
 });
 
-// PUT /api/team/tasks/:id - Update team task
+// PUT /api/team/tasks/:id - Update team task (Non-viewers only)
 router.put('/team/tasks/:id', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const taskId = req.params.id;
+
+  const currentTask = (db as any).data.teamTasks.find((t: any) => t.id === taskId);
+  if (!currentTask) {
+    return res.status(404).json({ success: false, error: 'Task not found' });
+  }
+
+  const role = db.getProjectRole(currentTask.projectId, userId);
+  if (!role) {
+    return res.status(404).json({ success: false, error: 'Task not found or unauthorized' });
+  }
+  if (role === 'VIEWER') {
+    return res.status(403).json({ success: false, error: 'Forbidden: Viewers have read-only access and cannot modify tasks.' });
+  }
 
   const updated = db.updateTeamTask(taskId, req.body, userId);
   if (!updated) {
@@ -156,10 +211,68 @@ router.put('/team/tasks/:id', (req: Request, res: Response) => {
   res.json({ success: true, data: updated });
 });
 
-// DELETE /api/team/tasks/:id - Delete team task
+// POST /api/team/tasks/:id/comments - Server-Authoritative Task Commenting
+router.post('/team/tasks/:id/comments', (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const userEmail = req.user!.email;
+  const userName = req.user!.name || userEmail.split('@')[0];
+  const taskId = req.params.id;
+  const { text } = req.body;
+
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return res.status(400).json({ success: false, error: 'Comment text is required.' });
+  }
+
+  const currentTask = (db as any).data.teamTasks.find((t: any) => t.id === taskId);
+  if (!currentTask) {
+    return res.status(404).json({ success: false, error: 'Task not found' });
+  }
+
+  const role = db.getProjectRole(currentTask.projectId, userId);
+  if (!role) {
+    return res.status(403).json({ success: false, error: 'Access denied: not an authorized member of this project' });
+  }
+  if (role === 'VIEWER') {
+    return res.status(403).json({ success: false, error: 'Forbidden: Viewers have read-only access and cannot comment.' });
+  }
+
+  const userInitials = userName.slice(0, 2).toUpperCase();
+  const updated = db.addTeamTaskComment(
+    taskId,
+    {
+      authorId: userId,
+      authorName: userName,
+      authorInitials: userInitials,
+      authorColor: 'from-indigo-600 to-violet-600',
+      text: text.trim()
+    },
+    userId
+  );
+
+  if (!updated) {
+    return res.status(403).json({ success: false, error: 'Failed to record comment.' });
+  }
+
+  res.status(201).json({ success: true, data: updated });
+});
+
+// DELETE /api/team/tasks/:id - Delete team task (Non-viewers only)
 router.delete('/team/tasks/:id', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const taskId = req.params.id;
+
+  const currentTask = (db as any).data.teamTasks.find((t: any) => t.id === taskId);
+  if (!currentTask) {
+    return res.status(404).json({ success: false, error: 'Task not found' });
+  }
+
+  const role = db.getProjectRole(currentTask.projectId, userId);
+  if (!role) {
+    return res.status(404).json({ success: false, error: 'Task not found or unauthorized' });
+  }
+  if (role === 'VIEWER') {
+    return res.status(403).json({ success: false, error: 'Forbidden: Viewers have read-only access and cannot delete tasks.' });
+  }
 
   const success = db.deleteTeamTask(taskId, userId);
   if (!success) {
@@ -176,43 +289,62 @@ router.get('/team/invitations', (req: Request, res: Response) => {
   res.json({ success: true, count: invites.length, data: invites });
 });
 
-// POST /api/team/invitations - Send invitation to colleague
+// POST /api/team/invitations - Send invitation (OWNER and ADMIN only, no account enumeration)
 router.post('/team/invitations', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const userEmail = req.user!.email;
   const userName = req.user!.name || userEmail.split('@')[0];
-  const { projectId, email, role = 'Member' } = req.body;
+  const { projectId, email, role = 'MEMBER' } = req.body;
 
-  if (!projectId || !email) {
-    return res.status(400).json({ success: false, error: 'projectId and email are required' });
+  if (!projectId || !email || typeof email !== 'string') {
+    return res.status(400).json({ success: false, error: 'projectId and valid email are required' });
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const cleanEmail = email.trim().toLowerCase();
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ success: false, error: 'Invalid email address format' });
+  }
+
   if (cleanEmail === userEmail.toLowerCase()) {
     return res.status(400).json({ success: false, error: 'You cannot invite yourself.' });
   }
 
-  // Verify project exists and user has access
+  // Verify project exists and caller has authority
   const project = db.getTeamProjectById(projectId, userId);
   if (!project) {
     return res.status(403).json({ success: false, error: 'Project not found or you lack permission to invite members' });
   }
 
-  // Target user check
-  const targetUser = db.getUserByEmail(cleanEmail);
-  if (!targetUser) {
-    return res.status(400).json({
+  const callerRole = db.getProjectRole(projectId, userId);
+  if (callerRole !== 'OWNER' && callerRole !== 'ADMIN') {
+    return res.status(403).json({
       success: false,
-      error: `No account exists with email "${cleanEmail}". They must first sign up before receiving invitations.`
+      error: 'Forbidden: Only project owners and administrators can invite new members.'
     });
   }
 
-  if (project.memberIds.includes(targetUser.id)) {
+  const requestedRole = (role.toUpperCase() as WorkspaceRole);
+  if (!['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'].includes(requestedRole)) {
+    return res.status(400).json({ success: false, error: 'Invalid role specified.' });
+  }
+
+  // Privilege Escalation Defense: Admins cannot grant OWNER privileges
+  if (callerRole === 'ADMIN' && requestedRole === 'OWNER') {
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden: Project administrators cannot grant Owner privileges.'
+    });
+  }
+
+  // Check if target user already belongs to the project
+  const targetUser = db.getUserByEmail(cleanEmail);
+  if (targetUser && project.memberIds.includes(targetUser.id)) {
     return res.status(400).json({ success: false, error: `${targetUser.name} is already a member of this project.` });
   }
 
   const newInvite: ProjectInvitationRecord = {
-    id: `inv-${Date.now()}`,
+    id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     projectId: project.id,
     projectName: project.name,
     projectKey: project.key,
@@ -221,15 +353,16 @@ router.post('/team/invitations', (req: Request, res: Response) => {
     invitedByUserId: userId,
     invitedByName: userName,
     invitedByEmail: userEmail,
-    role: (role.toUpperCase() as WorkspaceRole) || 'MEMBER',
+    role: requestedRole,
     status: 'PENDING',
     createdAt: new Date().toISOString().split('T')[0]
   };
 
   const created = db.createProjectInvitation(newInvite);
+  // Generic success message prevents account enumeration
   res.status(201).json({
     success: true,
-    message: `Invitation successfully sent to ${targetUser.name} (${cleanEmail})`,
+    message: `Invitation successfully dispatched to ${cleanEmail}`,
     data: created
   });
 });

@@ -471,6 +471,14 @@ export const api = {
     return json.data;
   },
 
+  async addTeamTaskComment(taskId: string, text: string): Promise<any> {
+    const json = await request<{ success: boolean; data: any }>(`/team/tasks/${taskId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+    return json.data;
+  },
+
   async deleteTeamTask(id: string): Promise<void> {
     await request<{ success: boolean }>(`/team/tasks/${id}`, {
       method: 'DELETE',
