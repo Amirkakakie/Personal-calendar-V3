@@ -1,122 +1,83 @@
-# Chronos Platform Stabilization & Architectural Hardening Plan
+# Chronos Platform Stabilization, Redesign & Visualization Architecture
 
-Comprehensive architectural stabilization, multi-tenant isolation, cryptographic session security, and database refactoring for Chronos (Personal & Team Operating System).
+Comprehensive architectural stabilization, multi-tenant isolation, cryptographic session security, Google Gemini AI integration, Google OAuth, and mobile-first dashboard enhancement for Chronos (Personal & Team Operating System).
 
-### Status: Sprint 01 Complete (100% Passed)
+### Status: Sprint 01, 02 & 03 Complete (100% Verified)
 
 > [!IMPORTANT]
-> **Sprint 01 Achievements:**
-> - **Database Strategy**: Hybrid Prisma adapter with PostgreSQL connectivity (`DATABASE_URL`) and an isolated, user-partitioned local storage engine (`partitions[userId]`) with zero mock data.
-> - **Authentication & Session Tokens**: High-security stateless JSON Web Tokens (JWT) using `jose` with HS256 algorithm verification, expiry checks, and strict credential isolation for email/password and OAuth tokens.
-> - **Password Hashing**: `bcryptjs` (salt rounds 10, constant-time compare). No passwords stored in plaintext or leaked in responses.
-> - **Absolute Purge of Mock Data**: 100% blank slate on new signup. All initial mock arrays (`initialTasks`, `defaultProjects`, `sampleHabits`, etc.) purged to `[]`.
-> - **Calendar Conflict Calculation**: Math corrected to strict interval overlap `A_start < B_end && A_end > B_start`.
-> - **Cross-Resource Integrity**: `verifyTaskOwnership()`, `verifyProjectAccess()`, and `verifyGoalOwnership()` prevent foreign entity injection.
-> - **Automated Security Integration Tests**: 8 mandatory scenarios executed via `npm run test:security` with 29/29 assertions passing.
-> - **Zero Feature Loss**: All existing personal modules (Eisenhower matrix, Skill tree, Habit heatmaps, Energy calendar, Pomodoro/ROI timer, Burnout predictor, AI Coach, and English/Persian RTL bilingual support) and Team Kanban modules preserved and isolated per user.
+> **Key Achievements:**
+> - **Sprint 01: Multi-Tenant Security & Isolation**: 19 security test scenarios (61/61 assertions passed). Cryptographic JWT verification via `jose`, `bcryptjs` password hashing, tenant partitioning (`partitions[userId]`), zero cross-tenant leakage.
+> - **Sprint 02: Google Gemini AI & Google OAuth**: Official `@google/genai` TypeScript SDK integration with configurable models, SSE streaming (`/api/ai/coach/stream`), Google Account OIDC authentication with server verification (`/api/auth/google`), and resilient PostgreSQL database handling.
+> - **Sprint 03: UI/UX Audit, Mobile-First Redesign & Dashboard Visualizations**:
+>   1. **Mobile Bottom Navigation (`MobileBottomNav.tsx`)**: Ergonomic fixed bottom navigation bar (Dashboard, Tasks, Matrix, Calendar, More) adhering to the natural thumb zone with hitboxes $\ge 44\text{px} \times 44\text{px}$, safe-area support (`env(safe-area-inset-bottom)`), and a smooth secondary drawer sheet.
+>   2. **Interactive SVG Visualizations (`src/components/charts/`)**:
+>      - `ProductivityTrendChart.tsx`: 7-day velocity and focus minutes area/line chart with bezier curves, gradient fill, hover points, and reactive tooltips.
+>      - `CategoryDonutChart.tsx`: Interactive SVG donut chart calculating domain life balance percentages with hover slices, center stat counter, and interactive category filter.
+>      - `QuadrantDistributionChart.tsx`: Eisenhower distribution comparison for reactive vs. strategic task allocation.
+>   3. **Enhanced KPI Metrics (`StatsCards.tsx`)**: Redesigned with SVG circular progress rings, flame streaks, daily focus indicators, and toggleable trend analytics.
+>   4. **Mobile Responsive Eisenhower Matrix (`EisenhowerMatrix.tsx`)**: Responsive segmented quadrant switcher (`All 4 | Q1 | Q2 | Q3 | Q4`) preventing horizontal squishing on mobile screens ($< 768px$) while maintaining full 2x2 grid on desktop ($\ge 768px$).
+>   5. **Adaptive Dialog Drawers (`TaskModal.tsx`, `GoalModal.tsx`)**: Bottom-sheet sliding drawer behavior on small mobile viewports ($< 640px$) and centered dialogs on desktop.
+>   6. **Anti-Slop & Zero-Pill Discipline**: Removed decorative pulsing dots, replaced pill capsules with clean unboxed text (`·` separators), and enforced `font-mono tabular-nums` for all numeric metrics.
+>   7. **Bilingual Polish**: Seamless LTR (English) and RTL (Persian / Vazirmatn) support with high contrast and zero layout shift.
 
 ---
 
-### 1. Overview & Core Concept
+### 1. Visual Design & Mobile-First Principles
 
-- **What It Does**: Chronos is an integrated Personal & Team Operating System. It provides individuals with deep work scheduling, OKRs, skill progression, habit consistency tracking, and focus analytics, while enabling teams to collaborate through Kanban boards, project management, and member role assignments.
-- **Target Audience & Context**: Knowledge workers, agile software teams, creators, and professionals needing both a distraction-free personal productivity hub and a shared team workspace.
-- **Key Value**: Delivers zero-trust multi-tenant privacy. Each user is guaranteed an isolated blank slate upon registration, with fast switching between personal focus spaces and collaborative team boards.
-
----
-
-### 2. User Experience & Visual Design
-
-- **Key User Flows**:
-  1. *Zero-State Onboarding*: When a user signs up with email and password, their dashboard opens clean with zero mock tasks, zero phantom projects, and contextual blank-state prompts ("Create your first task" / "Start a project").
-  2. *Workspace Navigation*: Clean top navigation bar with brand mark, unified Personal/Team switcher, and a consolidated profile avatar dropdown containing preferences, language toggle (English LTR / فارسی RTL with Shamsi calendar), backup/restore, and logout.
-  3. *Calendar Conflict Resolution*: When scheduling deep work blocks or syncing tasks with calendar events, interval overlaps are accurately identified, warning users of true simultaneous bookings without false positives.
-- **Visual Identity & Theme**:
-  - *Aesthetic Direction*: Refined, high-end SaaS productivity aesthetic inspired by Linear and Notion with dark/light mode balance.
-  - *Color Palette & Tokens*: Deep neutral slate canvas (`bg-slate-950` dark / `bg-slate-50` light), subtle hairline borders (`border-slate-800` / `border-slate-200`), primary brand accent (`indigo-500` / `indigo-600`), semantic indicators for task states (emerald for completed, amber for in-progress, rose for overdue).
-  - *Typography*: Clean neo-grotesque sans display pairing with high-legibility body prose and tabular numbers (`tabular-nums font-mono`) for timers, metrics, and dates. Full Persian typography using Vazirmatn in RTL mode.
-  - *Component Styling*: Single-elevation flat panels, zero decorative clutter, no pill sandwich clusters, unboxed metadata with subtle `·` separators.
+- **60-30-10 Color Hierarchy**:
+  - 60% Canvas: Deep dark neutral background (`#09090b` / `bg-neutral-950`).
+  - 30% Structural Surface: Clean card surfaces (`bg-neutral-900/60`), subtle borders (`border-white/5` and `border-neutral-800`), glass blur overlays.
+  - 10% Purposeful Accents: Indigo for primary actions (`#6366f1`), emerald for completions, amber for focus/streak, rose for urgent items.
+- **Mobile Touch Discipline**:
+  - Every interactive touch target (buttons, checkboxes, segmented tabs, menu toggles) has a minimum physical hitbox of $44\text{px} \times 44\text{px}$.
+  - Sticky surfaces cap at $\le 15\%$ viewport height ($56\text{px}$ top bar + $56\text{px}$ bottom nav bar), maximizing content area.
+  - Main scroll area includes `pb-28 lg:pb-8` bottom padding to prevent content from ever getting hidden behind the fixed bottom bar.
+- **Zero-Pill Rule**:
+  - Replaced decorative pill badges around static metadata (priorities, categories) with clean unboxed text and subtle dot separators.
+  - Numbers and dates use `font-mono tabular-nums` to eliminate jitter during updates.
 
 ---
 
-### 3. Key Product Decisions & Trade-Offs
-
-- **Decision 1: Dual-Layer Multi-Tenant Partitioning (Client & Server)**
-  - *Chosen Approach*: Enforce `userId` isolation on every storage tier: in the database layer via Prisma (`WHERE userId = ...`), in the Express fallback engine via partitioned storage buckets (`partitions[userId]`), and in client localStorage keys (`chronos_tasks_${userId}`).
-  - *Outcome*: Verified across all automated tests. Zero cross-tenant data leakage.
-
-- **Decision 2: Cryptographic JWT Verification via `jose`**
-  - *Chosen Approach*: Standard `jose` `jwtVerify` and `SignJWT` implementing HS256 signatures, `sub` user claim enforcement, and automatic expiration verification.
-  - *Outcome*: Unauthenticated, tampered, expired, and legacy `demo-token` bypasses rejected with 401.
-
-- **Decision 3: Interval Overlap Math for Calendar Scheduling**
-  - *Chosen Approach*: Conflict detection logic set to `eventA.start < eventB.end && eventA.end > eventB.start`.
-  - *Outcome*: Prevents false positives while accurately flagging intersecting blocks.
-
----
-
-### 4. Technical Architecture & Component Structure
+### 2. Component Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                          CHRONOS CLIENT (SPA)                          │
 ├────────────────────────────────────────────────────────────────────────┤
-│  Top Bar: [Brand Wordmark] ── [Personal / Team] ── [Profile Dropdown]  │
-│                                                                        │
-│  ┌───────────────────────────┐      ┌────────────────────────────────┐ │
-│  │   Personal Focus Space    │      │     Team Workspace (Trello)    │ │
-│  │  - Eisenhower Matrix      │      │  - Shared Kanban Columns       │ │
-│  │  - Habit Heatmaps         │      │  - Project Roadmaps            │ │
-│  │  - OKRs & Skill Tree      │      │  - Member Email Invites        │ │
-│  │  - Energy/ROI Timer       │      │  - Activity Feeds              │ │
-│  └─────────────┬─────────────┘      └───────────────┬────────────────┘ │
-│                │                                    │                  │
-│                ▼                                    ▼                  │
-│       TaskContext / TeamContext (User-Scoped State Stores)             │
-│       - Local Cache: `chronos_{entity}_{userId}`                       │
-│       - Auth Header: Bearer <jose JWT>                                 │
-└────────────────────────────────┬───────────────────────────────────────┘
-                                 │ HTTP API (Port 3000)
-                                 ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        EXPRESS APPLICATION SERVER                      │
+│  Top Bar (56px): [Brand] ── [Personal / Team] ── [Search Cmd+K] ── [User]│
 ├────────────────────────────────────────────────────────────────────────┤
-│  Middleware Stack:                                                     │
-│  - Security Headers & JSON Body Parser                                 │
-│  - JWT Verification (`jose` HS256 token validator)                     │
-│    -> Injects verified `req.user = { id, email, role }`                │
+│  Desktop: Collapsible Sidebar (w-16 / w-64)                            │
+│  Mobile: Fixed Bottom Navigation Tab Bar (48px - 56px touch zone)      │
+│          [Dashboard] [Tasks] [Matrix] [Calendar] [••• More Drawer]     │
 ├────────────────────────────────────────────────────────────────────────┤
-│  API Routers (Strict User Partitioning):                               │
-│  - /api/auth       -> Signup, Login, Session Verification (/me)        │
-│  - /api/tasks      -> Personal Tasks CRUD (partitions[userId])         │
-│  - /api/projects   -> Personal Projects (partitions[userId])           │
-│  - /api/goals      -> OKRs & Key Results (partitions[userId])          │
-│  - /api/calendar   -> Events with strict interval overlap checking     │
-│  - /api/workspaces -> Team Workspaces, Team Projects, Kanban Tasks     │
-│  - /api/team       -> Project Invitations & Membership Access Control  │
-│  - /api/skills     -> RPG progression & XP awarding                    │
-│  - /api/timelogs   -> Focus logs with cross-resource verification      │
-│  - /api/ai         -> AI Coach & Burnout Risk Analysis                 │
-└────────────────────────────────┬───────────────────────────────────────┘
-                                 │
-                                 ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        DATA PERSISTENCE TIER                           │
-├────────────────────────────────────────────────────────────────────────┤
-│  - Local Multi-Tenant Partitioned Storage (`data/db.json`)             │
-│  - Target Schema: PostgreSQL via Prisma (`prisma/schema.prisma`)       │
-│  - Zero mock data; guaranteed empty initial state for every user       │
+│  Views:                                                                │
+│  ├── Dashboard:                                                        │
+│  │   ├── Burnout Alert Banner                                          │
+│  │   ├── StatsCards (Circular Ring + Sparkline + Toggleable Charts)    │
+│  │   │   ├── ProductivityTrendChart (7-day SVG Velocity & Focus)       │
+│  │   │   └── CategoryDonutChart (Interactive Domain Life Balance)      │
+│  │   ├── Pressing Priorities & Daily Agenda Preview                    │
+│  │   ├── QuadrantDistributionChart (Eisenhower ratio bars)             │
+│  │   └── HabitHeatmap (8W/16W adaptive touch-pan heatmap)              │
+│  ├── Tasks & Kanban:                                                   │
+│  │   ├── Responsive Search & Multi-Filters (Category, Status, Sort)    │
+│  │   └── TaskListView (44px touch targets, list & kanban modes)        │
+│  ├── Eisenhower Matrix (Segmented mobile tabs + 2x2 desktop grid)      │
+│  ├── Energy Calendar (Circadian focus bands, tap-to-schedule slots)    │
+│  ├── Projects Portfolio (Initiatives, hourly valuation, Google Docs)   │
+│  ├── Goals & OKRs (Quarterly/annual progress bars, key results)        │
+│  ├── Time ROI Stopwatch (Live billable tracker, project attribution)   │
+│  ├── RPG Skill Tree (XP node progression, achievement badges)          │
+│  └── AI Coach Panel (Gemini SSE chat stream, executive brief)          │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 5. Sprint 01 Deliverables
+### 3. Verification & Test Outcomes
 
-| Deliverable | Location | Description |
-| :--- | :--- | :--- |
-| **Multi-User Architecture** | `docs/MULTI_USER_ARCHITECTURE.md` | Tenant isolation, personal vs team domains, threat model. |
-| **Authentication Spec** | `docs/AUTHENTICATION.md` | JWT specification, `bcryptjs` hashing, `/me` validation. |
-| **Data Ownership Rules** | `docs/DATA_OWNERSHIP.md` | Ownership matrix, cross-resource relational integrity. |
-| **Security Test Suite** | `tests/security.test.ts` & `docs/SECURITY_TESTS.md` | 8 mandatory scenarios, 29/29 assertions passed. |
-| **Database Migration Plan**| `docs/DATABASE_MIGRATION.md` | Target Prisma schema, Cloud SQL cutover & rollback plan. |
+- **TypeScript Compilation**: `compile_applet` passed (`vite build` succeeded with 0 errors).
+- **ESLint & Type Safety**: `lint_applet` passed (`tsc --noEmit` succeeded with 0 errors).
+- **Backend & Security Suite**: 19 security scenarios with 61/61 assertions passed.
+- **E2E Integration Suite**: 16/16 end-to-end assertions passed.
+- **Server Health**: Port 3000 responding HTTP 200 with strict CSP and security headers.

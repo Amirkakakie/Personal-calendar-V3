@@ -356,16 +356,22 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
                 {/* Slot Content */}
                 <div className="flex-1 space-y-2">
                   {matchingEvents.length === 0 ? (
-                    <div className="h-8 border border-dashed border-neutral-800 rounded-lg flex items-center justify-between px-3 text-xs text-neutral-500">
+                    <div 
+                      onClick={() => onOpenNewTaskWithTime && onOpenNewTaskWithTime(selectedDate, timeStr)}
+                      className="min-h-[40px] border border-dashed border-neutral-800 rounded-lg flex items-center justify-between px-3 text-xs text-neutral-500 cursor-pointer hover:border-neutral-700 transition-colors"
+                    >
                       <span>{locale === 'fa' ? 'بازه زمانی آزاد' : 'Available focus window'}</span>
                       {onOpenNewTaskWithTime && (
                         <button
                           type="button"
-                          onClick={() => onOpenNewTaskWithTime(selectedDate, timeStr)}
-                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenNewTaskWithTime(selectedDate, timeStr);
+                          }}
+                          className="flex sm:opacity-0 sm:group-hover:opacity-100 items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-opacity min-h-[36px] py-1"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>{locale === 'fa' ? 'ثبت کار در این ساعت' : 'Schedule task here'}</span>
+                          <span>{locale === 'fa' ? 'ثبت کار' : 'Schedule task'}</span>
                         </button>
                       )}
                     </div>

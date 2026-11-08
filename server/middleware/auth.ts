@@ -43,10 +43,16 @@ function getSecretKey(): Uint8Array {
 const EXACT_PUBLIC_PATHS = new Set([
   '/api/auth/login',
   '/api/auth/signup',
+  '/api/auth/google',
+  '/api/auth/google/config',
   '/api/health',
+  '/api/health/db',
   '/auth/login',
   '/auth/signup',
-  '/health'
+  '/auth/google',
+  '/auth/google/config',
+  '/health',
+  '/health/db'
 ]);
 
 /**

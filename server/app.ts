@@ -68,6 +68,7 @@ const authRateLimiter = createRateLimiter({
 app.use('/api', globalApiLimiter);
 app.use('/api/auth/login', authRateLimiter);
 app.use('/api/auth/signup', authRateLimiter);
+app.use('/api/auth/google', authRateLimiter);
 app.use('/api/ai', aiRateLimiter);
 
 // Authentication Guard on API Endpoints (handles public exclusions internally)
@@ -94,6 +95,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     geminiEnabled: Boolean(process.env.GEMINI_API_KEY)
   });
+});
+
+// Database & Persistence Engine Diagnostic Health Endpoint
+app.get('/api/health/db', (_req: Request, res: Response) => {
+  res.json(db.getHealthInfo());
 });
 
 // Direct Productivity Stats endpoint (strictly user-scoped)

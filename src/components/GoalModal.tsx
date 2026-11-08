@@ -130,7 +130,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -138,7 +138,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
       }}
     >
       <div 
-        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative flex flex-col"
+        className="bg-neutral-900 border-t sm:border border-neutral-800 rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl p-5 sm:p-6 relative flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <button

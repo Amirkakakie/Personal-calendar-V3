@@ -304,18 +304,20 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => openEditModal(project)}
-                        className="p-1.5 text-neutral-500 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
                         title={t('common.edit')}
+                        aria-label="Edit project"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(project.id)}
-                        className="p-1.5 text-neutral-500 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
                         title={t('common.delete')}
+                        aria-label="Delete project"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

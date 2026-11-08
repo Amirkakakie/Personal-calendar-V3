@@ -365,13 +365,13 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
         </div>
 
         {/* Suggested Quick Prompts */}
-        <div className="py-2.5 flex items-center gap-1.5 overflow-x-auto border-t border-neutral-800 custom-scrollbar">
+        <div className="py-2.5 flex items-center gap-2 overflow-x-auto border-t border-neutral-800 custom-scrollbar touch-pan-x">
           {suggestedPrompts.map((p, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleSendChat(undefined, p)}
-              className="px-2.5 py-1 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white text-[11px] whitespace-nowrap border border-neutral-800 transition-all shrink-0"
+              className="px-3 py-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs whitespace-nowrap border border-neutral-800 transition-all shrink-0 min-h-[36px] flex items-center"
             >
               {p}
             </button>
@@ -385,13 +385,14 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder={t('coach.coachPlaceholder')}
-            className="app-input"
+            className="app-input min-h-[44px]"
           />
           <button
             type="submit"
             disabled={!chatInput.trim() || isSendingChat}
-            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-all shadow-lg shadow-indigo-600/20 shrink-0"
+            className="w-11 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-all shadow-lg shadow-indigo-600/20 shrink-0 flex items-center justify-center"
             title={t('coach.askBtn')}
+            aria-label="Send prompt to AI coach"
           >
             <Send className="w-4 h-4" />
           </button>

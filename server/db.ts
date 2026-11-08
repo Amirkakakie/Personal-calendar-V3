@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pg from 'pg';
+const { Pool } = pg;
 import type { 
   Task, 
   GoalOKR, 
@@ -72,6 +74,8 @@ export interface UserRecord {
   role: string;
   title: string;
   avatarColor: string;
+  avatarUrl?: string;
+  googleId?: string;
   initials: string;
   joinedAt: string;
   personalWorkspaceId: string;
@@ -187,22 +191,120 @@ function createBlankPartition(): UserPartition {
   };
 }
 
+function isValidPostgresUrl(url?: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed.startsWith('postgres://') && !trimmed.startsWith('postgresql://')) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname;
+    if (!host || host === 'base' || host.includes('Your') || host.includes('db-host')) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 class Database {
   private data: DatabaseSchema;
   private dbPath: string;
+  private isServerless: boolean = false;
+  private pgPool: pg.Pool | null = null;
+  private pgConnected: boolean = false;
+  private pgInitPromise: Promise<void> | null = null;
 
   constructor() {
-    const { targetFile } = resolveStoragePath();
+    const { targetFile, isServerless } = resolveStoragePath();
     this.dbPath = targetFile;
+    this.isServerless = isServerless;
     this.data = this.load();
-    this.checkPrismaConnectivity();
+    this.initPostgres();
   }
 
-  private checkPrismaConnectivity() {
-    if (process.env.DATABASE_URL) {
-      console.log('[Chronos DB] DATABASE_URL detected. Hybrid Prisma PostgreSQL adapter active.');
-    } else {
-      console.log('[Chronos DB] Local multi-tenant partitioned storage adapter active.');
+  private initPostgres() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl || !isValidPostgresUrl(dbUrl)) {
+      if (dbUrl && !isValidPostgresUrl(dbUrl)) {
+        console.log(`[Chronos DB] DATABASE_URL ("${dbUrl}") is not a valid PostgreSQL URI. Operating on local multi-tenant storage.`);
+      } else if (this.isServerless) {
+        console.warn('[Chronos DB Warning] Running on serverless without DATABASE_URL. Data stored in /tmp is ephemeral across cold starts. Configure DATABASE_URL in Vercel environment variables for permanent cloud persistence.');
+      } else {
+        console.log('[Chronos DB] Local multi-tenant file persistence active at:', this.dbPath);
+      }
+      return;
+    }
+
+    try {
+      console.log('[Chronos DB] Connecting to PostgreSQL pool...');
+      const isLocalhost = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+      this.pgPool = new Pool({
+        connectionString: dbUrl,
+        ssl: isLocalhost ? false : { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      });
+
+      this.pgPool.on('error', (err) => {
+        console.warn('[Chronos DB] PostgreSQL client warning:', err.message);
+        this.pgConnected = false;
+      });
+
+      this.pgInitPromise = this.setupPostgresStore();
+    } catch (err: any) {
+      console.warn('[Chronos DB] Failed to initialize PostgreSQL pool, using local storage:', err.message);
+      this.pgPool = null;
+      this.pgConnected = false;
+    }
+  }
+
+  private async setupPostgresStore() {
+    if (!this.pgPool) return;
+    try {
+      await this.pgPool.query(`
+        CREATE TABLE IF NOT EXISTS chronos_data (
+          key VARCHAR(100) PRIMARY KEY,
+          data JSONB NOT NULL,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Attempt to load existing cloud state
+      const res = await this.pgPool.query(`SELECT data FROM chronos_data WHERE key = 'root' LIMIT 1;`);
+      if (res.rows && res.rows.length > 0 && res.rows[0].data) {
+        this.data = this.sanitizeParsedData(res.rows[0].data);
+        console.log('[Chronos DB] Successfully hydrated state from PostgreSQL store.');
+      } else {
+        // Seed initial state to DB
+        await this.syncToPostgres(this.data);
+        console.log('[Chronos DB] Initialized PostgreSQL store with current schema state.');
+      }
+      this.pgConnected = true;
+    } catch (err: any) {
+      console.warn('[Chronos DB] PostgreSQL connection unavailable, operating on local storage:', err.message);
+      this.pgConnected = false;
+      try {
+        await this.pgPool.end();
+      } catch {}
+      this.pgPool = null;
+    }
+  }
+
+  private async syncToPostgres(data: DatabaseSchema) {
+    if (!this.pgPool) return;
+    try {
+      await this.pgPool.query(
+        `INSERT INTO chronos_data (key, data, updated_at) 
+         VALUES ('root', $1, CURRENT_TIMESTAMP)
+         ON CONFLICT (key) DO UPDATE SET data = $1, updated_at = CURRENT_TIMESTAMP;`,
+        [JSON.stringify(data)]
+      );
+    } catch (err) {
+      console.error('[Chronos DB] Failed to sync data to PostgreSQL:', err);
     }
   }
 
@@ -254,6 +356,53 @@ class Database {
     } catch (err) {
       console.warn('[Database] Filesystem write failed, keeping in-memory copy active:', err);
     }
+
+    if (this.pgPool && this.pgConnected) {
+      this.syncToPostgres(data).catch((err) => {
+        console.warn('[Database] Async PostgreSQL sync error:', err.message);
+      });
+    }
+  }
+
+  public getHealthInfo() {
+    const dbUrl = process.env.DATABASE_URL;
+    const isValidUrl = isValidPostgresUrl(dbUrl);
+    return {
+      status: 'healthy',
+      persistenceEngine: (this.pgPool && this.pgConnected) 
+        ? 'postgresql_cloud' 
+        : (this.isServerless ? 'serverless_ephemeral_tmp' : 'local_json_filesystem'),
+      isServerless: this.isServerless,
+      databaseUrlConfigured: Boolean(dbUrl),
+      databaseUrlValid: isValidUrl,
+      pgConnected: this.pgConnected,
+      usersCount: this.data.users.length,
+      storagePath: this.dbPath,
+      serverlessWarning: (this.isServerless && (!dbUrl || !isValidUrl))
+        ? 'Running in serverless environment without a valid PostgreSQL DATABASE_URL. For production persistence across cold starts, set DATABASE_URL in Vercel environment variables.'
+        : undefined
+    };
+  }
+
+  public updateUser(userId: string, updates: Partial<UserRecord>): UserRecord | null {
+    const idx = this.data.users.findIndex(u => u.id === userId);
+    if (idx === -1) return null;
+    const safeUpdates = { ...updates };
+    delete (safeUpdates as any).id;
+    this.data.users[idx] = { ...this.data.users[idx], ...safeUpdates };
+    this.save(this.data);
+    return this.data.users[idx];
+  }
+
+  public linkGoogleAccount(userId: string, googleId: string, avatarUrl?: string): UserRecord | null {
+    const user = this.getUserById(userId);
+    if (!user) return null;
+    user.googleId = googleId;
+    if (avatarUrl && !user.avatarUrl) {
+      user.avatarUrl = avatarUrl;
+    }
+    this.save(this.data);
+    return user;
   }
 
   // --- USER AUTH & PROFILES ---

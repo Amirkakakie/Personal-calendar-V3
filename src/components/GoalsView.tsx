@@ -78,32 +78,35 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
           {goals.map(goal => (
             <div
               key={goal.id}
-              className="rounded-2xl border border-white/5 bg-white/[0.02] hover:border-white/10 p-5 flex flex-col justify-between transition-all"
+              className="group rounded-2xl border border-white/5 bg-white/[0.02] hover:border-white/10 p-5 flex flex-col justify-between transition-all"
             >
               <div>
                 {/* Meta Header */}
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${getCategoryClass(goal.category)}`}>
+                    <span className="text-xs font-semibold text-neutral-300">
                       {getCategoryLabel(goal.category)}
                     </span>
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white/5 text-neutral-400 capitalize">
+                    <span className="text-neutral-600">·</span>
+                    <span className="text-xs text-neutral-400 capitalize">
                       {goal.timeframe === 'quarterly' ? t('goals.quarterly') : t('goals.annual')}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onEditGoal(goal)}
-                      className="p-1.5 text-neutral-500 hover:text-white rounded-lg hover:bg-white/[0.05]"
+                      className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors"
                       title={t('common.edit')}
+                      aria-label="Edit goal"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => onDeleteGoal(goal.id)}
-                      className="p-1.5 text-neutral-500 hover:text-rose-400 rounded-lg hover:bg-white/[0.05]"
+                      className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-white/[0.05] transition-colors"
                       title={t('common.delete')}
+                      aria-label="Delete goal"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

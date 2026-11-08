@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, title?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   findUserByEmail: (email: string) => User | null;
   getProjectMembers: (memberIds: string[]) => TeamMember[];
@@ -178,6 +179,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   );
 
+  const loginWithGoogle = useCallback(
+    async (credential: string): Promise<{ success: boolean; error?: string }> => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success && data.user && data.token) {
+          setAuthToken(data.token);
+          setCurrentUser(data.user);
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+          setIsLoading(false);
+          return { success: true };
+        } else {
+          setIsLoading(false);
+          return { success: false, error: data.error || 'Google authentication failed.' };
+        }
+      } catch (err: any) {
+        setIsLoading(false);
+        return { success: false, error: err.message || 'Unable to connect to Google authentication service.' };
+      }
+    },
+    []
+  );
+
   const findUserByEmail = useCallback(
     (email: string): User | null => {
       const clean = email.trim().toLowerCase();
@@ -229,6 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         signup,
+        loginWithGoogle,
         logout,
         findUserByEmail,
         getProjectMembers

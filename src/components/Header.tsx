@@ -54,12 +54,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [isInboxOpen, setIsInboxOpen] = useState(false);
 
   return (
-    <header className="h-14 border-b border-white/5 bg-neutral-950/80 backdrop-blur-md sticky top-0 z-50 px-4">
-      <div className="h-full max-w-[1600px] mx-auto flex items-center justify-between gap-4">
+    <header className="h-14 border-b border-white/5 bg-neutral-950/80 backdrop-blur-md sticky top-0 z-50 px-3 sm:px-4">
+      <div className="h-full max-w-[1600px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
         {/* Left Side: Brand & Workspace Switcher */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 transition-all group-hover:scale-105 group-hover:rotate-3">
+        <div className="flex items-center gap-2 sm:gap-4 md:gap-6 min-w-0">
+          <div className="flex items-center gap-2 group cursor-pointer shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 transition-all group-hover:scale-105">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-sm font-bold text-white tracking-tight hidden sm:block">
@@ -69,29 +69,31 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="h-4 w-px bg-white/10 hidden md:block" />
 
-          {/* New Premium Switcher */}
-          <div className="flex items-center bg-white/[0.03] p-0.5 rounded-lg border border-white/5">
+          {/* Premium Switcher */}
+          <div className="flex items-center bg-white/[0.03] p-0.5 rounded-lg border border-white/5 shrink-0">
             <button
               onClick={() => onToggleWorkspaceMode('personal')}
-              className={`flex items-center gap-2 px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all min-h-[32px] ${
                 workspaceMode === 'personal'
                   ? 'bg-neutral-800 text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/10'
                   : 'text-neutral-500 hover:text-neutral-300'
               }`}
+              aria-label="Personal Workspace"
             >
               <User className={`w-3 h-3 ${workspaceMode === 'personal' ? 'text-indigo-400' : ''}`} />
-              Personal
+              <span>Personal</span>
             </button>
             <button
               onClick={() => onToggleWorkspaceMode('team')}
-              className={`flex items-center gap-2 px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all min-h-[32px] ${
                 workspaceMode === 'team'
                   ? 'bg-neutral-800 text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/10'
                   : 'text-neutral-500 hover:text-neutral-300'
               }`}
+              aria-label="Team Workspace"
             >
               <Users className={`w-3 h-3 ${workspaceMode === 'team' ? 'text-emerald-400' : ''}`} />
-              Team
+              <span>Team</span>
             </button>
           </div>
         </div>
@@ -101,6 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={onOpenCommandPalette}
           className="hidden lg:flex flex-1 max-w-md relative group items-center text-start"
+          aria-label="Search or jump to command"
         >
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 group-hover:text-indigo-400 transition-colors pointer-events-none" />
           <div className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-neutral-700 rounded-lg py-1.5 pl-9 pr-12 text-[11px] text-neutral-400 transition-all cursor-pointer">
@@ -113,24 +116,26 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Right Side: Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onOpenNewTask}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-600/20"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-600/20 min-h-[36px]"
+            aria-label="New Task"
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
             <span className="hidden sm:inline">New Task</span>
           </button>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setIsInboxOpen(true)}
-              className="relative p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.05] transition-all"
+              className="relative p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.05] transition-all min-h-[38px] min-w-[38px] flex items-center justify-center"
+              aria-label="Notifications"
             >
               <Bell className="w-4 h-4" />
               {myPendingInvites.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full border-2 border-neutral-950" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-neutral-950" />
               )}
             </button>
 

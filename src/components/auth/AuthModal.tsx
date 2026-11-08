@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, LogIn, UserPlus, AlertCircle, Users, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useI18n } from '../../i18n/I18nContext.tsx';
+import { GoogleSignInButton } from './GoogleSignInButton.tsx';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -110,6 +111,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <span>{errorMessage}</span>
             </div>
           )}
+
+          {/* Google Sign-In */}
+          <div className="mb-4">
+            <GoogleSignInButton 
+              onSuccess={onClose} 
+              onError={(err) => setErrorMessage(err)} 
+            />
+          </div>
+
+          <div className="relative flex py-1 items-center mb-4">
+            <div className="flex-grow border-t border-neutral-800" />
+            <span className="flex-shrink mx-2.5 text-[10px] text-neutral-500 uppercase tracking-wider font-medium">
+              {direction === 'rtl' ? 'یا ادامه با ایمیل' : 'or continue with email'}
+            </span>
+            <div className="flex-grow border-t border-neutral-800" />
+          </div>
 
           {/* Form */}
           {mode === 'login' ? (

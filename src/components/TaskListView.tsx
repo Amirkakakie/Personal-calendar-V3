@@ -9,17 +9,14 @@ import {
   Search, 
   ChevronDown, 
   ChevronUp, 
-  ExternalLink,
-  Flame,
-  LayoutGrid,
-  List,
-  ArrowUpDown,
-  X,
-  CheckSquare,
-  Square,
-  ArrowRight,
-  Sparkles,
-  Zap
+  LayoutGrid, 
+  List, 
+  ArrowUpDown, 
+  X, 
+  CheckSquare, 
+  Square, 
+  Zap,
+  Filter
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Task, TaskStatus } from '../types/index.ts';
@@ -45,13 +42,14 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   onDeleteTask,
   onOpenNewTask
 }) => {
-  const { t, formatNumber, formatDate, formatTime, formatDuration, locale, direction } = useI18n();
+  const { t, formatNumber, formatDate, formatDuration, locale } = useI18n();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeStatus, setActiveStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortField>('date');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
   const toggleExpand = (taskId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -66,7 +64,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   const handleTaskCheck = (taskId: string, isCurrentlyDone: boolean, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!isCurrentlyDone) {
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      try {
+        confetti({ particleCount: 45, spread: 55, origin: { y: 0.7 } });
+      } catch {}
     }
     onToggleTask(taskId);
   };
@@ -121,12 +121,12 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High': return 'bg-rose-500/10 text-rose-300 border-rose-500/30';
-      case 'Medium': return 'bg-amber-500/10 text-amber-300 border-amber-500/30';
-      case 'Low': return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
-      default: return 'bg-neutral-800 text-neutral-300 border-neutral-700';
+      case 'High': return 'text-rose-400';
+      case 'Medium': return 'text-amber-400';
+      case 'Low': return 'text-emerald-400';
+      default: return 'text-neutral-400';
     }
   };
 
@@ -140,16 +140,6 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
     }
   };
 
-  const getCategoryBadge = (category: string) => {
-    switch (category) {
-      case 'Work/Career': return 'bg-blue-500/10 text-blue-300 border-blue-500/30';
-      case 'Academic/Study': return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
-      case 'Personal Growth': return 'bg-purple-500/10 text-purple-300 border-purple-500/30';
-      case 'Health & Habits': return 'bg-amber-500/10 text-amber-300 border-amber-500/30';
-      default: return 'bg-neutral-800 text-neutral-300 border-neutral-700';
-    }
-  };
-
   const getStatusLabel = (status: TaskStatus) => {
     switch (status) {
       case 'todo': return t('tasks.todo');
@@ -160,150 +150,154 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fadeIn pb-8">
       {/* Search, Filter Bar, Sorting, and View Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl backdrop-blur-md">
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-neutral-500 absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder={t('tasks.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="app-input ps-9"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white p-0.5"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Filter Selectors, Sorting & View Mode */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Category Filter */}
-          <select
-            value={activeCategory}
-            onChange={(e) => setActiveCategory(e.target.value)}
-            className="app-select w-auto text-xs"
-          >
-            <option value="all">{t('tasks.allCategories')}</option>
-            <option value="Work/Career">{t('categories.workCareer')}</option>
-            <option value="Academic/Study">{t('categories.academicStudy')}</option>
-            <option value="Personal Growth">{t('categories.personalGrowth')}</option>
-            <option value="Health & Habits">{t('categories.healthHabits')}</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={activeStatus}
-            onChange={(e) => setActiveStatus(e.target.value)}
-            className="app-select w-auto text-xs"
-          >
-            <option value="all">{t('tasks.allStatus')}</option>
-            <option value="todo">{t('tasks.todo')}</option>
-            <option value="in_progress">{t('tasks.inProgress')}</option>
-            <option value="completed">{t('tasks.completed')}</option>
-          </select>
-
-          {/* Sort Selector */}
-          <div className="flex items-center gap-1 bg-neutral-950 border border-neutral-800 rounded-xl px-2 py-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-neutral-500" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortField)}
-              className="bg-transparent text-neutral-300 text-xs focus:outline-none cursor-pointer"
-            >
-              <option value="date" className="bg-neutral-900 text-white">{locale === 'fa' ? 'مهلت زمانی' : 'Due Date'}</option>
-              <option value="priority" className="bg-neutral-900 text-white">{locale === 'fa' ? 'اولویت' : 'Priority'}</option>
-              <option value="duration" className="bg-neutral-900 text-white">{locale === 'fa' ? 'مدت تخمینی' : 'Duration'}</option>
-              <option value="title" className="bg-neutral-900 text-white">{locale === 'fa' ? 'عنوان (الفبا)' : 'Title'}</option>
-            </select>
+      <div className="flex flex-col gap-3 p-3.5 sm:p-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-neutral-500 absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={t('tasks.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="app-input ps-9 pe-9 min-h-[44px]"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute end-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white p-2 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Clear Filters Button */}
-          {hasFiltersActive && (
-            <button
-              onClick={handleClearFilters}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white text-xs transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>{t('common.clear')}</span>
-            </button>
-          )}
+          {/* New Task Button (Primary Touch CTA) */}
+          <button
+            type="button"
+            onClick={onOpenNewTask}
+            className="btn-primary min-h-[44px] px-3.5 sm:px-4 shrink-0 shadow-lg shadow-indigo-600/25"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span className="hidden sm:inline">{t('tasks.newTask')}</span>
+          </button>
+        </div>
 
-          {/* View Toggle */}
+        {/* Filter Selectors, Sorting & View Mode Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Category Filter */}
+            <select
+              value={activeCategory}
+              onChange={(e) => setActiveCategory(e.target.value)}
+              className="app-select w-auto text-xs min-h-[38px] py-1.5"
+              aria-label="Filter by category"
+            >
+              <option value="all">{t('tasks.allCategories')}</option>
+              <option value="Work/Career">{t('categories.workCareer')}</option>
+              <option value="Academic/Study">{t('categories.academicStudy')}</option>
+              <option value="Personal Growth">{t('categories.personalGrowth')}</option>
+              <option value="Health & Habits">{t('categories.healthHabits')}</option>
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={activeStatus}
+              onChange={(e) => setActiveStatus(e.target.value)}
+              className="app-select w-auto text-xs min-h-[38px] py-1.5"
+              aria-label="Filter by status"
+            >
+              <option value="all">{t('tasks.allStatus')}</option>
+              <option value="todo">{t('tasks.todo')}</option>
+              <option value="in_progress">{t('tasks.inProgress')}</option>
+              <option value="completed">{t('tasks.completed')}</option>
+            </select>
+
+            {/* Sort Selector */}
+            <div className="flex items-center gap-1 bg-neutral-950 border border-neutral-800 rounded-xl px-2.5 min-h-[38px]">
+              <ArrowUpDown className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortField)}
+                className="bg-transparent text-neutral-300 text-xs focus:outline-none cursor-pointer py-1"
+                aria-label="Sort tasks"
+              >
+                <option value="date" className="bg-neutral-900 text-white">{locale === 'fa' ? 'مهلت زمانی' : 'Due Date'}</option>
+                <option value="priority" className="bg-neutral-900 text-white">{locale === 'fa' ? 'اولویت' : 'Priority'}</option>
+                <option value="duration" className="bg-neutral-900 text-white">{locale === 'fa' ? 'مدت تخمینی' : 'Duration'}</option>
+                <option value="title" className="bg-neutral-900 text-white">{locale === 'fa' ? 'عنوان' : 'Title'}</option>
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {hasFiltersActive && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="flex items-center gap-1 px-2.5 min-h-[38px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>{t('common.clear')}</span>
+              </button>
+            )}
+          </div>
+
+          {/* View Toggle (List vs Kanban) */}
           <div className="flex items-center bg-neutral-950 border border-neutral-800 rounded-xl p-0.5">
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${
                 viewMode === 'list' 
                   ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-white/10' 
                   : 'text-neutral-500 hover:text-neutral-300'
               }`}
               title="List View"
+              aria-label="List View"
             >
               <List className="w-4 h-4" />
             </button>
             <button
               type="button"
               onClick={() => setViewMode('kanban')}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-all ${
                 viewMode === 'kanban' 
                   ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-white/10' 
                   : 'text-neutral-500 hover:text-neutral-300'
               }`}
               title="Kanban Board"
+              aria-label="Kanban Board"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
-
-          {/* New Task Button */}
-          <button
-            type="button"
-            onClick={onOpenNewTask}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('tasks.newTask')}</span>
-          </button>
         </div>
       </div>
 
       {/* Task Count Summary Strip */}
       <div className="flex items-center justify-between text-xs text-neutral-500 px-1 font-mono">
         <span>
-          {locale === 'fa' ? `نمایش ${formatNumber(sortedTasks.length)} از ${formatNumber(tasks.length)} کار` : `Showing ${formatNumber(sortedTasks.length)} of ${formatNumber(tasks.length)} tasks`}
+          {formatNumber(sortedTasks.length)} {sortedTasks.length === 1 ? 'task' : 'tasks'}
         </span>
-        <div className="flex items-center gap-3">
-          <span className="text-emerald-400">
-            {formatNumber(tasks.filter(t => t.status === 'completed').length)} {locale === 'fa' ? 'تکمیل‌شده' : 'done'}
-          </span>
-          <span>•</span>
-          <span className="text-amber-400">
-            {formatNumber(tasks.filter(t => t.status === 'in_progress').length)} {locale === 'fa' ? 'در جریان' : 'in progress'}
-          </span>
-        </div>
+        <span>
+          {formatNumber(sortedTasks.filter(t => t.status === 'completed').length)} {locale === 'fa' ? 'تکمیل شده' : 'completed'}
+        </span>
       </div>
 
-      {/* View Mode: List vs Kanban */}
+      {/* Content Area */}
       {viewMode === 'list' ? (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {sortedTasks.length === 0 ? (
             <EmptyState
-              icon={Check}
-              title={tasks.length === 0 ? "Welcome! Create your first task" : t('tasks.noTasksFound')}
-              description={tasks.length === 0 ? "Get started by creating your first action item. Organize your work by priority, Eisenhower quadrants, and circadian energy blocks." : "No tasks match your current category, status, or search query. Try clearing your filters."}
+              icon={CheckSquare}
+              title={hasFiltersActive ? t('tasks.noFilteredTasks') : t('tasks.noTasks')}
+              description={hasFiltersActive ? t('tasks.noFilteredTasksDesc') : t('tasks.noTasksDesc')}
               actionLabel={t('tasks.newTask')}
               onAction={onOpenNewTask}
-              secondaryActionLabel={hasFiltersActive ? t('common.clear') : undefined}
-              onSecondaryAction={hasFiltersActive ? handleClearFilters : undefined}
             />
           ) : (
             sortedTasks.map(task => {
@@ -317,7 +311,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                 <div
                   key={task.id}
                   onClick={() => onEditTask(task)}
-                  className={`group p-4 rounded-xl border transition-all cursor-pointer ${
+                  className={`group p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${
                     isDone 
                       ? 'border-neutral-800/60 opacity-60 bg-neutral-950/40 hover:opacity-80' 
                       : isInProgress
@@ -325,43 +319,50 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                       : 'border-neutral-800 hover:border-neutral-700 bg-neutral-900/60 hover:bg-neutral-850/60'
                   }`}
                 >
-                  <div className="flex items-start gap-3.5">
-                    {/* Checkbox */}
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox Touch Wrapper (min 44px hitbox) */}
                     <button
                       type="button"
                       onClick={(e) => handleTaskCheck(task.id, isDone, e)}
-                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all border shrink-0 ${
+                      className="w-10 h-10 -ms-2 -mt-2 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors shrink-0"
+                      aria-label={isDone ? 'Mark as incomplete' : 'Mark as complete'}
+                    >
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all border ${
                         isDone
                           ? 'bg-emerald-500 border-emerald-500 text-neutral-950 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
                           : 'border-neutral-700 hover:border-indigo-400 bg-neutral-950/60'
-                      }`}
-                      aria-label="Toggle task status"
-                    >
-                      {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      }`}>
+                        {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      </div>
                     </button>
 
                     {/* Task Title & Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`text-sm font-semibold transition-colors ${
+                          className={`text-sm font-semibold transition-colors leading-snug ${
                             isDone ? 'line-through text-neutral-500' : 'text-neutral-100 group-hover:text-white'
                           }`}
                         >
                           {task.title}
                         </span>
 
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${getPriorityBadge(task.priority)}`}>
+                        {/* Unboxed Metadata (Zero-Pill Rule) */}
+                        <div className="flex items-center gap-1.5 text-[11px]">
+                          <span className={`font-semibold ${getPriorityColor(task.priority)}`}>
                             {getPriorityLabel(task.priority)}
                           </span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${getCategoryBadge(task.category)}`}>
+                          <span className="text-neutral-600">·</span>
+                          <span className="text-neutral-400">
                             {getCategoryLabel(task.category)}
                           </span>
                           {isInProgress && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                              {t('tasks.inProgress')}
-                            </span>
+                            <>
+                              <span className="text-neutral-600">·</span>
+                              <span className="text-amber-400 font-semibold">
+                                {t('tasks.inProgress')}
+                              </span>
+                            </>
                           )}
                         </div>
                       </div>
@@ -372,18 +373,18 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                         </p>
                       )}
 
-                      {/* Metadata */}
-                      <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-neutral-500">
+                      {/* Metadata Row */}
+                      <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-neutral-500">
                         {task.dueDate && (
-                          <div className="flex items-center gap-1.5 font-mono text-neutral-400">
+                          <div className="flex items-center gap-1.5 font-mono text-neutral-400 tabular-nums">
                             <Calendar className="w-3.5 h-3.5 text-neutral-500" />
                             <span>{formatDate(task.dueDate)}</span>
-                            {task.dueTime && <span className="text-neutral-500 font-mono">({task.dueTime})</span>}
+                            {task.dueTime && <span className="text-neutral-500">({task.dueTime})</span>}
                           </div>
                         )}
 
                         {task.durationMinutes && (
-                          <div className="flex items-center gap-1.5 font-mono text-neutral-400">
+                          <div className="flex items-center gap-1.5 font-mono text-neutral-400 tabular-nums">
                             <Clock className="w-3.5 h-3.5 text-neutral-500" />
                             <span>{formatDuration(task.durationMinutes)}</span>
                           </div>
@@ -400,9 +401,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                           <button
                             type="button"
                             onClick={(e) => toggleExpand(task.id, e)}
-                            className="flex items-center gap-1 text-indigo-400 font-medium hover:text-indigo-300 transition-colors"
+                            className="flex items-center gap-1 text-indigo-400 font-medium hover:text-indigo-300 transition-colors py-1"
                           >
-                            <span>
+                            <span className="tabular-nums font-mono">
                               {formatNumber(completedSubtasks)}/{formatNumber(subtasks.length)} subtasks
                             </span>
                             {isExpanded ? (
@@ -428,7 +429,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                               <div
                                 key={st.id}
                                 onClick={() => onToggleSubtask(task.id, st.id)}
-                                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-800/50 transition-colors cursor-pointer text-xs"
+                                className="flex items-center gap-2 p-2 rounded-lg hover:bg-neutral-800/50 transition-colors cursor-pointer text-xs min-h-[40px]"
                               >
                                 {st.completed ? (
                                   <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -445,9 +446,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                       )}
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions (visible on mobile tap or desktop hover) */}
                     <div 
-                      className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" 
+                      className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0" 
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -456,8 +457,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                           e.stopPropagation();
                           onEditTask(task);
                         }}
-                        className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
                         title={t('common.edit')}
+                        aria-label="Edit task"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
@@ -469,8 +471,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                             onDeleteTask(task.id);
                           }
                         }}
-                        className="p-1.5 text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
                         title={t('common.delete')}
+                        aria-label="Delete task"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -503,7 +506,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                       {statusTitle}
                     </h3>
                   </div>
-                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700">
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700 tabular-nums">
                     {formatNumber(colTasks.length)}
                   </span>
                 </div>
@@ -529,32 +532,36 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                             <button
                               type="button"
                               onClick={(e) => handleTaskCheck(task.id, isDone, e)}
-                              className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 transition-colors ${
-                                isDone ? 'bg-emerald-500 border-emerald-500 text-neutral-950' : 'border-neutral-700 hover:border-indigo-400'
-                              }`}
+                              className="w-8 h-8 -me-2 -mt-2 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors shrink-0"
+                              aria-label={isDone ? 'Mark as incomplete' : 'Mark as complete'}
                             >
-                              {isDone && <Check className="w-3 h-3 stroke-[3]" />}
+                              <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                                isDone ? 'bg-emerald-500 border-emerald-500 text-neutral-950' : 'border-neutral-700 hover:border-indigo-400'
+                              }`}>
+                                {isDone && <Check className="w-3 h-3 stroke-[3]" />}
+                              </div>
                             </button>
                           </div>
 
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border ${getPriorityBadge(task.priority)}`}>
+                          <div className="flex items-center gap-2 text-[10px]">
+                            <span className={`font-semibold ${getPriorityColor(task.priority)}`}>
                               {getPriorityLabel(task.priority)}
                             </span>
-                            <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border ${getCategoryBadge(task.category)}`}>
+                            <span className="text-neutral-600">·</span>
+                            <span className="text-neutral-400">
                               {getCategoryLabel(task.category)}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1 border-t border-neutral-800/60">
                             {task.dueDate ? (
-                              <span className="font-mono">{formatDate(task.dueDate)}</span>
+                              <span className="font-mono tabular-nums">{formatDate(task.dueDate)}</span>
                             ) : (
                               <span />
                             )}
                             {subtasks.length > 0 && (
-                              <span className="text-indigo-400 font-mono text-[10px]">
-                                {completedSubtasks}/{subtasks.length}
+                              <span className="text-indigo-400 font-mono text-[10px] tabular-nums">
+                                {formatNumber(completedSubtasks)}/{formatNumber(subtasks.length)}
                               </span>
                             )}
                           </div>

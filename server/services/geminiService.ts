@@ -2,6 +2,10 @@ import { GoogleGenAI, Type } from '@google/genai';
 import type { Task, GoalOKR, AIProductivityBrief, TaskCategory, EisenhowerQuadrant } from '../../src/types/index.ts';
 import { withExponentialBackoff } from './googleCalendarService.ts';
 
+function getGeminiModel(): string {
+  return process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+}
+
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -13,6 +17,21 @@ function getGeminiClient(): GoogleGenAI | null {
       },
     },
   });
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 25000, operationName = 'Gemini API call'): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timer!);
+  }
 }
 
 export interface DecompositionTaskItem {
@@ -38,6 +57,8 @@ export interface DecompositionResult {
     eisenhower: EisenhowerQuadrant;
   }[];
   recommendations: string[];
+  source?: 'gemini' | 'heuristic_engine';
+  modelUsed?: string;
 }
 
 export class GeminiProductivityService {
@@ -64,15 +85,17 @@ Return structured JSON with:
       const client = getGeminiClient();
       if (!client) throw new Error('GEMINI_API_KEY not configured');
 
+      const model = getGeminiModel();
       return await withExponentialBackoff(async () => {
-        const response = await client.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            systemInstruction: 'You are an elite productivity systems architect who breaks large goals into atomic, actionable steps.',
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
+        const response = await withTimeout(
+          client.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              systemInstruction: 'You are an elite productivity systems architect who breaks large goals into atomic, actionable steps.',
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
               properties: {
                 goalTitle: { type: Type.STRING },
                 category: { type: Type.STRING },
@@ -118,7 +141,10 @@ Return structured JSON with:
               required: ['goalTitle', 'category', 'eisenhower', 'totalEstimatedHours', 'tasks', 'subtasks', 'recommendations']
             }
           }
-        });
+        }),
+        25000,
+        'decomposeGoal'
+      );
 
         const parsed = JSON.parse(response.text || '{}');
         const resolvedCategory = (parsed.category as TaskCategory) || preferredCategory || 'Academic/Study';
@@ -152,7 +178,9 @@ Return structured JSON with:
           totalEstimatedHours: Number(parsed.totalEstimatedHours) || 8,
           tasks: formattedTasks,
           subtasks: Array.isArray(parsed.subtasks) ? parsed.subtasks : [],
-          recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : []
+          recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+          source: 'gemini',
+          modelUsed: model
         };
       }, 3, 600);
     } catch (error) {
@@ -231,7 +259,8 @@ Return structured JSON with:
           'Utilize 25-minute Pomodoro intervals to prevent cognitive fatigue.',
           'Schedule deep-work blocks during your peak morning alertness window.',
           'Review progress against your quarterly OKRs at the end of each sprint.'
-        ]
+        ],
+        source: 'heuristic_engine'
       };
     }
   }
@@ -267,41 +296,46 @@ Generate:
       const client = getGeminiClient();
       if (!client) throw new Error('GEMINI_API_KEY not configured');
 
+      const model = getGeminiModel();
       return await withExponentialBackoff(async () => {
-        const response = await client.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            systemInstruction: 'You are an executive performance and cognitive load specialist. You construct realistic, rhythm-aligned daily plans that maximize focus without inducing burnout.',
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                summary: { type: Type.STRING },
-                burnoutRisk: { type: Type.STRING },
-                recommendedSchedule: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      timeSlot: { type: Type.STRING },
-                      suggestedTaskTitle: { type: Type.STRING },
-                      category: { type: Type.STRING },
-                      reason: { type: Type.STRING }
-                    },
-                    required: ['timeSlot', 'suggestedTaskTitle', 'category', 'reason']
-                  }
+        const response = await withTimeout(
+          client.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              systemInstruction: 'You are an executive performance and cognitive load specialist. You construct realistic, rhythm-aligned daily plans that maximize focus without inducing burnout.',
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  summary: { type: Type.STRING },
+                  burnoutRisk: { type: Type.STRING },
+                  recommendedSchedule: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        timeSlot: { type: Type.STRING },
+                        suggestedTaskTitle: { type: Type.STRING },
+                        category: { type: Type.STRING },
+                        reason: { type: Type.STRING }
+                      },
+                      required: ['timeSlot', 'suggestedTaskTitle', 'category', 'reason']
+                    }
+                  },
+                  strategicAdvice: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                  },
+                  motivationalQuote: { type: Type.STRING }
                 },
-                strategicAdvice: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING }
-                },
-                motivationalQuote: { type: Type.STRING }
-              },
-              required: ['summary', 'burnoutRisk', 'recommendedSchedule', 'strategicAdvice', 'motivationalQuote']
+                required: ['summary', 'burnoutRisk', 'recommendedSchedule', 'strategicAdvice', 'motivationalQuote']
+              }
             }
-          }
-        });
+          }),
+          25000,
+          'generateDailyBriefing'
+        );
 
         const parsed = JSON.parse(response.text || '{}');
         const recommendedSchedule = Array.isArray(parsed.recommendedSchedule) ? parsed.recommendedSchedule : [];
@@ -385,19 +419,65 @@ Provide an insightful, empathetic, highly actionable response (under 250 words).
       const client = getGeminiClient();
       if (!client) throw new Error('GEMINI_API_KEY not configured');
 
+      const model = getGeminiModel();
       return await withExponentialBackoff(async () => {
-        const response = await client.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            systemInstruction: 'You are an elite performance coach combining neuroscience, deep work methodology, and agile execution.'
-          }
-        });
+        const response = await withTimeout(
+          client.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              systemInstruction: 'You are an elite performance coach combining neuroscience, deep work methodology, and agile execution.'
+            }
+          }),
+          25000,
+          'askCoach'
+        );
         return response.text || 'Keep moving forward with intentional focus.';
       }, 3, 600);
     } catch (error) {
       console.warn('[GeminiProductivityService] Chat coach fallback:', error);
       return `Based on your current priorities, I recommend locking in a single 45-minute sprint on your highest-leverage task. Break any sticking point into the absolute smallest physical action you can execute right now.`;
+    }
+  }
+
+  /**
+   * Real-time streaming conversational coach response
+   */
+  async *askCoachStream(userQuestion: string, contextSummary: string): AsyncGenerator<string, void, unknown> {
+    const prompt = `You are the user's Principal AI Productivity Coach & Systems Mentor.
+User Context:
+${contextSummary}
+
+User's Question/Request:
+"${userQuestion}"
+
+Provide an insightful, empathetic, highly actionable response (under 250 words). Include 2 concrete tactics they can apply immediately.`;
+
+    const client = getGeminiClient();
+    if (!client) {
+      const fallback = `Based on your current priorities, I recommend locking in a single 45-minute sprint on your highest-leverage task. Break any sticking point into the absolute smallest physical action you can execute right now.`;
+      yield fallback;
+      return;
+    }
+
+    try {
+      const model = getGeminiModel();
+      const stream = await client.models.generateContentStream({
+        model,
+        contents: prompt,
+        config: {
+          systemInstruction: 'You are an elite performance coach combining neuroscience, deep work methodology, and agile execution.'
+        }
+      });
+
+      for await (const chunk of stream) {
+        if (chunk.text) {
+          yield chunk.text;
+        }
+      }
+    } catch (error) {
+      console.warn('[GeminiProductivityService] Stream error, falling back:', error);
+      yield `Keep your momentum going. Focus on the immediate next physical milestone and eliminate distractions.`;
     }
   }
 }

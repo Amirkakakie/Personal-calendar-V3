@@ -160,6 +160,192 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/auth/google/config
+router.get('/google/config', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    configured: Boolean(process.env.GOOGLE_CLIENT_ID)
+  });
+});
+
+// POST /api/auth/google - Authenticate, auto-create, or link Google user account
+router.post('/google', async (req: Request, res: Response) => {
+  try {
+    const { credential, code, redirectUri } = req.body;
+
+    if (!credential && !code) {
+      return res.status(400).json({ success: false, error: 'Google credential (ID token) or authorization code is required' });
+    }
+
+    let googlePayload: {
+      sub: string;
+      email: string;
+      name?: string;
+      picture?: string;
+      email_verified?: boolean | string;
+    } | null = null;
+
+    if (credential) {
+      if (typeof credential !== 'string' || !credential.trim()) {
+        return res.status(400).json({ success: false, error: 'Invalid Google credential token format' });
+      }
+
+      // Check for mock/test credentials in non-production test runs
+      if (process.env.NODE_ENV !== 'production' && credential.startsWith('test-mock-google-token')) {
+        const parts = credential.split(':');
+        const testEmail = parts[1] || 'google.test@chronos.ai';
+        googlePayload = {
+          sub: 'google-sub-' + Buffer.from(testEmail).toString('hex').slice(0, 12),
+          email: testEmail,
+          name: 'Google Test User',
+          picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+          email_verified: true
+        };
+      } else {
+        // Official Google Token Verification via tokeninfo endpoint
+        try {
+          const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential.trim())}`;
+          const tokenRes = await fetch(verifyUrl, {
+            headers: { 'User-Agent': 'chronos-os-auth' }
+          });
+
+          if (tokenRes.ok) {
+            const data: any = await tokenRes.json();
+            // Validate audience if GOOGLE_CLIENT_ID is configured
+            if (process.env.GOOGLE_CLIENT_ID && data.aud && data.aud !== process.env.GOOGLE_CLIENT_ID) {
+              return res.status(401).json({ success: false, error: 'Google token audience mismatch' });
+            }
+            googlePayload = {
+              sub: data.sub,
+              email: data.email,
+              name: data.name,
+              picture: data.picture,
+              email_verified: data.email_verified
+            };
+          } else {
+            const errBody = await tokenRes.text().catch(() => '');
+            console.warn('[Google Auth] Tokeninfo verification failed:', errBody);
+          }
+        } catch (fetchErr) {
+          console.warn('[Google Auth] Error contacting Google tokeninfo:', fetchErr);
+        }
+      }
+    } else if (code) {
+      // Exchange authorization code for tokens
+      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+        return res.status(500).json({ success: false, error: 'Google OAuth client secret not configured on server' });
+      }
+
+      try {
+        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            redirect_uri: redirectUri || `${req.protocol}://${req.get('host')}/api/auth/google/callback`,
+            grant_type: 'authorization_code'
+          })
+        });
+
+        if (tokenRes.ok) {
+          const tokenData: any = await tokenRes.json();
+          if (tokenData.id_token) {
+            const idRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(tokenData.id_token)}`);
+            if (idRes.ok) {
+              const data: any = await idRes.json();
+              googlePayload = {
+                sub: data.sub,
+                email: data.email,
+                name: data.name,
+                picture: data.picture,
+                email_verified: data.email_verified
+              };
+            }
+          }
+        }
+      } catch (codeErr) {
+        console.warn('[Google Auth] Code exchange failed:', codeErr);
+      }
+    }
+
+    if (!googlePayload || !googlePayload.email) {
+      return res.status(401).json({ success: false, error: 'Failed to verify Google identity credential.' });
+    }
+
+    // Require verified email address from Google
+    const isVerified = googlePayload.email_verified === true || googlePayload.email_verified === 'true';
+    if (!isVerified) {
+      return res.status(401).json({ success: false, error: 'Unverified Google email accounts are not permitted.' });
+    }
+
+    const cleanEmail = googlePayload.email.trim().toLowerCase();
+    let user = db.getUserByEmail(cleanEmail);
+
+    if (user) {
+      // Account linking: link Google ID to existing account
+      db.linkGoogleAccount(user.id, googlePayload.sub, googlePayload.picture);
+      user = db.getUserById(user.id)!;
+    } else {
+      // Auto-provision new user account
+      const displayName = (googlePayload.name && googlePayload.name.trim()) 
+        ? googlePayload.name.trim() 
+        : cleanEmail.split('@')[0];
+
+      const avatarColors = [
+        'from-violet-600 to-indigo-600',
+        'from-emerald-600 to-teal-600',
+        'from-sky-600 to-blue-700',
+        'from-amber-600 to-orange-600'
+      ];
+      const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
+
+      const id = `usr-g-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const newUser = {
+        id,
+        name: displayName,
+        email: cleanEmail,
+        passwordHash: '',
+        role: 'Member',
+        title: 'Productivity Engineer',
+        avatarColor: randomColor,
+        avatarUrl: googlePayload.picture,
+        googleId: googlePayload.sub,
+        initials: getInitials(displayName),
+        joinedAt: new Date().toISOString().split('T')[0]
+      };
+
+      user = db.createUser(newUser);
+    }
+
+    // Sign cryptographic Chronos JWT session
+    const token = await new SignJWT({
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('chronos-os')
+      .setAudience('chronos-clients')
+      .setIssuedAt()
+      .setExpirationTime('7d')
+      .sign(getSigningKey());
+
+    const { passwordHash: _hash, password: _legacy, ...safeUser } = user as any;
+    res.json({
+      success: true,
+      token,
+      user: safeUser
+    });
+  } catch (err: any) {
+    console.error('[Google Auth Error]:', err);
+    res.status(500).json({ success: false, error: err.message || 'Google authentication failed' });
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', (req: Request, res: Response) => {
   if (!req.user) {

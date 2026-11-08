@@ -3,6 +3,7 @@ import { UserPlus, AlertCircle, ArrowRight, ArrowLeft, Layers } from 'lucide-rea
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useI18n } from '../../i18n/I18nContext.tsx';
 import { LanguageSwitcher } from '../LanguageSwitcher.tsx';
+import { GoogleSignInButton } from './GoogleSignInButton.tsx';
 
 interface SignupProps {
   onSwitchToLogin: () => void;
@@ -93,6 +94,19 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
               <span>{errorMessage}</span>
             </div>
           )}
+
+          {/* Google Sign-In */}
+          <div className="mb-5">
+            <GoogleSignInButton onError={(err) => setErrorMessage(err)} />
+          </div>
+
+          <div className="relative flex py-1.5 items-center mb-4">
+            <div className="flex-grow border-t border-neutral-800" />
+            <span className="flex-shrink mx-3 text-[11px] text-neutral-500 uppercase tracking-wider font-medium">
+              {direction === 'rtl' ? 'یا ثبت‌نام با ایمیل' : 'or continue with email'}
+            </span>
+            <div className="flex-grow border-t border-neutral-800" />
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

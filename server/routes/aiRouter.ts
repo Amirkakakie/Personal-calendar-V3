@@ -67,6 +67,39 @@ router.post('/coach', async (req: Request, res: Response) => {
   }
 });
 
+// STREAM productivity coach responses via Server-Sent Events (SSE)
+router.post('/coach/stream', async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { message } = req.body;
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ success: false, error: 'Message is required' });
+  }
+
+  if (message.length > 1000) {
+    return res.status(400).json({ success: false, error: 'Message must not exceed 1000 characters' });
+  }
+
+  const tasks = db.getTasks(userId);
+  const stats = db.getProductivityStats(userId);
+  const contextSummary = `Total Tasks: ${tasks.length}, Completed: ${stats.completedCount}, Streak: ${stats.currentStreakDays} days, Completion Rate: ${stats.completionRate}%, Focus Minutes: ${stats.focusMinutesToday}`;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  try {
+    for await (const chunk of geminiService.askCoachStream(message.trim(), contextSummary)) {
+      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+    }
+    res.write(`data: [DONE]\n\n`);
+    res.end();
+  } catch (err: any) {
+    res.write(`data: ${JSON.stringify({ error: err.message || 'Stream terminated' })}\n\n`);
+    res.end();
+  }
+});
+
 // PREDICTIVE BURNOUT & 48-HOUR DEADLINE RISK ALERT (user-scoped)
 router.get('/burnout-risk', async (req: Request, res: Response) => {
   const userId = req.user!.id;
