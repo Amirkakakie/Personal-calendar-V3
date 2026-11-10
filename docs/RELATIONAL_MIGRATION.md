@@ -19,6 +19,7 @@ docker compose up -d postgres
 3. Configure the connection string in the same PowerShell session. The generated password is hexadecimal, so it does not require URL encoding:
 
 ```powershell
+$env:NODE_ENV = "development"
 $env:DATABASE_URL = "postgresql://chronos:$env:CHRONOS_POSTGRES_PASSWORD@localhost:5432/chronos?schema=public"
 $keyBytes = New-Object byte[] 32
 [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($keyBytes)
