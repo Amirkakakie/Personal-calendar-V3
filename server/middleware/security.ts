@@ -67,7 +67,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-  // Safe CSP allowing applet iframe execution while restricting dangerous sources
+  // Restrictive Content Security Policy; add only explicitly required external origins.
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https: blob:; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com; frame-src https://accounts.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;"
