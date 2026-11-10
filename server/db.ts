@@ -701,6 +701,12 @@ class Database {
   }
 
   // --- TEAM TASKS (PROJECT & MEMBER SCOPED WITH RBAC) ---
+  public getTeamTaskById(taskId: string, userId: string): TeamTaskRecord | undefined {
+    const task = this.data.teamTasks.find(item => item.id === taskId);
+    if (!task || !this.getTeamProjectById(task.projectId, userId)) return undefined;
+    return task;
+  }
+
   public getTeamTasksForProject(projectId: string, userId: string): TeamTaskRecord[] | null {
     const proj = this.getTeamProjectById(projectId, userId);
     if (!proj) return null; // Unauthorized
