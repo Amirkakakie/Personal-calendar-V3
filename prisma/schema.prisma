@@ -677,6 +677,7 @@ model ProjectInvitation {
   id              String        @id @default(uuid())
   projectId       String
   invitedEmail    String
+  recipientId     String?
   invitedByUserId String
   projectName     String        @default("")
   projectKey      String        @default("")
@@ -689,7 +690,7 @@ model ProjectInvitation {
 
   project         TeamProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   invitedBy       User          @relation("SentInvites", fields: [invitedByUserId], references: [id], onDelete: Cascade)
-  recipient       User?         @relation("ReceivedInvites", fields: [invitedEmail], references: [email])
+  recipient       User?         @relation("ReceivedInvites", fields: [recipientId], references: [id], onDelete: SetNull)
 
   @@index([invitedEmail])
   @@index([projectId])
