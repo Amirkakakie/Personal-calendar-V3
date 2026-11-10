@@ -319,7 +319,16 @@ async function runSecurityTestSuite() {
     // SCENARIO 8: WORKSPACE ACCESS & INVITATIONS
     // ---------------------------------------------------------
     console.log(`\n${BOLD}[SCENARIO 8] Workspace Access & Invitation Flow${RESET}`);
-    // User A creates a team project
+    // User A creates a workspace and then a project inside that authorized workspace.
+    const resWorkspaceA = await fetch(`${BASE_URL}/workspaces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` },
+      body: JSON.stringify({ name: 'Alice Team Workspace' })
+    });
+    const dataWorkspaceA = await resWorkspaceA.json();
+    assert(resWorkspaceA.status === 201 && !!dataWorkspaceA.data?.id, 'User A creates an owned workspace');
+    const workspaceAId = dataWorkspaceA.data.id;
+
     const resTeamProjA = await fetch(`${BASE_URL}/team/projects`, {
       method: 'POST',
       headers: {
@@ -328,7 +337,7 @@ async function runSecurityTestSuite() {
       },
       body: JSON.stringify({
         name: 'Project Orion',
-        workspaceId: 'ws-team',
+        workspaceId: workspaceAId,
         description: 'Joint spacecraft design'
       })
     });
