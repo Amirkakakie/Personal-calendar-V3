@@ -149,6 +149,7 @@ model Domain {
   updatedAt   DateTime       @updatedAt
 
   @@unique([userId, type])
+  @@unique([id, userId])
   @@index([userId])
   legacyData Json?
 
@@ -159,7 +160,7 @@ model GoalOKR {
   userId          String
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   domainId        String?
-  domain          Domain?        @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  domain          Domain?        @relation(fields: [domainId, userId], references: [id, userId], onDelete: Restrict)
   category        LifeDomainType @default(WORK_CAREER)
   
   title           String
@@ -176,6 +177,7 @@ model GoalOKR {
   updatedAt       DateTime       @updatedAt
 
   @@index([userId, timeframe])
+  @@unique([id, userId])
   @@index([domainId])
   legacyData Json?
 
@@ -206,9 +208,9 @@ model Project {
   userId          String
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   domainId        String?
-  domain          Domain?        @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  domain          Domain?        @relation(fields: [domainId, userId], references: [id, userId], onDelete: Restrict)
   goalId          String?
-  goal            GoalOKR?       @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goal            GoalOKR?       @relation(fields: [goalId, userId], references: [id, userId], onDelete: Restrict)
   
   name            String
   description     String?
@@ -226,6 +228,7 @@ model Project {
   updatedAt       DateTime       @updatedAt
 
   @@index([userId, status])
+  @@unique([id, userId])
   @@index([domainId])
   @@index([goalId])
   legacyData Json?
@@ -239,9 +242,9 @@ model Task {
   domainId              String?
   domain                Domain?               @relation(fields: [domainId], references: [id], onDelete: SetNull)
   goalId                String?
-  goal                  GoalOKR?              @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goal                  GoalOKR?              @relation(fields: [goalId, userId], references: [id, userId], onDelete: Restrict)
   projectId             String?
-  project               Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project               Project?              @relation(fields: [projectId, userId], references: [id, userId], onDelete: Restrict)
   
   title                 String
   description           String?
@@ -310,7 +313,7 @@ model TimeLog {
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   taskId          String?
-  task            Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task            Task?    @relation(fields: [taskId, userId], references: [id, userId], onDelete: Restrict)
   projectId       String?
   project         Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   
@@ -416,7 +419,7 @@ model CalendarEvent {
   googleEventId String?
   htmlLink      String?
   taskId        String?
-  task          Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task          Task?    @relation(fields: [taskId, userId], references: [id, userId], onDelete: Restrict)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
