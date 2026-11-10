@@ -451,6 +451,25 @@ export const api = {
     });
   },
 
+  async getTeamProjectMembers(projectId: string): Promise<any[]> {
+    const json = await request<{ success: boolean; data: any[] }>(`/team/projects/${encodeURIComponent(projectId)}/members`);
+    return json.data || [];
+  },
+
+  async updateTeamProjectMemberRole(projectId: string, memberId: string, role: string): Promise<any[]> {
+    const json = await request<{ success: boolean; data: any[] }>(`/team/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(memberId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role: role.toUpperCase() }),
+    });
+    return json.data || [];
+  },
+
+  async removeTeamProjectMember(projectId: string, memberId: string): Promise<void> {
+    await request<{ success: boolean }>(`/team/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(memberId)}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getTeamTasks(projectId: string): Promise<any[]> {
     const json = await request<{ success: boolean; data: any[] }>(`/team/tasks?projectId=${encodeURIComponent(projectId)}`);
     return json.data || [];
