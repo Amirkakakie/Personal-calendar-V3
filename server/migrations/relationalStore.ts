@@ -130,11 +130,11 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
     const raw=legacy(t.legacyData);
     const childRows=teamSubtasks.filter(x=>x.taskId===t.id).sort((a,b)=>a.position-b.position).map(x=>({id:x.id,title:x.title,completed:x.completed}));
     const childrenById=new Map<string,any>(arr(t.subtasksJson).map((x:any)=>[text(x.id),obj(x)]));
-    for(const child of childRows) childrenById.set(child.id,child);
+    for(const child of childRows) childrenById.set(child.id,{...childrenById.get(child.id),...child});
     const children=Array.from(childrenById.values());
     const commentRows=teamComments.filter(x=>x.taskId===t.id).map(x=>({...legacy(x.legacyData),id:x.id,authorId:x.authorId,authorName:x.authorName,authorInitials:x.authorInitials,authorColor:x.authorColor,text:x.body,createdAt:iso(x.createdAt)}));
     const commentsById=new Map<string,any>(arr(t.commentsJson).map((x:any)=>[text(x.id),obj(x)]));
-    for(const comment of commentRows) commentsById.set(comment.id,comment);
+    for(const comment of commentRows) commentsById.set(comment.id,{...commentsById.get(comment.id),...comment});
     const comments=Array.from(commentsById.values());
     const normalizedTags=teamTagAssignments.filter(a=>a.taskId===t.id).map(a=>teamTags.find(tag=>tag.id===a.tagId)?.name).filter(Boolean) as string[];
     const tags=Array.from(new Set([...arr(t.tagsJson).map(x=>text(x)),...normalizedTags]));
