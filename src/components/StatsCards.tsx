@@ -78,11 +78,11 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   return (
     <div className="space-y-4">
       {/* 4 Metric KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. Completion Velocity */}
-        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
+        <div className="premium-border rounded-2xl p-4 sm:p-5 min-h-[132px] relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.035] transition-all bg-white/[0.02]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+            <span className="text-xs sm:text-[13px] font-semibold text-neutral-400 tracking-normal">
               {t('stats.completionRate')}
             </span>
             <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
@@ -97,7 +97,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                   {formatNumber(completionRate)}%
                 </span>
               </div>
-              <p className="text-[10px] text-neutral-500 mt-0.5">
+              <p className="text-xs text-neutral-500 mt-1">
                 {locale === 'fa' 
                   ? `${formatNumber(stats.completedCount)} از ${formatNumber(stats.totalTasks)} انجام شده`
                   : `${formatNumber(stats.completedCount)} of ${formatNumber(stats.totalTasks)} done`}
