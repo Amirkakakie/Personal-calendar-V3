@@ -54,12 +54,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [isInboxOpen, setIsInboxOpen] = useState(false);
 
   return (
-    <header className="h-14 border-b border-white/5 bg-neutral-950/80 backdrop-blur-md sticky top-0 z-50 px-3 sm:px-4">
+    <header className="h-16 border-b border-white/[0.07] bg-neutral-950/90 backdrop-blur-xl sticky top-0 z-50 px-3 sm:px-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
       <div className="h-full max-w-[1600px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
         {/* Left Side: Brand & Workspace Switcher */}
         <div className="flex items-center gap-2 sm:gap-4 md:gap-6 min-w-0">
           <div className="flex items-center gap-2 group cursor-pointer shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 transition-all group-hover:scale-105">
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 transition-all group-hover:scale-105">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-sm font-bold text-white tracking-tight hidden sm:block">
@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center bg-white/[0.03] p-0.5 rounded-lg border border-white/5 shrink-0">
             <button
               onClick={() => onToggleWorkspaceMode('personal')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all min-h-[34px] ${
+              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-all min-h-[38px] ${
                 workspaceMode === 'personal'
                   ? 'bg-neutral-800 text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ring-1 ring-white/10'
                   : 'text-neutral-500 hover:text-neutral-300'
@@ -106,10 +106,10 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label="Search or jump to command (Cmd+K)"
         >
           <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 group-hover:text-indigo-400 transition-colors pointer-events-none" />
-          <div className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-neutral-700 rounded-lg py-1.5 ps-9 pe-12 text-[11px] text-neutral-400 transition-all cursor-pointer">
+          <div className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-neutral-700 rounded-lg py-1.5 ps-9 pe-12 text-xs text-neutral-400 transition-all cursor-pointer">
             {locale === 'fa' ? 'جستجو یا پرش سریع...' : 'Search or jump to...'}
           </div>
-          <div className="absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/10 bg-neutral-900 text-[9px] text-neutral-500 font-mono select-none">
+          <div className="absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/10 bg-neutral-900 text-[11px] text-neutral-500 font-mono select-none">
             <Command className="w-2.5 h-2.5" />
             <span>K</span>
           </div>
