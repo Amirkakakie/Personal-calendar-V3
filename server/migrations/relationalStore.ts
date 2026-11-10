@@ -58,7 +58,6 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
     prisma.databaseRevision.findUnique({where:{id:'root'}})
   ]);
   if(!revision) throw new Error('Prisma relational revision row is missing.');
-  const userById=new Map(users.map(u=>[u.id,u]));
   const partitionFor=(id:string):UserPartition => {
     if(!partitions[id]) partitions[id]={tasks:[],goals:[],projects:[],calendarEvents:[],timeLogs:[],skills:[],badges:[],stats:{focusMinutes:0,pomodoroSessions:0,totalXp:0,userLevel:1,rpgTitle:'Novice Pioneer',focusScore:100,totalRoiDollars:0,activityHistory:{}},googleAuth:{isConnected:false,email:''}};
     return partitions[id];
@@ -77,12 +76,11 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
     return {...raw,id:w.id,name:w.name,slug:w.slug,ownerId:w.ownerId,isPersonal:w.isPersonal,createdAt:iso(w.createdAt),members} as WorkspaceRecord;
   });
 
-  const goalById=new Map<string,any>();
   for(const g of goals){
     const raw=legacy(g.legacyData);
     const keyResultsForGoal=keyResults.filter(k=>k.goalId===g.id).map(k=>({...legacy(k.legacyData),id:k.id,title:k.title,currentValue:k.currentValue,targetValue:k.targetValue,unit:k.unit,completed:k.completed}));
     const record={...raw,id:g.id,userId:g.userId,title:g.title,description:g.description||'',category:raw.category||g.category,timeframe:raw.timeframe||g.timeframe.toLowerCase(),targetDate:iso(g.targetDate),progressPercent:g.progressPercent,keyResults:keyResultsForGoal,createdAt:iso(g.createdAt)};
-    goalById.set(g.id,record); partitionFor(g.userId).goals.push(record);
+    partitionFor(g.userId).goals.push(record);
   }
   for(const p of projects){
     const raw=legacy(p.legacyData);
@@ -90,7 +88,7 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
   }
   for(const t of tasks){
     const raw=legacy(t.legacyData);
-    const children=subtasks.filter(st=>st.taskId===t.id).map(st=>({...legacy(st.legacyData),id:st.id,title:st.title,completed:st.completed,estimatedMinutes:st.estimatedMinutes}));
+    const children=subtasks.filter(st=>st.taskId===t.id).map(st=>({id:st.id,title:st.title,completed:st.completed,estimatedMinutes:st.estimatedMinutes}));
     partitionFor(t.userId).tasks.push({...raw,id:t.id,userId:t.userId,title:t.title,description:t.description||undefined,category:raw.category||t.category,priority:raw.priority||t.priority.toLowerCase(),status:raw.status||t.status.toLowerCase(),eisenhower:raw.eisenhower||t.eisenhower.toLowerCase(),energyLevel:raw.energyLevel||t.energyLevel.toLowerCase(),dueDate:t.dueDate||'',dueTime:t.dueTime||undefined,durationMinutes:t.durationMinutes,subtasks:children,goalId:t.goalId||undefined,projectId:t.projectId||undefined,tags:t.tags,googleCalendarEventId:t.googleCalendarEventId||undefined,syncedToGoogle:t.syncedToGoogle,calendarOverlay:t.calendarOverlay as any,recurrence:raw.recurrence,xpReward:t.xpReward,linkedSkillId:t.linkedSkillId||undefined,driveDocUrl:t.driveDocUrl||undefined,completedAt:t.completedAt?iso(t.completedAt):undefined,createdAt:iso(t.createdAt),updatedAt:iso(t.updatedAt)});
   }
   for(const e of events){
@@ -192,7 +190,7 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     for(const t of allTasks){
       const skillId=allSkills.some(sk=>text(sk.id)===text(t.linkedSkillId))?nullable(t.linkedSkillId):null;
       await upsert('task',text(t.id),{userId:text(t.userId),goalId:nullable(t.goalId),projectId:nullable(t.projectId),title:text(t.title,'Untitled task'),description:nullable(t.description),category:category(t.category),priority:priority(t.priority),status:taskStatus(t.status),eisenhower:quadrant(t.eisenhower),energyLevel:energy(t.energyLevel),dueDate:nullable(t.dueDate),dueTime:nullable(t.dueTime),durationMinutes:num(t.durationMinutes,45),googleCalendarEventId:nullable(t.googleCalendarEventId),syncedToGoogle:bool(t.syncedToGoogle),calendarOverlay:text(t.calendarOverlay,'work'),xpReward:num(t.xpReward,50),linkedSkillId:skillId,driveDocUrl:nullable(t.driveDocUrl),tags:arr(t.tags).map(x=>text(x)),completedAt:t.completedAt?asDate(t.completedAt):null,createdAt:asDate(t.createdAt),updatedAt:asDate(t.updatedAt||t.createdAt),legacyData:json(t)});
-      for(const st of arr(t.subtasks).map(obj)) await upsert('subTask',text(st.id),{taskId:text(t.id),title:text(st.title),completed:bool(st.completed),estimatedMinutes:num(st.estimatedMinutes,20),legacyData:json(st)});
+      for(const st of arr(t.subtasks).map(obj)) await upsert('subTask',text(st.id),{taskId:text(t.id),title:text(st.title),completed:bool(st.completed),estimatedMinutes:num(st.estimatedMinutes,20)});
     }
     for(const e of allEvents) await upsert('calendarEvent',text(e.id),{userId:text(e.userId),title:text(e.title),description:nullable(e.description),startTime:asDate(e.startTime),endTime:asDate(e.endTime),category:text(e.category,'work'),calendarType:text(e.calendarOverlay,'work'),isGoogleEvent:bool(e.isGoogleEvent),googleEventId:nullable(e.googleEventId),htmlLink:nullable(e.htmlLink),taskId:nullable(e.taskId),legacyData:json(e)});
     for(const l of allLogs) await upsert('timeLog',text(l.id),{userId:text(l.userId),taskId:nullable(l.taskId),projectId:nullable(l.projectId),durationSeconds:num(l.durationSeconds),hourlyRate:num(l.hourlyRate,75),calculatedRoi:num(l.calculatedRoi),efficiencyRate:num(l.efficiencyRate,90),energyReported:text(l.energyReported,'High'),note:nullable(l.note),startedAt:asDate(l.startedAt),endedAt:asDate(l.endedAt),legacyData:json(l)});
