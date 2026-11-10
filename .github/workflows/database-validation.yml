@@ -95,6 +95,23 @@ jobs:
           echo "Created $TABLE_COUNT relational tables"
           test "$TABLE_COUNT" -ge 20
 
+      # Commit the exact schema SQL that was generated and applied above.
+      # This creates a reproducible Prisma baseline; it does not migrate user data.
+      - name: Commit relational baseline migration
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/relational-database-architecture'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p prisma/migrations/20261110000000_init
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/20261110000000_init/migration.sql
+          printf 'provider = "postgresql"\\n' > prisma/migrations/migration_lock.toml
+          git add prisma/migrations
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(db): add reviewed relational baseline migration"
+            git push origin "HEAD:feat/relational-database-architecture"
+            gh workflow run database-validation.yml --ref feat/relational-database-architecture
+          fi
+
       - name: Upload generated baseline SQL for review
         uses: actions/upload-artifact@v4
         with:
@@ -108,9 +125,14 @@ jobs:
       - name: Create isolated test databases
         run: |
           createdb --host=127.0.0.1 --username=chronos chronos_security
-          createdb --host=127.0.0.1 --username=chronos chronos_e2e
+          createdb --host=127.0.0.1 --username=chronos chronos_e2e\n          createdb --host=127.0.0.1 --username=chronos chronos_migrate
         env:
           PGPASSWORD: chronos
+
+      - name: Validate committed Prisma migrations on a fresh database
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_migrate?schema=public
 
       - name: Security tests
         run: npm run test:security
