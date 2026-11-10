@@ -200,3 +200,18 @@ The assistant cannot access the user's production database or Vercel environment
 The tracked `data/db.json` file from the latest `main` branch is retained in the reconciled branch. It may contain local-development data and is not deleted as part of this database safety change. Security and E2E tests use unique temporary files through `CHRONOS_DATA_FILE`, so test registrations do not mutate that tracked file. Production must continue to read only the configured PostgreSQL root row; do not use the repository file as a production backup or automatic seed.
 
 The live production PostgreSQL database is not accessible through this repository integration. Its contents have not been exported, counted, backed up, or migrated by this change.
+
+
+## Phase 3: protected legacy snapshot export and integrity verification
+
+The branch now includes a read-only export utility for the authoritative PostgreSQL JSONB root row:
+
+- `npm run db:export-legacy -- --output /absolute/path/outside/repo/chronos-export.json`
+- `npm run db:verify-legacy-export -- /absolute/path/to/chronos-export.json`
+- `npm run test:legacy-export`
+
+The exporter reads only `chronos_data.key = 'root'`; it does not modify the database. It refuses to overwrite an existing file or write sensitive exports inside the repository. It records the source row version, record counts and SHA-256 digest, and creates the file with restrictive POSIX permissions where supported. The verifier checks the format, digest and manifest counts before any future import.
+
+This export is a logical snapshot, not a provider-native physical backup. Take both a provider-native backup and this export before migration. Keep the export encrypted and outside Git: it contains user records, password hashes and personal data.
+
+The CI pipeline now runs the export manifest integrity/tamper tests. The export utility is intentionally not wired to production startup and no import or relational cutover is performed automatically.
