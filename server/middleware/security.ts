@@ -87,7 +87,10 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
   };
   addOrigin(process.env.APP_URL);
   for (const value of (process.env.CORS_ORIGIN || '').split(',')) addOrigin(value.trim());
-  if (process.env.VERCEL_URL) addOrigin('https://' + process.env.VERCEL_URL.replace(/^https?:\\/\\//, ''));
+  if (process.env.VERCEL_URL) {
+    const vercelUrl = process.env.VERCEL_URL.trim();
+    addOrigin(vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://') ? vercelUrl : `https://${vercelUrl}`);
+  }
   if (process.env.NODE_ENV !== 'production') {
     addOrigin('http://localhost:3000'); addOrigin('http://localhost:5173');
     addOrigin('http://127.0.0.1:3000'); addOrigin('http://127.0.0.1:5173');
