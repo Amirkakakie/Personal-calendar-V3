@@ -151,9 +151,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   };
 
   return (
-    <div className="space-y-4 animate-fadeIn pb-8">
+    <div className="space-y-5 animate-fadeIn pb-8 min-w-0">
       {/* Search, Filter Bar, Sorting, and View Switcher */}
-      <div className="flex flex-col gap-3 p-3.5 sm:p-4 bg-neutral-900/60 border border-neutral-800 rounded-2xl backdrop-blur-md">
+      <div className="chronos-toolbar flex flex-col gap-3 p-3.5 sm:p-4 backdrop-blur-md">
         <div className="flex items-center gap-2">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -291,7 +291,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
 
       {/* Content Area */}
       {viewMode === 'list' ? (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {sortedTasks.length === 0 ? (
             <EmptyState
               icon={CheckSquare}
@@ -320,7 +320,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                       : 'border-neutral-800 hover:border-neutral-700 bg-neutral-900/60 hover:bg-neutral-850/60'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 rounded-xl border border-white/[0.04] bg-white/[0.015] p-3 transition-colors hover:bg-white/[0.035]">
                     {/* Checkbox Touch Wrapper (min 44px hitbox) */}
                     <button
                       type="button"
