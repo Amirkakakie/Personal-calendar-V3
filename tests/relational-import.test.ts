@@ -86,12 +86,12 @@ try {
   assert.equal(nextVersion, 2n);
   const reloaded = await loadRelationalSnapshot(prisma);
   assert.equal(reloaded.data.partitions['user-a'].tasks[0].title, 'Updated through relational runtime');
-  assert.equal(reloaded.data.partitions['user-a'].tasks[0].subtasks[0].legacySubtaskFlag, 'keep');
-  assert.equal(reloaded.data.partitions['user-a'].goals[0].keyResults[0].legacyKeyResultFlag, 'keep');
-  assert.equal(reloaded.data.partitions['user-a'].stats.legacyStatsFlag, 'keep');
-  assert.equal(reloaded.data.partitions['user-a'].googleAuth.legacyGoogleFlag, 'keep');
-  assert.equal(reloaded.data.workspaces[0].members[0].legacyMemberFlag, true);
-  assert.equal(reloaded.data.teamTasks[0].subtasks[0].legacyTeamSubtaskFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'].tasks[0](.subtasks[0] as any).legacySubtaskFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'].goals[0](.keyResults[0] as any).legacyKeyResultFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'](.stats as any).legacyStatsFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'](.googleAuth as any).legacyGoogleFlag, 'keep');
+  assert.equal(reloaded.data.workspaces[0](.members[0] as any).legacyMemberFlag, true);
+  assert.equal(reloaded.data.teamTasks[0](.subtasks[0] as any).legacyTeamSubtaskFlag, 'keep');
   await assert.rejects(
     () => persistRelationalSnapshot(prisma, loaded.data, loaded.version),
     /changed in another instance/
