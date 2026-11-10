@@ -162,6 +162,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_security?schema=public
           NODE_ENV: test
+          CHRONOS_ALLOW_EMPTY_DB_INIT: 'true'
           JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
 
       - name: Authentication and AI E2E tests
@@ -169,6 +170,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_e2e?schema=public
           NODE_ENV: test
+          CHRONOS_ALLOW_EMPTY_DB_INIT: 'true'
           JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
 
       - name: Legacy snapshot integrity and archive preparation tests
