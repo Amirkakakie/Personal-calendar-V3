@@ -175,12 +175,15 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     const taskOwnerById=new Map(allTasks.map(x=>[text(x.id),text(x.userId)]));
     const skillIds=new Set(allSkills.map(x=>text(x.id)));
     const workspaceIds=new Set(workspaces.map(w=>text(w.id)));
+    const usedWorkspaceSlugs=new Set(workspaces.map(w=>text(w.slug)).filter(Boolean));
     const teamProjects=arr(snapshot.teamProjects).map(obj);
     for(const p of teamProjects) if(!workspaceIds.has(text(p.workspaceId))){
       const owner=usersById.get(text(p.ownerId)); if(!owner) throw new Error('Cannot persist team project with missing owner: '+text(p.id));
       const wid='legacy-team-workspace-'+text(p.ownerId);
       if(!workspaceIds.has(wid)){
-        const ws={id:wid,name:'Imported team workspace',slug:'legacy-team-'+text(p.ownerId),ownerId:text(p.ownerId),isPersonal:false,members:[{userId:text(p.ownerId),role:'OWNER',joinedAt:iso(p.createdAt)}],createdAt:iso(p.createdAt)};
+        const baseSlug=('legacy-team-'+text(p.ownerId)).toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-');
+        let slug=baseSlug, suffix=1; while(usedWorkspaceSlugs.has(slug)) slug=baseSlug+'-'+(++suffix); usedWorkspaceSlugs.add(slug);
+        const ws={id:wid,name:'Imported team workspace',slug,ownerId:text(p.ownerId),isPersonal:false,members:[{userId:text(p.ownerId),role:'OWNER',joinedAt:iso(p.createdAt)}],createdAt:iso(p.createdAt)};
         workspaces.push(ws); workspaceIds.add(wid);
       }
       p.workspaceId=wid;
@@ -195,7 +198,9 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     for(const w of workspaces){
       await upsert('workspace',text(w.id),{name:text(w.name,'Workspace'),slug:text(w.slug,'workspace-'+text(w.id)),type:bool(w.isPersonal)?'PERSONAL':'TEAM',isPersonal:bool(w.isPersonal),ownerId:text(w.ownerId),createdAt:asDate(w.createdAt),legacyData:json(w)});
       if(!usersById.has(text(w.ownerId))) throw new Error('Workspace references a missing owner: '+text(w.id));
-      for(const m of arr(w.members).map(obj)) if(usersById.has(text(m.userId))) await (tx as any).workspaceMember.upsert({where:{workspaceId_userId:{workspaceId:text(w.id),userId:text(m.userId)}},create:{id:'wm-'+text(w.id)+'-'+text(m.userId),workspaceId:text(w.id),userId:text(m.userId),role:role(m.role),joinedAt:asDate(m.joinedAt)},update:{role:role(m.role),joinedAt:asDate(m.joinedAt)}});
+      const members=arr(w.members).map(obj);
+      if(!members.some(m=>text(m.userId)===text(w.ownerId))) members.push({userId:text(w.ownerId),role:'OWNER',joinedAt:iso(w.createdAt)});
+      for(const m of members) if(usersById.has(text(m.userId))) await (tx as any).workspaceMember.upsert({where:{workspaceId_userId:{workspaceId:text(w.id),userId:text(m.userId)}},create:{id:'wm-'+text(w.id)+'-'+text(m.userId),workspaceId:text(w.id),userId:text(m.userId),role:role(m.role),joinedAt:asDate(m.joinedAt)},update:{role:role(m.role),joinedAt:asDate(m.joinedAt)}});
     }
     for(const g of allGoals){
       await upsert('goalOKR',text(g.id),{userId:text(g.userId),category:category(g.category),title:text(g.title,'Untitled goal'),description:nullable(g.description),timeframe:timeframe(g.timeframe),targetDate:asDate(g.targetDate),progressPercent:num(g.progressPercent),createdAt:asDate(g.createdAt),updatedAt:asDate(g.updatedAt||g.createdAt),legacyData:json(g)});
@@ -249,7 +254,7 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     }
 
     const ids=(rows:any[])=>rows.map(x=>text(x.id)).filter(Boolean);
-    const wsMemberIds=workspaces.flatMap(w=>arr(w.members).map(m=>'wm-'+text(w.id)+'-'+text(obj(m).userId)));
+    const wsMemberIds=workspaces.flatMap(w=>Array.from(new Set([text(w.ownerId),...arr(w.members).map(m=>text(obj(m).userId))])).filter(id=>usersById.has(id)).map(id=>'wm-'+text(w.id)+'-'+id));
     const pMemberIds=teamProjects.flatMap(p=>Array.from(new Set([text(p.ownerId),...arr(p.memberIds).map(x=>text(x))])).filter(id=>usersById.has(id)).map(id=>'pm-'+text(p.id)+'-'+id));
     const subIds=allSubtasks.map(x=>text(x.id)), krIds=allKeyResults.map(x=>text(x.id));
     const teamSubIds=teamTasks.flatMap(t=>arr(t.subtasks).map(x=>text(obj(x).id)));
