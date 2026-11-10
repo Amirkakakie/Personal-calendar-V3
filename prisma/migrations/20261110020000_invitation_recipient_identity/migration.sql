@@ -1,3 +1,4 @@
+ALTER TABLE "ProjectInvitation" DROP CONSTRAINT IF EXISTS "ProjectInvitation_invitedEmail_fkey";
 ALTER TABLE "ProjectInvitation" ADD COLUMN "recipientId" TEXT;
 ALTER TABLE "ProjectInvitation"
   ADD CONSTRAINT "ProjectInvitation_recipientId_fkey"
