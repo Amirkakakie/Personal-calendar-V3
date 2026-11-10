@@ -181,24 +181,24 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
 
       {/* Aggregate Metrics Summary Bar */}
       {projects.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
-            <span className="text-[11px] font-mono uppercase text-neutral-500 block mb-1">Active Projects</span>
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 xl:grid-cols-4 gap-3.5">
+          <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "پروژه‌های فعال" : "Active Projects"}</span>
             <span className="text-xl font-bold font-mono text-white tracking-tight">{formatNumber(projects.length)}</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
-            <span className="text-[11px] font-mono uppercase text-neutral-500 block mb-1">Target Hours</span>
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ساعات هدف" : "Target Hours"}</span>
             <span className="text-xl font-bold font-mono text-white tracking-tight">{formatNumber(totalTargetHours)}h</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
-            <span className="text-[11px] font-mono uppercase text-neutral-500 block mb-1">Logged Hours</span>
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ساعات ثبت‌شده" : "Logged Hours"}</span>
             <span className="text-xl font-bold font-mono text-indigo-400 tracking-tight">{formatNumber(totalLoggedHours)}h</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
-            <span className="text-[11px] font-mono uppercase text-neutral-500 block mb-1">Cumulative Yield</span>
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ارزش ایجادشده" : "Cumulative Yield"}</span>
             <span className="text-xl font-bold font-mono text-emerald-400 tracking-tight">${formatNumber(Math.round(totalYieldValue))}</span>
           </div>
         </div>
@@ -214,7 +214,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={locale === 'fa' ? 'جستجوی پروژه با نام یا مشخصات...' : 'Search projects by name or spec...'}
-              className="w-full ps-10 pe-4 py-2 bg-neutral-950/70 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-500 text-xs focus:outline-none focus:border-indigo-500"
+              className="app-input w-full ps-10 pe-4 bg-neutral-950/70 text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -223,7 +223,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
             <select
               value={selectedStatus}
               onChange={e => setSelectedStatus(e.target.value as any)}
-              className="px-3 py-2 bg-neutral-950/70 border border-neutral-800 rounded-xl text-neutral-300 text-xs focus:outline-none focus:border-indigo-500"
+              className="app-select px-3 bg-neutral-950/70 border-neutral-800 text-neutral-300 focus:outline-none focus:border-indigo-500"
             >
               <option value="all">{locale === 'fa' ? 'همه وضعیت‌ها' : 'All Statuses'}</option>
               <option value="in_progress">{locale === 'fa' ? 'در جریان' : 'In Progress'}</option>
