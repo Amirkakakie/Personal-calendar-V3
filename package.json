@@ -12,7 +12,7 @@
     "lint": "node scripts/check-translations.mjs && tsc --noEmit",
     "test:security": "tsx tests/security.test.ts",
     "test:e2e": "tsx tests/e2e-auth-ai.test.ts",
-    "test": "tsx tests/security.test.ts && tsx tests/e2e-auth-ai.test.ts",
+    "test": "tsx tests/security.test.ts && tsx tests/e2e-auth-ai.test.ts && tsx tests/admin-security.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
@@ -23,7 +23,8 @@
     "test:legacy-export": "tsx tests/legacy-snapshot.test.ts",
     "db:import-legacy-archive": "tsx scripts/import-legacy-archive.ts",
     "test:relational-import": "tsx tests/relational-import.test.ts",
-    "check:i18n": "node scripts/check-translations.mjs"
+    "check:i18n": "node scripts/check-translations.mjs",
+    "admin:bootstrap": "tsx scripts/bootstrap-superadmin.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

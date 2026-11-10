@@ -36,6 +36,7 @@ interface UserAccountMenuProps {
   onExportIcal: () => void;
   onOpenAuthModal?: () => void;
   onDataRestored?: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
@@ -48,7 +49,8 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   onOpenAIDecompose,
   onExportIcal,
   onOpenAuthModal,
-  onDataRestored
+  onDataRestored,
+  onNavigateToAdmin
 }) => {
   const { currentUser, isAuthenticated, logout } = useAuth();
   const { locale, setLocale, calendarType, setCalendarType, t, direction, formatNumber } = useI18n();
@@ -167,6 +169,33 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Super Admin Access Banner (Exclusively for superadmin role) */}
+          {currentUser.role === 'superadmin' && (
+            <div className="p-2 border-b border-purple-900/40 bg-purple-950/30">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onNavigateToAdmin) {
+                    onNavigateToAdmin();
+                  } else {
+                    window.history.pushState(null, '', '/admin');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 text-start rounded-xl bg-purple-900/50 hover:bg-purple-800/70 border border-purple-700/60 text-purple-200 hover:text-white transition-all shadow-sm group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Shield className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-xs">{t('admin.controlCenterTitle')}</span>
+                </div>
+                <span className="text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+                  /admin
+                </span>
+              </button>
+            </div>
+          )}
 
           <div className="p-2 space-y-1 max-h-[70vh] overflow-y-auto text-xs">
             {/* Section 1: Display & Preferences */}

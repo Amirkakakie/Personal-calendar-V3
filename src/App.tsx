@@ -71,11 +71,14 @@ import { QuadrantDistributionChart } from './components/charts/QuadrantDistribut
 // Team Collaboration Component
 import { TeamBoardView } from './components/TeamBoardView.tsx';
 
+// Super Admin Control Center
+import { AdminApp } from './components/admin/AdminApp.tsx';
+
 
 const STORAGE_WORKSPACE_MODE_KEY = 'chronos_workspace_mode';
 const STORAGE_SIDEBAR_COLLAPSED_KEY = 'chronos_sidebar_collapsed';
 
-function ChronosWorkspace() {
+function ChronosWorkspace({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void }) {
   const { t, direction, formatDate, formatTime, formatNumber } = useI18n();
   const { currentUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
@@ -363,6 +366,7 @@ function ChronosWorkspace() {
           showToast('System backup restored successfully!', 'success');
         }}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onNavigateToAdmin={onNavigateToAdmin}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -764,18 +768,61 @@ function ChronosWorkspace() {
   );
 }
 
+function RootRouter() {
+  const [isAdminPath, setIsAdminPath] = useState(() => 
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
+  );
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsAdminPath(window.location.pathname.startsWith('/admin'));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  if (isAdminPath) {
+    return (
+      <>
+        <AdminApp 
+          onExitToWorkspace={() => {
+            window.history.pushState(null, '', '/');
+            setIsAdminPath(false);
+          }}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+        />
+      </>
+    );
+  }
+
+  return (
+    <TaskProvider>
+      <TeamProvider>
+        <ChronosWorkspace
+          onNavigateToAdmin={() => {
+            window.history.pushState(null, '', '/admin');
+            setIsAdminPath(true);
+          }}
+        />
+      </TeamProvider>
+    </TaskProvider>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
       <I18nProvider>
         <AuthProvider>
-          <TaskProvider>
-            <TeamProvider>
-              <ChronosWorkspace />
-            </TeamProvider>
-          </TaskProvider>
+          <RootRouter />
         </AuthProvider>
       </I18nProvider>
     </ErrorBoundary>
   );
 }
+

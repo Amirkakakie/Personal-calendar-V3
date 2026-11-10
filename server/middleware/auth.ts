@@ -100,6 +100,14 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
       return;
     }
 
+    if (user.status === 'suspended') {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: Your account has been suspended by an administrator.'
+      });
+      return;
+    }
+
     req.user = {
       id: user.id,
       email: user.email,

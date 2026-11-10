@@ -31,6 +31,7 @@ interface HeaderProps {
   onOpenAuthModal?: () => void;
   onDataRestored?: () => void;
   onOpenCommandPalette?: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,7 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
   onExportIcal,
   onOpenAuthModal,
   onDataRestored,
-  onOpenCommandPalette
+  onOpenCommandPalette,
+  onNavigateToAdmin
 }) => {
   const { t, formatNumber, direction, locale } = useI18n();
   const { myPendingInvites } = useTeam();
@@ -161,6 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
               onExportIcal={onExportIcal}
               onOpenAuthModal={onOpenAuthModal}
               onDataRestored={onDataRestored}
+              onNavigateToAdmin={onNavigateToAdmin}
             />
           </div>
         </div>

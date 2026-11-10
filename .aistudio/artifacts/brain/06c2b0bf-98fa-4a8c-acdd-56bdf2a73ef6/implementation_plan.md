@@ -78,6 +78,44 @@ Comprehensive architectural stabilization, multi-tenant isolation, cryptographic
 
 - **TypeScript Compilation**: `compile_applet` passed (`vite build` succeeded with 0 errors).
 - **ESLint & Type Safety**: `lint_applet` passed (`tsc --noEmit` succeeded with 0 errors).
-- **Backend & Security Suite**: 19 security scenarios with 61/61 assertions passed.
+- **Backend & Security Suite**: 19 security scenarios with 80/80 assertions passed.
 - **E2E Integration Suite**: 16/16 end-to-end assertions passed.
+- **Super Admin Security Suite**: 14/14 automated admin test scenarios passed with 15/15 assertions.
+- **Bilingual i18n Validation**: 621 matching keys verified between `en.json` and `fa.json`.
 - **Server Health**: Port 3000 responding HTTP 200 with strict CSP and security headers.
+
+---
+
+### Sprint 04: Secure Super Admin Control Center (`/admin`) — Complete
+
+1. **Authentication & Authorization Guard (`/server/middleware/adminAuth.ts`)**:
+   - `requireSuperAdmin` middleware queries live database record for every request.
+   - Strictly enforces `user.role === 'superadmin'` and `user.status === 'active'`.
+   - Unauthorized attempts return HTTP 403 Forbidden and record tamper-evident audit logs.
+2. **Platform Owner Bootstrap (`/scripts/bootstrap-superadmin.ts`)**:
+   - CLI command `npm run admin:bootstrap` promotes platform owner (`amir.work.vr@gmail.com`).
+   - Server initializes environment-configured super admin from `CHRONOS_SUPERADMIN_EMAIL`.
+   - Never exposes credentials or automatically promotes public registrations.
+3. **Admin APIs & Database Methods (`/server/routes/adminRouter.ts`)**:
+   - `/api/admin/overview`: Real-time user, project, team, and task aggregations.
+   - `/api/admin/analytics`: Date-range time-series analytics (7d, 30d, 90d, 1y).
+   - `/api/admin/users`: Search, filter, inspect, suspend/reactivate, role modification, password reset, double-confirmation delete.
+   - `/api/admin/projects`: Cross-platform inspection of personal & team projects, archive/restore, and delete.
+   - `/api/admin/teams`: Workspace directory, members inspection, team projects, and team deletion.
+   - `/api/admin/tasks`: Global task inspection across all scopes, priorities, and statuses.
+   - `/api/admin/audit-logs`: Structured audit stream with actor, IP, timestamp, and JSON payload viewer.
+   - `/api/admin/system/health` & `/system/maintenance`: Persistence engine diagnostics, memory telemetry, uptime, and integrity verification.
+4. **Independent Frontend Control Center (`/src/components/admin/`)**:
+   - Accessible at `/admin` independently of user workspace.
+   - `AdminAccessDenied.tsx`: HTTP 403 Forbidden screen with clean recovery actions.
+   - `AdminLayout.tsx`: Responsive navigation, Super Admin shield badge, language switcher, and exit button.
+   - `AdminOverviewView.tsx`: KPI cards, quick actions, recent registrations, and audit logs.
+   - `AdminAnalyticsView.tsx`: Interactive SVG charts with responsive tooltips and timeframe selectors.
+   - `AdminUsersView.tsx`: Searchable user table with full administrative modal workflows.
+   - `AdminProjectsView.tsx`: Global project management and read-only inspection.
+   - `AdminTeamsView.tsx`: Collaborative teams control and directory inspection.
+   - `AdminTasksView.tsx`: Platform-wide tasks monitor and filter.
+   - `AdminAuditLogsView.tsx`: Security event stream with JSON detail modal.
+   - `AdminSystemHealthView.tsx`: Database status, memory usage, uptime, and maintenance check.
+   - `AdminSettingsView.tsx`: Platform owner CLI instructions and active security architecture summary.
+

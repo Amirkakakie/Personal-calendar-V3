@@ -9,9 +9,11 @@ import projectsRouter from './routes/projectsRouter.ts';
 import skillsRouter from './routes/skillsRouter.ts';
 import timelogsRouter from './routes/timelogsRouter.ts';
 import workspacesRouter from './routes/workspacesRouter.ts';
+import adminRouter from './routes/adminRouter.ts';
 import { db } from './db.ts';
 
 import { authenticateToken, getJwtSecret } from './middleware/auth.ts';
+import { requireSuperAdmin } from './middleware/adminAuth.ts';
 import {
   securityHeaders,
   corsMiddleware,
@@ -78,11 +80,19 @@ const authRateLimiter = createRateLimiter({
   message: 'Too many authentication attempts. Please wait one minute before trying again.'
 });
 
+// Super Admin Rate Limiter: 120 requests per minute
+const adminRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: 'Admin rate limit exceeded. Please throttle administrative requests.'
+});
+
 app.use('/api', globalApiLimiter);
 app.use('/api/auth/login', authRateLimiter);
 app.use('/api/auth/signup', authRateLimiter);
 app.use('/api/auth/google', authRateLimiter);
 app.use('/api/ai', aiRateLimiter);
+app.use('/api/admin', adminRateLimiter);
 
 // Persistent database request boundary.
 // Every API request receives an isolated relational snapshot and revision.
@@ -139,6 +149,7 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/skills', skillsRouter);
 app.use('/api/timelogs', timelogsRouter);
 app.use('/api', workspacesRouter);
+app.use('/api/admin', requireSuperAdmin, adminRouter);
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {

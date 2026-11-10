@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { loadRelationalSnapshot, persistRelationalSnapshot } from './migrations/relationalStore.ts';
 import type { 
   Task, 
@@ -88,6 +89,21 @@ export interface UserRecord {
   initials: string;
   joinedAt: string;
   personalWorkspaceId: string;
+  status?: 'active' | 'suspended';
+  lastLoginAt?: string;
+}
+
+export interface AuditLogRecord {
+  id: string;
+  timestamp: string;
+  adminId: string;
+  adminEmail: string;
+  action: string;
+  targetType: 'user' | 'project' | 'team' | 'task' | 'system' | 'auth';
+  targetId?: string;
+  details: Record<string, any>;
+  ip?: string;
+  userAgent?: string;
 }
 
 export interface TeamProjectRecord {
@@ -172,6 +188,7 @@ export interface DatabaseSchema {
   teamProjects: TeamProjectRecord[];
   teamTasks: TeamTaskRecord[];
   teamInvitations: ProjectInvitationRecord[];
+  auditLogs?: AuditLogRecord[];
 }
 
 function createBlankPartition(): UserPartition {
@@ -242,6 +259,7 @@ class Database {
     this.relationalEnabled = this.requiresPostgres || isValidPostgresUrl(process.env.DATABASE_URL);
     this.data = this.relationalEnabled ? this.createEmptyState() : this.load();
     this.initPostgres();
+    this.bootstrapSuperAdminFromEnv();
   }
 
   private createEmptyState(): DatabaseSchema {
@@ -252,7 +270,8 @@ class Database {
       partitions: {},
       teamProjects: [],
       teamTasks: [],
-      teamInvitations: []
+      teamInvitations: [],
+      auditLogs: []
     };
   }
 
@@ -410,7 +429,8 @@ class Database {
       partitions: {},
       teamProjects: [],
       teamTasks: [],
-      teamInvitations: []
+      teamInvitations: [],
+      auditLogs: []
     };
     this.save(pristine);
     return pristine;
@@ -423,6 +443,7 @@ class Database {
     if (!Array.isArray(parsed.teamProjects)) parsed.teamProjects = [];
     if (!Array.isArray(parsed.teamTasks)) parsed.teamTasks = [];
     if (!Array.isArray(parsed.teamInvitations)) parsed.teamInvitations = [];
+    if (!Array.isArray(parsed.auditLogs)) parsed.auditLogs = [];
     return parsed as DatabaseSchema;
   }
 
@@ -1239,6 +1260,1137 @@ class Database {
    */
   public verifyGoalOwnership(goalId: string, userId: string): boolean {
     return Boolean(this.getGoalById(goalId, userId));
+  }
+
+  // ============================================================================
+  // SUPER ADMIN CONTROL CENTER SERVICES & PLATFORM AGGREGATIONS
+  // ============================================================================
+
+  /**
+   * Automatic environment-based Super Admin bootstrap
+   */
+  public bootstrapSuperAdminFromEnv(): void {
+    try {
+      const adminEmail = (process.env.CHRONOS_SUPERADMIN_EMAIL || 'amir.work.vr@gmail.com').trim().toLowerCase();
+      if (!adminEmail) return;
+
+      const existing = this.getUserByEmail(adminEmail);
+      if (existing) {
+        let changed = false;
+        if (existing.role !== 'superadmin') {
+          existing.role = 'superadmin';
+          changed = true;
+        }
+        if (existing.status !== 'active') {
+          existing.status = 'active';
+          changed = true;
+        }
+        if (changed) {
+          this.save(this.data);
+          this.addAuditLog({
+            adminId: existing.id,
+            adminEmail: existing.email,
+            action: 'superadmin.bootstrap_promoted',
+            targetType: 'user',
+            targetId: existing.id,
+            details: { email: adminEmail, reason: 'Platform owner bootstrap promotion' }
+          });
+          console.log(`[Chronos SuperAdmin] Platform owner ${adminEmail} verified with role: superadmin`);
+        }
+      } else if (process.env.CHRONOS_SUPERADMIN_PASSWORD) {
+        const passwordHash = bcrypt.hashSync(process.env.CHRONOS_SUPERADMIN_PASSWORD, 10);
+        const id = `usr-admin-${Date.now()}`;
+        const newAdmin: UserRecord = {
+          id,
+          name: process.env.CHRONOS_SUPERADMIN_NAME || 'Platform Super Admin',
+          email: adminEmail,
+          passwordHash,
+          role: 'superadmin',
+          status: 'active',
+          title: 'Platform Super Admin',
+          avatarColor: 'from-violet-600 to-indigo-600',
+          initials: 'SA',
+          joinedAt: new Date().toISOString().split('T')[0],
+          personalWorkspaceId: `ws-personal-${id}`
+        };
+        this.createUser(newAdmin);
+        this.addAuditLog({
+          adminId: id,
+          adminEmail,
+          action: 'superadmin.bootstrap_created',
+          targetType: 'user',
+          targetId: id,
+          details: { email: adminEmail, reason: 'Initial superadmin account created via environment bootstrap' }
+        });
+        console.log(`[Chronos SuperAdmin] Provisioned initial superadmin ${adminEmail}`);
+      }
+    } catch (err) {
+      console.error('[Chronos SuperAdmin] Bootstrap check error:', err);
+    }
+  }
+
+  /**
+   * Explicit Super Admin provisioning (CLI / API)
+   */
+  public bootstrapSuperAdmin(email: string, password?: string, name?: string): { success: boolean; user?: Omit<UserRecord, 'passwordHash' | 'password'>; message: string } {
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = this.getUserByEmail(cleanEmail);
+
+    if (existing) {
+      existing.role = 'superadmin';
+      existing.status = 'active';
+      if (password) {
+        existing.passwordHash = bcrypt.hashSync(password, 10);
+        delete existing.password;
+      }
+      this.save(this.data);
+      this.addAuditLog({
+        adminId: existing.id,
+        adminEmail: existing.email,
+        action: 'superadmin.explicit_promote',
+        targetType: 'user',
+        targetId: existing.id,
+        details: { email: cleanEmail }
+      });
+      const { passwordHash: _, password: __, ...safe } = existing as any;
+      return { success: true, user: safe, message: `Account ${cleanEmail} promoted to Super Admin successfully.` };
+    }
+
+    if (!password) {
+      return { success: false, message: 'Password is required to create a new Super Admin account.' };
+    }
+
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const id = `usr-admin-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const displayName = name || cleanEmail.split('@')[0];
+    const newAdmin: UserRecord = {
+      id,
+      name: displayName,
+      email: cleanEmail,
+      passwordHash,
+      role: 'superadmin',
+      status: 'active',
+      title: 'Platform Super Admin',
+      avatarColor: 'from-violet-600 to-indigo-600',
+      initials: displayName.slice(0, 2).toUpperCase(),
+      joinedAt: new Date().toISOString().split('T')[0],
+      personalWorkspaceId: `ws-personal-${id}`
+    };
+
+    const created = this.createUser(newAdmin);
+    this.addAuditLog({
+      adminId: id,
+      adminEmail: cleanEmail,
+      action: 'superadmin.explicit_create',
+      targetType: 'user',
+      targetId: id,
+      details: { email: cleanEmail }
+    });
+
+    const { passwordHash: _, password: __, ...safe } = created as any;
+    return { success: true, user: safe, message: `Super Admin account ${cleanEmail} created successfully.` };
+  }
+
+  // --- AUDIT LOGGING ---
+  public addAuditLog(entry: Omit<AuditLogRecord, 'id' | 'timestamp'>): AuditLogRecord {
+    if (!Array.isArray(this.data.auditLogs)) {
+      this.data.auditLogs = [];
+    }
+    const log: AuditLogRecord = {
+      id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: new Date().toISOString(),
+      ...entry
+    };
+    this.data.auditLogs.unshift(log);
+    // Bounded FIFO buffer of 5000 records
+    if (this.data.auditLogs.length > 5000) {
+      this.data.auditLogs = this.data.auditLogs.slice(0, 5000);
+    }
+    this.save(this.data);
+    return log;
+  }
+
+  public getAuditLogs(options?: {
+    action?: string;
+    adminEmail?: string;
+    targetType?: string;
+    targetId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    limit?: number;
+    offset?: number;
+  }): { logs: AuditLogRecord[]; total: number } {
+    let logs = this.data.auditLogs || [];
+
+    if (options?.action) {
+      const q = options.action.toLowerCase();
+      logs = logs.filter(l => l.action.toLowerCase().includes(q));
+    }
+    if (options?.adminEmail) {
+      const q = options.adminEmail.toLowerCase();
+      logs = logs.filter(l => l.adminEmail.toLowerCase().includes(q));
+    }
+    if (options?.targetType) {
+      logs = logs.filter(l => l.targetType === options.targetType);
+    }
+    if (options?.targetId) {
+      logs = logs.filter(l => l.targetId === options.targetId);
+    }
+    if (options?.dateFrom) {
+      const fromTime = new Date(options.dateFrom).getTime();
+      logs = logs.filter(l => new Date(l.timestamp).getTime() >= fromTime);
+    }
+    if (options?.dateTo) {
+      const toTime = new Date(options.dateTo).getTime();
+      logs = logs.filter(l => new Date(l.timestamp).getTime() <= toTime);
+    }
+
+    const total = logs.length;
+    const limit = Math.min(Math.max(options?.limit || 50, 1), 200);
+    const offset = Math.max(options?.offset || 0, 0);
+    const paged = logs.slice(offset, offset + limit);
+
+    return { logs: paged, total };
+  }
+
+  // --- USER MANAGEMENT (SUPER ADMIN) ---
+  public getAllUsersAdmin(options?: {
+    search?: string;
+    status?: string;
+    role?: string;
+    limit?: number;
+    offset?: number;
+  }): {
+    users: Array<Omit<UserRecord, 'password' | 'passwordHash'> & {
+      personalProjectsCount: number;
+      teamMembershipsCount: number;
+      tasksCount: number;
+      status: 'active' | 'suspended';
+    }>;
+    total: number;
+  } {
+    let users = [...this.data.users];
+
+    if (options?.search) {
+      const q = options.search.trim().toLowerCase();
+      users = users.filter(u => 
+        u.email.toLowerCase().includes(q) || 
+        u.name.toLowerCase().includes(q) || 
+        u.id.toLowerCase().includes(q)
+      );
+    }
+
+    if (options?.status && options.status !== 'all') {
+      const reqStatus = options.status.toLowerCase();
+      users = users.filter(u => (u.status || 'active').toLowerCase() === reqStatus);
+    }
+
+    if (options?.role && options.role !== 'all') {
+      const reqRole = options.role.toLowerCase();
+      users = users.filter(u => u.role.toLowerCase() === reqRole);
+    }
+
+    const total = users.length;
+    const limit = Math.min(Math.max(options?.limit || 25, 1), 200);
+    const offset = Math.max(options?.offset || 0, 0);
+    const paged = users.slice(offset, offset + limit);
+
+    const mapped = paged.map(u => {
+      const partition = this.data.partitions[u.id];
+      const personalProjectsCount = partition?.projects?.length || 0;
+      const tasksCount = (partition?.tasks?.length || 0) + this.data.teamTasks.filter(t => t.assigneeId === u.id).length;
+      const teamMembershipsCount = this.data.workspaces.filter(ws => 
+        !ws.isPersonal && (ws.ownerId === u.id || ws.members?.some(m => m.userId === u.id))
+      ).length;
+
+      const { password: _, passwordHash: __, ...safe } = u as any;
+      return {
+        ...safe,
+        status: (u.status || 'active') as 'active' | 'suspended',
+        personalProjectsCount,
+        teamMembershipsCount,
+        tasksCount
+      };
+    });
+
+    return { users: mapped, total };
+  }
+
+  public getUserDetailsAdmin(userId: string) {
+    const user = this.getUserById(userId);
+    if (!user) return null;
+
+    const partition = this.data.partitions[userId] || createBlankPartition();
+    const personalProjects = partition.projects || [];
+    const personalTasks = partition.tasks || [];
+    const completedPersonalTasks = personalTasks.filter(t => t.status === 'completed').length;
+
+    // Team projects where user is owner or member
+    const teamProjects = this.data.teamProjects.filter(p => 
+      p.ownerId === userId || (Array.isArray(p.memberIds) && p.memberIds.includes(userId))
+    );
+
+    // Team workspaces
+    const workspaces = this.data.workspaces.filter(ws => 
+      !ws.isPersonal && (ws.ownerId === userId || ws.members?.some(m => m.userId === userId))
+    ).map(ws => ({
+      id: ws.id,
+      name: ws.name,
+      role: ws.ownerId === userId ? 'OWNER' : (ws.members?.find(m => m.userId === userId)?.role || 'MEMBER'),
+      createdAt: ws.createdAt
+    }));
+
+    const { password: _, passwordHash: __, ...safeUser } = user as any;
+
+    return {
+      user: {
+        ...safeUser,
+        status: user.status || 'active'
+      },
+      stats: partition.stats,
+      personalProjectsCount: personalProjects.length,
+      personalProjects: personalProjects.map(p => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        loggedHours: p.loggedHours,
+        createdAt: p.createdAt
+      })),
+      teamProjectsCount: teamProjects.length,
+      teamProjects: teamProjects.map(p => ({
+        id: p.id,
+        name: p.name,
+        key: p.key,
+        color: p.color,
+        createdAt: p.createdAt,
+        isOwner: p.ownerId === userId
+      })),
+      workspaces,
+      taskSummary: {
+        total: personalTasks.length,
+        completed: completedPersonalTasks,
+        pending: personalTasks.length - completedPersonalTasks
+      }
+    };
+  }
+
+  public deleteUserAdmin(userId: string): boolean {
+    const user = this.getUserById(userId);
+    if (!user) return false;
+
+    // 1. Remove user
+    this.data.users = this.data.users.filter(u => u.id !== userId);
+
+    // 2. Remove partition
+    delete this.data.partitions[userId];
+
+    // 3. Remove personal workspace
+    this.data.workspaces = this.data.workspaces.filter(ws => !(ws.isPersonal && ws.ownerId === userId));
+
+    // 4. Remove from workspace memberships
+    for (const ws of this.data.workspaces) {
+      if (Array.isArray(ws.members)) {
+        ws.members = ws.members.filter(m => m.userId !== userId);
+      }
+    }
+
+    // 5. Remove from team projects
+    for (const proj of this.data.teamProjects) {
+      if (Array.isArray(proj.memberIds)) {
+        proj.memberIds = proj.memberIds.filter(id => id !== userId);
+      }
+      if (proj.memberRoles && proj.memberRoles[userId]) {
+        delete proj.memberRoles[userId];
+      }
+    }
+
+    // 6. Unassign tasks
+    for (const t of this.data.teamTasks) {
+      if (t.assigneeId === userId) {
+        delete t.assigneeId;
+      }
+    }
+
+    // 7. Remove invitations
+    this.data.teamInvitations = this.data.teamInvitations.filter(inv => 
+      inv.invitedEmail.toLowerCase() !== user.email.toLowerCase() && inv.invitedByUserId !== userId
+    );
+
+    this.save(this.data);
+    return true;
+  }
+
+  // --- PROJECT MANAGEMENT (SUPER ADMIN) ---
+  public getAllProjectsAdmin(options?: {
+    search?: string;
+    type?: 'all' | 'personal' | 'team';
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    interface AdminProjectItem {
+      id: string;
+      name: string;
+      description?: string;
+      type: 'personal' | 'team';
+      ownerId: string;
+      ownerName: string;
+      ownerEmail: string;
+      status: string;
+      tasksCount: number;
+      completedTasksCount: number;
+      memberCount: number;
+      loggedHours: number;
+      createdAt: string;
+      color?: string;
+    }
+
+    const combined: AdminProjectItem[] = [];
+
+    // Personal projects
+    for (const user of this.data.users) {
+      const partition = this.data.partitions[user.id];
+      if (partition && Array.isArray(partition.projects)) {
+        for (const p of partition.projects) {
+          const pTasks = (partition.tasks || []).filter(t => t.projectId === p.id);
+          const completedCount = pTasks.filter(t => t.status === 'completed').length;
+          combined.push({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            type: 'personal',
+            ownerId: user.id,
+            ownerName: user.name,
+            ownerEmail: user.email,
+            status: p.status || 'in_progress',
+            tasksCount: pTasks.length,
+            completedTasksCount: completedCount,
+            memberCount: 1,
+            loggedHours: p.loggedHours || 0,
+            createdAt: p.createdAt || user.joinedAt,
+            color: p.color
+          });
+        }
+      }
+    }
+
+    // Team projects
+    for (const tp of this.data.teamProjects) {
+      const owner = this.getUserById(tp.ownerId);
+      const tpTasks = this.data.teamTasks.filter(t => t.projectId === tp.id);
+      const completedCount = tpTasks.filter(t => t.columnId === 'done' || t.columnId === 'completed').length;
+      combined.push({
+        id: tp.id,
+        name: tp.name,
+        description: tp.description,
+        type: 'team',
+        ownerId: tp.ownerId,
+        ownerName: owner?.name || tp.ownerEmail.split('@')[0],
+        ownerEmail: owner?.email || tp.ownerEmail,
+        status: 'active',
+        tasksCount: tpTasks.length,
+        completedTasksCount: completedCount,
+        memberCount: Array.isArray(tp.memberIds) ? tp.memberIds.length : 1,
+        loggedHours: tpTasks.reduce((acc, t) => acc + (t.estimatedHours || 0), 0),
+        createdAt: tp.createdAt,
+        color: tp.color
+      });
+    }
+
+    let filtered = combined;
+
+    if (options?.type && options.type !== 'all') {
+      filtered = filtered.filter(p => p.type === options.type);
+    }
+
+    if (options?.search) {
+      const q = options.search.trim().toLowerCase();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q) ||
+        p.ownerEmail.toLowerCase().includes(q) ||
+        p.ownerName.toLowerCase().includes(q)
+      );
+    }
+
+    if (options?.status && options.status !== 'all') {
+      const st = options.status.toLowerCase();
+      filtered = filtered.filter(p => p.status.toLowerCase() === st);
+    }
+
+    // Sort descending by createdAt
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const total = filtered.length;
+    const limit = Math.min(Math.max(options?.limit || 25, 1), 200);
+    const offset = Math.max(options?.offset || 0, 0);
+    const paged = filtered.slice(offset, offset + limit);
+
+    return { projects: paged, total };
+  }
+
+  public getProjectDetailsAdmin(projectId: string) {
+    // 1. Check if team project
+    const teamProj = this.data.teamProjects.find(p => p.id === projectId);
+    if (teamProj) {
+      const owner = this.getUserById(teamProj.ownerId);
+      const tasks = this.data.teamTasks.filter(t => t.projectId === projectId);
+      const members = (teamProj.memberIds || []).map(mid => {
+        const u = this.getUserById(mid);
+        return {
+          id: mid,
+          name: u?.name || 'Unknown',
+          email: u?.email || '',
+          role: teamProj.memberRoles?.[mid] || (mid === teamProj.ownerId ? 'OWNER' : 'MEMBER')
+        };
+      });
+
+      return {
+        id: teamProj.id,
+        name: teamProj.name,
+        key: teamProj.key,
+        description: teamProj.description,
+        type: 'team',
+        color: teamProj.color,
+        ownerId: teamProj.ownerId,
+        ownerName: owner?.name || teamProj.ownerEmail,
+        ownerEmail: owner?.email || teamProj.ownerEmail,
+        status: 'active',
+        createdAt: teamProj.createdAt,
+        members,
+        tasks: tasks.map(t => ({
+          id: t.id,
+          taskNumber: t.taskNumber,
+          title: t.title,
+          columnId: t.columnId,
+          priority: t.priority,
+          assignee: t.assigneeId ? this.getUserById(t.assigneeId)?.name : 'Unassigned',
+          estimatedHours: t.estimatedHours,
+          createdAt: t.createdAt
+        }))
+      };
+    }
+
+    // 2. Check if personal project in any partition
+    for (const [userId, partition] of Object.entries(this.data.partitions)) {
+      const proj = (partition.projects || []).find(p => p.id === projectId);
+      if (proj) {
+        const owner = this.getUserById(userId);
+        const tasks = (partition.tasks || []).filter(t => t.projectId === projectId);
+        return {
+          id: proj.id,
+          name: proj.name,
+          description: proj.description,
+          type: 'personal',
+          color: proj.color,
+          ownerId: userId,
+          ownerName: owner?.name || owner?.email || 'User',
+          ownerEmail: owner?.email || '',
+          status: proj.status || 'in_progress',
+          createdAt: proj.createdAt,
+          targetHours: proj.targetHours,
+          loggedHours: proj.loggedHours,
+          members: [{ id: userId, name: owner?.name || '', email: owner?.email || '', role: 'OWNER' }],
+          tasks: tasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            priority: t.priority,
+            category: t.category,
+            dueDate: t.dueDate,
+            durationMinutes: t.durationMinutes,
+            createdAt: t.createdAt
+          }))
+        };
+      }
+    }
+
+    return null;
+  }
+
+  public deleteProjectAdmin(projectId: string): boolean {
+    // 1. Team project deletion
+    const teamProjIdx = this.data.teamProjects.findIndex(p => p.id === projectId);
+    if (teamProjIdx !== -1) {
+      this.data.teamProjects.splice(teamProjIdx, 1);
+      this.data.teamTasks = this.data.teamTasks.filter(t => t.projectId !== projectId);
+      this.data.teamInvitations = this.data.teamInvitations.filter(i => i.projectId !== projectId);
+      this.save(this.data);
+      return true;
+    }
+
+    // 2. Personal project deletion
+    for (const [userId, partition] of Object.entries(this.data.partitions)) {
+      const idx = (partition.projects || []).findIndex(p => p.id === projectId);
+      if (idx !== -1) {
+        partition.projects.splice(idx, 1);
+        partition.tasks = partition.tasks.map(t => t.projectId === projectId ? { ...t, projectId: undefined } : t);
+        partition.timeLogs = partition.timeLogs.map(l => l.projectId === projectId ? { ...l, projectId: undefined } : l);
+        this.save(this.data);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public archiveProjectAdmin(projectId: string, archived: boolean): boolean {
+    const newStatus = archived ? 'archived' : 'in_progress';
+
+    // Personal project
+    for (const [_, partition] of Object.entries(this.data.partitions)) {
+      const proj = (partition.projects || []).find(p => p.id === projectId);
+      if (proj) {
+        proj.status = newStatus as any;
+        this.save(this.data);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // --- TEAM MANAGEMENT (SUPER ADMIN) ---
+  public getAllTeamsAdmin(options?: {
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    let teams = this.data.workspaces.filter(ws => !ws.isPersonal).map(ws => {
+      const owner = this.getUserById(ws.ownerId);
+      const projects = this.data.teamProjects.filter(p => p.workspaceId === ws.id);
+      return {
+        id: ws.id,
+        name: ws.name,
+        slug: ws.slug,
+        ownerId: ws.ownerId,
+        ownerName: owner?.name || 'Unknown',
+        ownerEmail: owner?.email || '',
+        membersCount: Array.isArray(ws.members) ? ws.members.length : 1,
+        projectsCount: projects.length,
+        createdAt: ws.createdAt,
+        status: 'active'
+      };
+    });
+
+    if (options?.search) {
+      const q = options.search.trim().toLowerCase();
+      teams = teams.filter(t => 
+        t.name.toLowerCase().includes(q) || 
+        t.slug.toLowerCase().includes(q) || 
+        t.id.toLowerCase().includes(q) || 
+        t.ownerEmail.toLowerCase().includes(q)
+      );
+    }
+
+    teams.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const total = teams.length;
+    const limit = Math.min(Math.max(options?.limit || 25, 1), 200);
+    const offset = Math.max(options?.offset || 0, 0);
+    const paged = teams.slice(offset, offset + limit);
+
+    return { teams: paged, total };
+  }
+
+  public getTeamDetailsAdmin(teamId: string) {
+    const ws = this.data.workspaces.find(w => w.id === teamId && !w.isPersonal);
+    if (!ws) return null;
+
+    const owner = this.getUserById(ws.ownerId);
+    const projects = this.data.teamProjects.filter(p => p.workspaceId === teamId);
+    const members = (ws.members || []).map(m => {
+      const u = this.getUserById(m.userId);
+      return {
+        userId: m.userId,
+        name: u?.name || 'Unknown',
+        email: u?.email || '',
+        avatarColor: u?.avatarColor || 'from-indigo-600 to-violet-600',
+        role: m.role,
+        joinedAt: m.joinedAt
+      };
+    });
+
+    return {
+      id: ws.id,
+      name: ws.name,
+      slug: ws.slug,
+      ownerId: ws.ownerId,
+      ownerName: owner?.name || '',
+      ownerEmail: owner?.email || '',
+      createdAt: ws.createdAt,
+      members,
+      projects: projects.map(p => ({
+        id: p.id,
+        name: p.name,
+        key: p.key,
+        color: p.color,
+        tasksCount: this.data.teamTasks.filter(t => t.projectId === p.id).length,
+        createdAt: p.createdAt
+      }))
+    };
+  }
+
+  public deleteTeamAdmin(teamId: string): boolean {
+    const idx = this.data.workspaces.findIndex(w => w.id === teamId && !w.isPersonal);
+    if (idx === -1) return false;
+
+    this.data.workspaces.splice(idx, 1);
+    // Delete team projects inside this workspace
+    const projectIds = this.data.teamProjects.filter(p => p.workspaceId === teamId).map(p => p.id);
+    this.data.teamProjects = this.data.teamProjects.filter(p => p.workspaceId !== teamId);
+    this.data.teamTasks = this.data.teamTasks.filter(t => !projectIds.includes(t.projectId));
+    this.data.teamInvitations = this.data.teamInvitations.filter(i => !projectIds.includes(i.projectId));
+
+    this.save(this.data);
+    return true;
+  }
+
+  // --- GLOBAL TASKS (SUPER ADMIN) ---
+  public getAllTasksAdmin(options?: {
+    search?: string;
+    status?: string;
+    priority?: string;
+    type?: 'all' | 'personal' | 'team';
+    limit?: number;
+    offset?: number;
+  }) {
+    interface AdminTaskItem {
+      id: string;
+      title: string;
+      type: 'personal' | 'team';
+      ownerEmail: string;
+      projectName?: string;
+      category: string;
+      priority: string;
+      status: string;
+      dueDate?: string;
+      createdAt: string;
+    }
+
+    const tasks: AdminTaskItem[] = [];
+
+    // Personal tasks
+    for (const u of this.data.users) {
+      const partition = this.data.partitions[u.id];
+      if (partition && Array.isArray(partition.tasks)) {
+        for (const t of partition.tasks) {
+          const project = t.projectId ? partition.projects?.find(p => p.id === t.projectId) : undefined;
+          tasks.push({
+            id: t.id,
+            title: t.title,
+            type: 'personal',
+            ownerEmail: u.email,
+            projectName: project?.name,
+            category: t.category,
+            priority: t.priority,
+            status: t.status,
+            dueDate: t.dueDate,
+            createdAt: t.createdAt
+          });
+        }
+      }
+    }
+
+    // Team tasks
+    for (const tt of this.data.teamTasks) {
+      const proj = this.data.teamProjects.find(p => p.id === tt.projectId);
+      tasks.push({
+        id: tt.id,
+        title: tt.title,
+        type: 'team',
+        ownerEmail: proj?.ownerEmail || 'Team',
+        projectName: proj?.name,
+        category: 'Work/Career',
+        priority: tt.priority,
+        status: tt.columnId,
+        dueDate: tt.dueDate,
+        createdAt: tt.createdAt
+      });
+    }
+
+    let filtered = tasks;
+
+    if (options?.type && options.type !== 'all') {
+      filtered = filtered.filter(t => t.type === options.type);
+    }
+
+    if (options?.status && options.status !== 'all') {
+      const st = options.status.toLowerCase();
+      filtered = filtered.filter(t => t.status.toLowerCase() === st);
+    }
+
+    if (options?.priority && options.priority !== 'all') {
+      const pr = options.priority.toLowerCase();
+      filtered = filtered.filter(t => t.priority.toLowerCase() === pr);
+    }
+
+    if (options?.search) {
+      const q = options.search.trim().toLowerCase();
+      filtered = filtered.filter(t => 
+        t.title.toLowerCase().includes(q) || 
+        t.ownerEmail.toLowerCase().includes(q) ||
+        (t.projectName && t.projectName.toLowerCase().includes(q))
+      );
+    }
+
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const total = filtered.length;
+    const limit = Math.min(Math.max(options?.limit || 25, 1), 200);
+    const offset = Math.max(options?.offset || 0, 0);
+    const paged = filtered.slice(offset, offset + limit);
+
+    return { tasks: paged, total };
+  }
+
+  // --- STATISTICAL OVERVIEW & AGGREGATIONS ---
+  public getAdminOverviewStats() {
+    const now = new Date();
+    const nowMs = now.getTime();
+    const oneDayAgo = nowMs - 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = nowMs - 7 * 24 * 60 * 60 * 1000;
+    const thirtyDaysAgo = nowMs - 30 * 24 * 60 * 60 * 1000;
+    const sixtyDaysAgo = nowMs - 60 * 24 * 60 * 60 * 1000;
+    const oneYearAgo = nowMs - 365 * 24 * 60 * 60 * 1000;
+
+    const users = this.data.users;
+    const totalUsers = users.length;
+
+    let newToday = 0;
+    let newThisWeek = 0;
+    let newThisMonth = 0;
+    let newThisYear = 0;
+    let previousMonthCount = 0;
+    let activeUsers = 0;
+    let suspendedUsers = 0;
+
+    for (const u of users) {
+      const joinedMs = new Date(u.joinedAt).getTime();
+      if (joinedMs >= oneDayAgo) newToday++;
+      if (joinedMs >= sevenDaysAgo) newThisWeek++;
+      if (joinedMs >= thirtyDaysAgo) newThisMonth++;
+      if (joinedMs < thirtyDaysAgo && joinedMs >= sixtyDaysAgo) previousMonthCount++;
+      if (joinedMs >= oneYearAgo) newThisYear++;
+
+      if (u.status === 'suspended') {
+        suspendedUsers++;
+      } else {
+        // Consider active if user joined within last 30d, or has lastLoginAt within 30d, or has recent activity in activityHistory
+        const partition = this.data.partitions[u.id];
+        const lastLoginMs = u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : 0;
+        const hasRecentActivity = partition && Object.keys(partition.stats?.activityHistory || {}).some(d => {
+          const dMs = new Date(d).getTime();
+          return nowMs - dMs <= 30 * 86400000;
+        });
+
+        if (lastLoginMs >= thirtyDaysAgo || joinedMs >= thirtyDaysAgo || hasRecentActivity) {
+          activeUsers++;
+        }
+      }
+    }
+
+    const inactiveUsers = Math.max(0, totalUsers - activeUsers - suspendedUsers);
+    const growthRatePct = previousMonthCount > 0 
+      ? Math.round(((newThisMonth - previousMonthCount) / previousMonthCount) * 100)
+      : (newThisMonth > 0 ? 100 : 0);
+
+    // Projects stats
+    let personalProjectsCount = 0;
+    let personalProjectsActive = 0;
+    let personalProjectsArchived = 0;
+    let projectsCreatedToday = 0;
+    let projectsCreatedThisWeek = 0;
+    let projectsCreatedThisMonth = 0;
+
+    for (const [_, partition] of Object.entries(this.data.partitions)) {
+      for (const p of partition.projects || []) {
+        personalProjectsCount++;
+        if (p.status === 'archived') personalProjectsArchived++;
+        else personalProjectsActive++;
+
+        const pCreatedMs = new Date(p.createdAt).getTime();
+        if (pCreatedMs >= oneDayAgo) projectsCreatedToday++;
+        if (pCreatedMs >= sevenDaysAgo) projectsCreatedThisWeek++;
+        if (pCreatedMs >= thirtyDaysAgo) projectsCreatedThisMonth++;
+      }
+    }
+
+    const teamProjects = this.data.teamProjects;
+    const teamProjectsCount = teamProjects.length;
+
+    for (const tp of teamProjects) {
+      const tpCreatedMs = new Date(tp.createdAt).getTime();
+      if (tpCreatedMs >= oneDayAgo) projectsCreatedToday++;
+      if (tpCreatedMs >= sevenDaysAgo) projectsCreatedThisWeek++;
+      if (tpCreatedMs >= thirtyDaysAgo) projectsCreatedThisMonth++;
+    }
+
+    const totalProjects = personalProjectsCount + teamProjectsCount;
+    const activeProjects = personalProjectsActive + teamProjectsCount;
+    const archivedProjects = personalProjectsArchived;
+
+    // Tasks stats
+    let totalTasks = 0;
+    let completedTasks = 0;
+
+    for (const [_, partition] of Object.entries(this.data.partitions)) {
+      for (const t of partition.tasks || []) {
+        totalTasks++;
+        if (t.status === 'completed') completedTasks++;
+      }
+    }
+
+    for (const tt of this.data.teamTasks) {
+      totalTasks++;
+      if (tt.columnId === 'done' || tt.columnId === 'completed') completedTasks++;
+    }
+
+    const pendingTasks = totalTasks - completedTasks;
+    const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    // Teams stats
+    const teamWorkspaces = this.data.workspaces.filter(w => !w.isPersonal);
+    const totalTeams = teamWorkspaces.length;
+    let totalTeamMemberships = 0;
+    for (const tw of teamWorkspaces) {
+      totalTeamMemberships += Array.isArray(tw.members) ? tw.members.length : 1;
+    }
+    const averageMembersPerTeam = totalTeams > 0 ? Number((totalTeamMemberships / totalTeams).toFixed(1)) : 0;
+
+    // Recent activity feeds
+    const recentRegistrations = [...users]
+      .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime())
+      .slice(0, 6)
+      .map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        status: u.status || 'active',
+        joinedAt: u.joinedAt
+      }));
+
+    const recentProjects = this.getAllProjectsAdmin({ limit: 6 }).projects;
+    const recentTeams = this.getAllTeamsAdmin({ limit: 6 }).teams;
+    const recentAuditLogs = (this.data.auditLogs || []).slice(0, 6);
+
+    return {
+      users: {
+        total: totalUsers,
+        newToday,
+        newThisWeek,
+        newThisMonth,
+        newThisYear,
+        active: activeUsers,
+        inactive: inactiveUsers,
+        suspended: suspendedUsers,
+        growthPercentage: growthRatePct
+      },
+      projects: {
+        total: totalProjects,
+        personal: personalProjectsCount,
+        team: teamProjectsCount,
+        createdToday: projectsCreatedToday,
+        createdThisWeek: projectsCreatedThisWeek,
+        createdThisMonth: projectsCreatedThisMonth,
+        active: activeProjects,
+        archived: archivedProjects,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        completionRate: taskCompletionRate
+      },
+      teams: {
+        total: totalTeams,
+        totalMemberships: totalTeamMemberships,
+        averageMembersPerTeam,
+        activeProjects: teamProjectsCount
+      },
+      activity: {
+        recentRegistrations,
+        recentProjects,
+        recentTeams,
+        recentAuditLogs
+      }
+    };
+  }
+
+  // --- ADVANCED ANALYTICS (CHARTS & HISTORICAL TRENDS) ---
+  public getAdminAnalytics(timeframe: '7d' | '30d' | '90d' | '1y' | 'all' = '30d') {
+    const days = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : timeframe === '90d' ? 90 : timeframe === '1y' ? 365 : 730;
+    const now = new Date();
+
+    // 1. Daily registration buckets
+    const registrationTrend: Array<{ date: string; count: number; cumulative: number }> = [];
+    let runningCumulative = 0;
+
+    // Build timeline buckets
+    const dateMap = new Map<string, number>();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+      dateMap.set(d, 0);
+    }
+
+    for (const u of this.data.users) {
+      const joinedDate = u.joinedAt.split('T')[0];
+      if (dateMap.has(joinedDate)) {
+        dateMap.set(joinedDate, (dateMap.get(joinedDate) || 0) + 1);
+      }
+    }
+
+    // Calculate cumulative
+    for (const [date, count] of dateMap.entries()) {
+      runningCumulative += count;
+      registrationTrend.push({ date, count, cumulative: runningCumulative });
+    }
+
+    // 2. Project creation trend (Personal vs Team)
+    const projectCreationTrend: Array<{ date: string; personal: number; team: number; total: number }> = [];
+    const pDateMap = new Map<string, { personal: number; team: number }>();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+      pDateMap.set(d, { personal: 0, team: 0 });
+    }
+
+    // Personal
+    for (const [_, partition] of Object.entries(this.data.partitions)) {
+      for (const p of partition.projects || []) {
+        const d = (p.createdAt || '').split('T')[0];
+        if (pDateMap.has(d)) {
+          pDateMap.get(d)!.personal += 1;
+        }
+      }
+    }
+
+    // Team
+    for (const tp of this.data.teamProjects) {
+      const d = (tp.createdAt || '').split('T')[0];
+      if (pDateMap.has(d)) {
+        pDateMap.get(d)!.team += 1;
+      }
+    }
+
+    for (const [date, counts] of pDateMap.entries()) {
+      projectCreationTrend.push({
+        date,
+        personal: counts.personal,
+        team: counts.team,
+        total: counts.personal + counts.team
+      });
+    }
+
+    // 3. Task status breakdown
+    let completedCount = 0;
+    let inProgressCount = 0;
+    let todoCount = 0;
+    const categoryDistribution: Record<string, number> = {
+      'Work/Career': 0,
+      'Academic/Study': 0,
+      'Personal Growth': 0,
+      'Health & Habits': 0
+    };
+
+    for (const [_, partition] of Object.entries(this.data.partitions)) {
+      for (const t of partition.tasks || []) {
+        if (t.status === 'completed') completedCount++;
+        else if (t.status === 'in_progress') inProgressCount++;
+        else todoCount++;
+
+        if (categoryDistribution[t.category] !== undefined) {
+          categoryDistribution[t.category]++;
+        } else {
+          categoryDistribution['Work/Career']++;
+        }
+      }
+    }
+
+    for (const tt of this.data.teamTasks) {
+      if (tt.columnId === 'done' || tt.columnId === 'completed') completedCount++;
+      else if (tt.columnId === 'in_progress' || tt.columnId === 'review') inProgressCount++;
+      else todoCount++;
+      categoryDistribution['Work/Career']++;
+    }
+
+    const totalTasks = completedCount + inProgressCount + todoCount;
+
+    // 4. Team creation velocity
+    const teamTrend: Array<{ date: string; count: number }> = [];
+    const teamDateMap = new Map<string, number>();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+      teamDateMap.set(d, 0);
+    }
+
+    for (const ws of this.data.workspaces) {
+      if (!ws.isPersonal) {
+        const d = (ws.createdAt || '').split('T')[0];
+        if (teamDateMap.has(d)) {
+          teamDateMap.set(d, (teamDateMap.get(d) || 0) + 1);
+        }
+      }
+    }
+
+    for (const [date, count] of teamDateMap.entries()) {
+      teamTrend.push({ date, count });
+    }
+
+    // Active vs Inactive
+    const overview = this.getAdminOverviewStats();
+
+    return {
+      timeframe,
+      registrationTrend,
+      projectCreationTrend,
+      teamTrend,
+      taskStatusBreakdown: {
+        total: totalTasks,
+        completed: completedCount,
+        inProgress: inProgressCount,
+        todo: todoCount,
+        completionRate: totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
+      },
+      categoryDistribution,
+      userDistribution: {
+        active: overview.users.active,
+        inactive: overview.users.inactive,
+        suspended: overview.users.suspended,
+        total: overview.users.total
+      }
+    };
+  }
+
+  // --- SYSTEM HEALTH & DIAGNOSTICS ---
+  public getSystemDiagnostics() {
+    const memory = process.memoryUsage();
+    const overview = this.getAdminOverviewStats();
+
+    return {
+      status: 'operational',
+      environment: process.env.NODE_ENV || 'development',
+      serverless: this.isServerless,
+      persistence: this.getHealthInfo(),
+      uptimeSeconds: Math.floor(process.uptime()),
+      systemTime: new Date().toISOString(),
+      nodeVersion: process.version,
+      platform: process.platform,
+      memory: {
+        rssMb: Math.round(memory.rss / (1024 * 1024)),
+        heapTotalMb: Math.round(memory.heapTotal / (1024 * 1024)),
+        heapUsedMb: Math.round(memory.heapUsed / (1024 * 1024)),
+        externalMb: Math.round(memory.external / (1024 * 1024))
+      },
+      records: {
+        users: overview.users.total,
+        workspaces: this.data.workspaces.length,
+        projects: overview.projects.total,
+        tasks: overview.projects.totalTasks,
+        auditLogs: (this.data.auditLogs || []).length,
+        teamTasks: this.data.teamTasks.length
+      }
+    };
   }
 }
 

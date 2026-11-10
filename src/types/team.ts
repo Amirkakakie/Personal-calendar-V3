@@ -1,14 +1,16 @@
-export type TeamRole = 'Owner' | 'Admin' | 'Member' | 'Viewer';
+export type TeamRole = 'Owner' | 'Admin' | 'Member' | 'Viewer' | 'superadmin';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: TeamRole;
+  status?: 'active' | 'suspended';
   title: string;
   avatarColor: string;
   initials: string;
   joinedAt: string;
+  lastLoginAt?: string;
 }
 
 export interface TeamMember {

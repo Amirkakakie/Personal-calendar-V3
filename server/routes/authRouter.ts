@@ -118,6 +118,10 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }
 
+    if (user.status === 'suspended') {
+      return res.status(403).json({ success: false, error: 'Your account has been suspended by an administrator. Please contact support.' });
+    }
+
     // Secure verification with bcrypt
     let isMatch = false;
     if (user.passwordHash) {
@@ -134,6 +138,10 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!isMatch) {
       return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }
+
+    // Record last login timestamp
+    user.lastLoginAt = new Date().toISOString();
+    db.updateUser(user.id, { lastLoginAt: user.lastLoginAt });
 
     // Cryptographically sign JWT with jose
     const token = await new SignJWT({
@@ -300,9 +308,14 @@ router.post('/google', async (req: Request, res: Response) => {
     let user = db.getUserByEmail(cleanEmail);
 
     if (user) {
+      if (user.status === 'suspended') {
+        return res.status(403).json({ success: false, error: 'Your account has been suspended by an administrator. Please contact support.' });
+      }
       // Account linking: link Google ID to existing account
       db.linkGoogleAccount(user.id, googlePayload.sub, googlePayload.picture);
       user = db.getUserById(user.id)!;
+      user.lastLoginAt = new Date().toISOString();
+      db.updateUser(user.id, { lastLoginAt: user.lastLoginAt });
     } else {
       // Auto-provision new user account
       const displayName = (googlePayload.name && googlePayload.name.trim()) 
