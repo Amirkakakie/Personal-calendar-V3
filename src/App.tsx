@@ -398,6 +398,48 @@ function ChronosWorkspace() {
                 {/* 1. Dashboard View */}
                 {currentTab === 'dashboard' && (
                   <div className="space-y-6">
+                    {/* Dashboard welcome and primary actions */}
+                    <section className="relative isolate overflow-hidden rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/[0.13] via-neutral-900 to-neutral-950 p-5 sm:p-7 shadow-[0_18px_55px_-35px_rgba(99,102,241,0.45)]">
+                      <div aria-hidden="true" className="pointer-events-none absolute -top-24 end-0 -z-10 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-400/10 px-3 py-1 text-[11px] font-semibold text-indigo-300">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>{direction === 'rtl' ? 'فضای شخصی کرونوس' : 'YOUR PERSONAL WORKSPACE'}</span>
+                          </div>
+                          <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                            {direction === 'rtl' ? 'امروزت رو آگاهانه بساز.' : 'Make today count.'}
+                          </h1>
+                          <p className="mt-2 max-w-xl text-sm leading-7 text-neutral-400">
+                            {direction === 'rtl'
+                              ? 'اولویت‌ها رو مشخص کن، روی کارهای مهم تمرکز کن و قدم‌به‌قدم پیشرفتت رو ببین.'
+                              : 'Set your priorities, focus on meaningful work, and make steady progress toward your goals.'}
+                          </p>
+                          <p className="mt-3 text-xs font-medium text-neutral-500">
+                            {new Intl.DateTimeFormat(direction === 'rtl' ? 'fa-IR-u-ca-persian' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-2 min-[420px]:flex-row">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenNewTask()}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-950/40 transition-all hover:-translate-y-0.5 hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-300"
+                          >
+                            <CheckSquare className="h-4 w-4" />
+                            <span>{direction === 'rtl' ? 'ثبت کار جدید' : 'Create a task'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentTab('calendar')}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-neutral-200 transition-colors hover:border-white/20 hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-300"
+                          >
+                            <Calendar className="h-4 w-4" />
+                            <span>{direction === 'rtl' ? 'مشاهده تقویم' : 'Open calendar'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+
                     {/* Burnout Risk Alert Banner */}
                     <BurnoutAlertBanner 
                       onNavigateToCalendar={() => setCurrentTab('calendar')}
