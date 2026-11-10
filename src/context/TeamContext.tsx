@@ -56,7 +56,7 @@ interface TeamContextType {
 const TeamContext = createContext<TeamContextType | null>(null);
 
 export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, getProjectMembers } = useAuth();
+  const { currentUser } = useAuth();
   const currentUserId = currentUser?.id;
 
   const [allProjects, setAllProjects] = useState<TeamProject[]>([]);
@@ -124,19 +124,20 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load project tasks whenever active project changes
   useEffect(() => {
-    if (!currentUserId || !currentProjectId) return;
+    if (!currentUserId || !currentProject?.id) return;
+    const projectId = currentProject.id;
 
-    api.getTeamTasks(currentProjectId)
+    api.getTeamTasks(projectId)
       .then(tasks => {
         if (Array.isArray(tasks)) {
           setAllTasks(prev => {
-            const otherTasks = prev.filter(t => t.projectId !== currentProjectId);
+            const otherTasks = prev.filter(t => t.projectId !== projectId);
             return [...otherTasks, ...tasks];
           });
         }
       })
       .catch(() => {});
-  }, [currentUserId, currentProjectId]);
+  }, [currentUserId, currentProject?.id]);
 
   // STRICT ACCESS CONTROL: Only projects where currentUser is owner or accepted member
   const userProjects = useMemo(() => {
@@ -332,11 +333,13 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
         setAllProjects(freshProjs);
         setInvitations(freshInvites);
+        const acceptedInvite = invitations.find(inv => inv.id === inviteId);
+        if (acceptedInvite) setCurrentProjectId(acceptedInvite.projectId);
       } catch (err) {
         console.error('[TeamContext] Accept invite error:', err);
       }
     },
-    [currentUser]
+    [currentUser, invitations, setCurrentProjectId]
   );
 
   const declineInvite = useCallback(
