@@ -70,7 +70,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 <h3 className="text-sm font-bold text-white">
                   {locale === 'fa' ? 'ماژول‌ها و ابزارهای سیستم' : 'Productivity Modules'}
                 </h3>
-                <p className="text-[11px] text-neutral-400">
+                <p className="text-xs text-neutral-400">
                   {locale === 'fa' ? 'دسترسی سریع به تمام بخش‌های کرونوس' : 'Quick access to all Chronos features'}
                 </p>
               </div>
@@ -139,7 +139,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       {/* Fixed Ergonomic Bottom Tab Bar */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 bg-neutral-950/95 backdrop-blur-xl border-t border-white/10 lg:hidden px-2 pt-1 pb-[calc(env(safe-area-inset-bottom,0px)+0.35rem)] transition-all shadow-[0_-8px_24px_rgba(0,0,0,0.5)]"
+        className="fixed bottom-0 inset-x-0 z-40 bg-neutral-950/95 backdrop-blur-xl border-t border-white/10 lg:hidden px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)] transition-all shadow-[0_-8px_24px_rgba(0,0,0,0.5)]"
         aria-label="Mobile Navigation"
       >
         <div className="flex items-center justify-around max-w-lg mx-auto">
@@ -151,7 +151,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => onTabChange(tab.id)}
-                className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] py-1 px-2 rounded-xl transition-all relative ${
+                className={`flex flex-col items-center justify-center min-w-[56px] min-h-[54px] py-1.5 px-2 rounded-xl transition-all relative ${
                   isActive ? 'text-indigo-400 font-bold' : 'text-neutral-500 hover:text-neutral-300 font-medium'
                 }`}
               >
@@ -159,7 +159,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   <span className="absolute top-0 w-6 h-0.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
                 )}
                 <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-indigo-400' : ''}`} />
-                <span className="text-[10px] mt-1 tracking-tight leading-none truncate max-w-[64px]">
+                <span className="text-xs mt-1 tracking-normal leading-tight truncate max-w-[64px]">
                   {t(tab.labelKey)}
                 </span>
               </button>
