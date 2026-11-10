@@ -56,10 +56,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside 
       className={`fixed top-14 ${direction === 'rtl' ? 'right-0' : 'left-0'} bottom-0 z-30 flex flex-col border-e border-white/5 bg-neutral-950 transition-all duration-300 ease-in-out ${
-        collapsed ? 'w-16' : 'w-64'
+        collapsed ? 'w-[4.5rem]' : 'w-[17rem]'
       } hidden lg:flex`}
     >
-      <div className="flex-1 py-4 px-2 space-y-1 custom-scrollbar overflow-y-auto">
+      <div className="flex-1 py-5 px-3 space-y-1.5 custom-scrollbar overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -70,13 +70,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onTabChange(item.id)}
               title={label}
               aria-label={label}
-              className={`w-full flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-xl text-[13px] font-medium transition-all group relative ${
+              className={`w-full flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3.5 px-3.5'} py-3 rounded-xl text-sm font-medium transition-all group relative ${
                 isActive 
                   ? 'bg-white/[0.04] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-white/5' 
                   : 'text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.02] border border-transparent'
               }`}
             >
-              <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-indigo-400' : 'text-neutral-500 group-hover:text-neutral-400'}`} />
+              <Icon className={`w-[18px] h-[18px] shrink-0 transition-colors ${isActive ? 'text-indigo-400' : 'text-neutral-500 group-hover:text-neutral-400'}`} />
               {!collapsed && (
                 <span className="truncate opacity-100 transition-opacity duration-300 text-start flex-1">
                   {label}
@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      <div className="p-3 border-t border-white/5 bg-neutral-950/50 backdrop-blur-sm">
+      <div className="p-4 border-t border-white/5 bg-neutral-950/50 backdrop-blur-sm">
         <button
           onClick={onToggleCollapse}
           className="w-full flex items-center justify-center p-2 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.05] transition-all group"
