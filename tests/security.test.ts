@@ -335,6 +335,14 @@ async function runSecurityTestSuite() {
     assert(resWorkspaceA.status === 201 && !!dataWorkspaceA.data?.id, 'User A creates an owned workspace');
     const workspaceAId = dataWorkspaceA.data.id;
 
+    // User B must not be able to attach a project to User A's workspace.
+    const resForeignWorkspaceProject = await fetch(`${BASE_URL}/team/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenB}` },
+      body: JSON.stringify({ name: 'Foreign Workspace Attempt', workspaceId: workspaceAId })
+    });
+    assert(resForeignWorkspaceProject.status === 403, 'A user cannot create a team project in another user workspace');
+
     const resTeamProjA = await fetch(`${BASE_URL}/team/projects`, {
       method: 'POST',
       headers: {
@@ -350,6 +358,15 @@ async function runSecurityTestSuite() {
     const dataTeamProjA = await resTeamProjA.json();
     assert(resTeamProjA.status === 201 && !!dataTeamProjA.data?.id, 'User A creates team project');
     const teamProjId = dataTeamProjA.data.id;
+
+    // Owner cannot move a project into another user's workspace.
+    const foreignWorkspaceId = userB.personalWorkspaceId;
+    const resMoveForeignWorkspace = await fetch(`${BASE_URL}/team/projects/${teamProjId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` },
+      body: JSON.stringify({ workspaceId: foreignWorkspaceId })
+    });
+    assert(resMoveForeignWorkspace.status === 404, 'Project cannot be moved into a workspace the owner does not belong to');
 
     // User B (non-member) tries to list tasks in Project Orion
     const resTeamTasksBBefore = await fetch(`${BASE_URL}/team/tasks?projectId=${teamProjId}`, {
