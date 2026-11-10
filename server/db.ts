@@ -21,6 +21,14 @@ const DEFAULT_DATA_DIR = path.resolve(__dirname, '../data');
 const DEFAULT_DB_FILE = path.join(DEFAULT_DATA_DIR, 'db.json');
 
 function resolveStoragePath(): { targetFile: string; isServerless: boolean } {
+  // Explicit isolated storage path is used by tests and local tooling.
+  if (process.env.CHRONOS_DATA_FILE) {
+    return {
+      targetFile: path.resolve(process.env.CHRONOS_DATA_FILE),
+      isServerless: false
+    };
+  }
+
   const isServerless = Boolean(
     process.env.VERCEL || 
     process.env.AWS_LAMBDA_FUNCTION_NAME || 
@@ -216,24 +224,101 @@ class Database {
   private pgPool: pg.Pool | null = null;
   private pgConnected: boolean = false;
   private pgInitPromise: Promise<void> | null = null;
+  private pgVersion = 0;
+  private writeQueue: Promise<void> = Promise.resolve();
+  private readonly requiresPostgres: boolean;
+  private configurationError: string | null = null;
 
   constructor() {
     const { targetFile, isServerless } = resolveStoragePath();
     this.dbPath = targetFile;
     this.isServerless = isServerless;
-    this.data = this.load();
+    this.requiresPostgres = process.env.NODE_ENV === 'production' || isServerless;
+    this.data = this.requiresPostgres
+      ? this.createEmptyState()
+      : this.load();
     this.initPostgres();
+  }
+
+  private createEmptyState(): DatabaseSchema {
+    return {
+      version: '3.0-relational-migration-pending',
+      users: [],
+      workspaces: [],
+      partitions: {},
+      teamProjects: [],
+      teamTasks: [],
+      teamInvitations: []
+    };
+  }
+
+  /**
+   * Wait until the configured persistence engine is ready.
+   * Production and serverless deployments must never silently fall back to
+   * ephemeral filesystem or in-memory storage.
+   */
+  public async ready(): Promise<void> {
+    if (this.pgInitPromise) await this.pgInitPromise;
+    if (!this.requiresPostgres && !this.pgPool) return;
+    if (!this.pgPool) {
+      throw new Error(this.configurationError || 'PostgreSQL is required but is not configured.');
+    }
+    try {
+      await this.pgPool.query('SELECT 1');
+      this.pgConnected = true;
+    } catch (error) {
+      this.pgConnected = false;
+      throw new Error('PostgreSQL is unavailable; requests requiring persistence are blocked.');
+    }
+  }
+
+  /**
+   * Refresh the compatibility snapshot at the start of each API request.
+   * Version-checked writes prevent one serverless instance from silently
+   * overwriting a newer snapshot written by another instance.
+   */
+  public async refresh(): Promise<void> {
+    await this.ready();
+    if (!this.pgPool) return;
+    try {
+      await this.flush();
+    } catch (error) {
+      // The previous request already received a persistence failure. Discard
+      // that rejected local queue and recover from the authoritative DB row.
+      // The failed request is never replayed implicitly.
+      console.error('[Chronos DB] Recovering after a rejected write:', error);
+      this.writeQueue = Promise.resolve();
+    }
+    const result = await this.pgPool.query(
+      "SELECT data, version FROM chronos_data WHERE key = 'root' LIMIT 1"
+    );
+    if (!result.rows.length) {
+      throw new Error('Chronos database state row is missing; refusing to recreate it implicitly.');
+    }
+    this.data = this.sanitizeParsedData(result.rows[0].data);
+    this.pgVersion = Number(result.rows[0].version);
+  }
+
+  /** Wait for all pending writes and surface persistence failures to callers. */
+  public async flush(): Promise<void> {
+    await this.writeQueue;
+    if (this.requiresPostgres && (!this.pgPool || !this.pgConnected)) {
+      throw new Error('Persistent database connection is not available.');
+    }
   }
 
   private initPostgres() {
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl || !isValidPostgresUrl(dbUrl)) {
-      if (dbUrl && !isValidPostgresUrl(dbUrl)) {
-        console.log(`[Chronos DB] DATABASE_URL ("${dbUrl}") is not a valid PostgreSQL URI. Operating on local multi-tenant storage.`);
-      } else if (this.isServerless) {
-        console.warn('[Chronos DB Warning] Running on serverless without DATABASE_URL. Data stored in /tmp is ephemeral across cold starts. Configure DATABASE_URL in Vercel environment variables for permanent cloud persistence.');
+      if (this.requiresPostgres) {
+        this.configurationError = !dbUrl
+          ? 'DATABASE_URL is required in production and serverless deployments.'
+          : 'DATABASE_URL must be a valid PostgreSQL connection string.';
+        console.error(`[Chronos DB] ${this.configurationError}`);
+      } else if (dbUrl) {
+        console.warn('[Chronos DB] Invalid DATABASE_URL. Local file storage is available only in development.');
       } else {
-        console.log('[Chronos DB] Local multi-tenant file persistence active at:', this.dbPath);
+        console.log('[Chronos DB] Local development file persistence active at:', this.dbPath);
       }
       return;
     }
@@ -256,9 +341,10 @@ class Database {
 
       this.pgInitPromise = this.setupPostgresStore();
     } catch (err: any) {
-      console.warn('[Chronos DB] Failed to initialize PostgreSQL pool, using local storage:', err.message);
-      this.pgPool = null;
+      console.error('[Chronos DB] Failed to initialize PostgreSQL:', err.message);
       this.pgConnected = false;
+      void this.pgPool?.end().catch(() => undefined);
+      this.pgPool = null;
     }
   }
 
@@ -269,23 +355,56 @@ class Database {
         CREATE TABLE IF NOT EXISTS chronos_data (
           key VARCHAR(100) PRIMARY KEY,
           data JSONB NOT NULL,
-          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+          version BIGINT NOT NULL DEFAULT 1,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      await this.pgPool.query(
+        'ALTER TABLE chronos_data ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 1'
+      );
 
-      // Attempt to load existing cloud state
-      const res = await this.pgPool.query(`SELECT data FROM chronos_data WHERE key = 'root' LIMIT 1;`);
-      if (res.rows && res.rows.length > 0 && res.rows[0].data) {
-        this.data = this.sanitizeParsedData(res.rows[0].data);
-        console.log('[Chronos DB] Successfully hydrated state from PostgreSQL store.');
+      const existing = await this.pgPool.query(
+        "SELECT data, version FROM chronos_data WHERE key = 'root' LIMIT 1"
+      );
+      if (existing.rows.length > 0) {
+        this.data = this.sanitizeParsedData(existing.rows[0].data);
+        this.pgVersion = Number(existing.rows[0].version);
+        console.log('[Chronos DB] Loaded persistent PostgreSQL state.');
       } else {
-        // Seed initial state to DB
-        await this.syncToPostgres(this.data);
-        console.log('[Chronos DB] Initialized PostgreSQL store with current schema state.');
+        // Never create an empty production root row implicitly: doing so can
+        // make an uninitialized database look like a successful migration and
+        // hide existing legacy data that still needs to be imported.
+        const allowExplicitBootstrap = process.env.CHRONOS_ALLOW_EMPTY_DB_INIT === 'true';
+        if (this.requiresPostgres && !allowExplicitBootstrap) {
+          this.configurationError =
+            'The production Chronos database has no legacy root row. Restore or import a verified backup first. Set CHRONOS_ALLOW_EMPTY_DB_INIT=true only for an intentional first-time installation.';
+          throw new Error(this.configurationError);
+        }
+
+        const initialState = this.createEmptyState();
+        const inserted = await this.pgPool.query(
+          `INSERT INTO chronos_data (key, data, version, updated_at)
+           VALUES ('root', $1, 1, CURRENT_TIMESTAMP)
+           ON CONFLICT (key) DO NOTHING
+           RETURNING version`,
+          [JSON.stringify(initialState)]
+        );
+        if (inserted.rows.length) {
+          this.data = initialState;
+          this.pgVersion = 1;
+        } else {
+          const raced = await this.pgPool.query(
+            "SELECT data, version FROM chronos_data WHERE key = 'root' LIMIT 1"
+          );
+          if (!raced.rows.length) throw new Error('Unable to initialize the PostgreSQL state row.');
+          this.data = this.sanitizeParsedData(raced.rows[0].data);
+          this.pgVersion = Number(raced.rows[0].version);
+        }
+        console.log('[Chronos DB] Initialized an empty PostgreSQL state after explicit bootstrap permission.');
       }
       this.pgConnected = true;
     } catch (err: any) {
-      console.warn('[Chronos DB] PostgreSQL connection unavailable, operating on local storage:', err.message);
+      console.error('[Chronos DB] PostgreSQL initialization failed:', err.message);
       this.pgConnected = false;
       try {
         await this.pgPool.end();
@@ -295,17 +414,23 @@ class Database {
   }
 
   private async syncToPostgres(data: DatabaseSchema) {
-    if (!this.pgPool) return;
-    try {
-      await this.pgPool.query(
-        `INSERT INTO chronos_data (key, data, updated_at) 
-         VALUES ('root', $1, CURRENT_TIMESTAMP)
-         ON CONFLICT (key) DO UPDATE SET data = $1, updated_at = CURRENT_TIMESTAMP;`,
-        [JSON.stringify(data)]
-      );
-    } catch (err) {
-      console.error('[Chronos DB] Failed to sync data to PostgreSQL:', err);
+    if (!this.pgPool || !this.pgConnected) {
+      throw new Error('PostgreSQL is not connected; refusing to acknowledge a write.');
     }
+
+    const result = await this.pgPool.query(
+      `UPDATE chronos_data
+       SET data = $1, version = version + 1, updated_at = CURRENT_TIMESTAMP
+       WHERE key = 'root' AND version = $2
+       RETURNING version`,
+      [JSON.stringify(data), this.pgVersion]
+    );
+
+    if (!result.rows.length) {
+      throw new Error('Database state changed in another application instance. Refresh and retry the operation.');
+    }
+
+    this.pgVersion = Number(result.rows[0].version);
   }
 
   private load(): DatabaseSchema {
@@ -345,41 +470,45 @@ class Database {
   }
 
   private save(data: DatabaseSchema) {
+    if (this.pgPool || this.requiresPostgres) {
+      // Capture an immutable snapshot at mutation time and serialize writes.
+      const snapshot = JSON.parse(JSON.stringify(data)) as DatabaseSchema;
+      this.writeQueue = this.writeQueue
+        .catch(() => undefined)
+        .then(() => this.syncToPostgres(snapshot));
+      return;
+    }
+
     try {
       const dir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const tmpFile = `${this.dbPath}.tmp.${Date.now()}`;
       fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
       fs.renameSync(tmpFile, this.dbPath);
     } catch (err) {
-      console.warn('[Database] Filesystem write failed, keeping in-memory copy active:', err);
-    }
-
-    if (this.pgPool && this.pgConnected) {
-      this.syncToPostgres(data).catch((err) => {
-        console.warn('[Database] Async PostgreSQL sync error:', err.message);
-      });
+      console.error('[Database] Local development persistence failed:', err);
+      throw err;
     }
   }
 
   public getHealthInfo() {
     const dbUrl = process.env.DATABASE_URL;
     const isValidUrl = isValidPostgresUrl(dbUrl);
+    const postgresReady = Boolean(this.pgPool && this.pgConnected);
+    const localDevelopment = !this.requiresPostgres && !this.pgPool;
     return {
-      status: 'healthy',
-      persistenceEngine: (this.pgPool && this.pgConnected) 
-        ? 'postgresql_cloud' 
-        : (this.isServerless ? 'serverless_ephemeral_tmp' : 'local_json_filesystem'),
+      status: postgresReady || localDevelopment ? 'healthy' : 'unavailable',
+      persistenceEngine: postgresReady
+        ? 'postgresql_legacy_snapshot'
+        : localDevelopment ? 'local_json_development' : 'unavailable',
       isServerless: this.isServerless,
       databaseUrlConfigured: Boolean(dbUrl),
       databaseUrlValid: isValidUrl,
       pgConnected: this.pgConnected,
       usersCount: this.data.users.length,
-      storagePath: this.dbPath,
-      serverlessWarning: (this.isServerless && (!dbUrl || !isValidUrl))
-        ? 'Running in serverless environment without a valid PostgreSQL DATABASE_URL. For production persistence across cold starts, set DATABASE_URL in Vercel environment variables.'
+      storagePath: this.requiresPostgres ? undefined : this.dbPath,
+      serverlessWarning: this.requiresPostgres && !postgresReady
+        ? (this.configurationError || 'PostgreSQL is required for persistent production storage.')
         : undefined
     };
   }

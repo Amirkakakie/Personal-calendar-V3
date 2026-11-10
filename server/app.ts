@@ -71,6 +71,50 @@ app.use('/api/auth/signup', authRateLimiter);
 app.use('/api/auth/google', authRateLimiter);
 app.use('/api/ai', aiRateLimiter);
 
+// Persistent database request boundary.
+// Every authenticated API request reads the latest committed snapshot before
+// authorization/business logic. Responses are held until all writes from that
+// request have been durably acknowledged by PostgreSQL.
+app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
+  const path = req.path;
+  if (req.method === 'OPTIONS' || path === '/health' || path === '/health/db') return next();
+
+  try {
+    await db.ready();
+    await db.refresh();
+
+    const originalSend = res.send.bind(res);
+    let sending = false;
+    (res as any).send = (body: any) => {
+      if (sending) return originalSend(body);
+      sending = true;
+      void db.flush()
+        .then(() => originalSend(body))
+        .catch((error: any) => {
+          console.error('[Chronos DB] Request could not be committed:', error);
+          if (!res.headersSent) {
+            res.status(503);
+            originalSend(JSON.stringify({
+              success: false,
+              error: 'Your changes could not be saved because persistent storage is unavailable. Please retry.'
+            }));
+          } else {
+            res.destroy(error);
+          }
+        });
+      return res;
+    };
+
+    next();
+  } catch (error: any) {
+    console.error('[Chronos DB] Request blocked because persistence is unavailable:', error);
+    res.status(503).json({
+      success: false,
+      error: 'Chronos persistent storage is unavailable. No changes were accepted.'
+    });
+  }
+});
+
 // Authentication Guard on API Endpoints (handles public exclusions internally)
 app.use('/api', authenticateToken);
 
@@ -99,7 +143,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // Database & Persistence Engine Diagnostic Health Endpoint
 app.get('/api/health/db', (_req: Request, res: Response) => {
-  res.json(db.getHealthInfo());
+  const health = db.getHealthInfo();
+  res.status(health.status === 'healthy' ? 200 : 503).json(health);
 });
 
 // Direct Productivity Stats endpoint (strictly user-scoped)

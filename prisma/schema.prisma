@@ -73,7 +73,11 @@ model User {
   email            String       @unique
   name             String
   avatarUrl        String?
+  avatarColor      String       @default("from-violet-600 to-indigo-600")
+  initials         String       @default("")
+  title            String       @default("")
   role             String       @default("user")
+  joinedAt         DateTime     @default(now())
   
   // RPG Progression
   totalXp          Int          @default(0)
@@ -105,6 +109,14 @@ model User {
   ownedProjects    TeamProject[]
   sentInvites      ProjectInvitation[] @relation("SentInvites")
   receivedInvites  ProjectInvitation[] @relation("ReceivedInvites")
+  ownedWorkspaces  Workspace[] @relation("WorkspaceOwner")
+  assignedTeamTasks TeamTask[] @relation("TeamTaskAssignee")
+  authSessions     AuthSession[]
+  projectMemberships ProjectMember[]
+  snapshots        LegacySnapshot[]
+  authoredTeamTaskComments TeamTaskComment[] @relation("TeamTaskCommentAuthor")
+  stats              UserStats?
+  googleConnection   GoogleConnection?
   
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
@@ -406,11 +418,19 @@ enum WorkspaceRole {
   VIEWER
 }
 
+enum WorkspaceType {
+  PERSONAL
+  TEAM
+}
+
 model Workspace {
   id          String            @id @default(uuid())
   name        String
-  type        String            @default("team") // "personal" | "team"
+  slug        String            @unique
+  type        WorkspaceType     @default(TEAM)
   ownerId     String
+  isPersonal  Boolean           @default(false)
+  owner       User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -418,6 +438,7 @@ model Workspace {
   projects    TeamProject[]
 
   @@index([ownerId])
+  @@index([ownerId, isPersonal])
 }
 
 model WorkspaceMember {
@@ -452,6 +473,8 @@ model TeamProject {
   owner       User          @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   tasks       TeamTask[]
   invitations ProjectInvitation[]
+  members     ProjectMember[]
+  tags        TeamTaskTag[]
 
   @@index([workspaceId])
   @@index([ownerId])
@@ -466,11 +489,17 @@ model TeamTask {
   description    String?
   priority       String      @default("medium")
   assigneeId     String?
+  assignee       User?       @relation("TeamTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   dueDate        String?
   estimatedHours Float       @default(0)
+  // Legacy JSON columns are retained during the staged data migration.
+  // New writes must use normalized child relations after the repository cutover.
   subtasksJson   Json?
   tagsJson       Json?
   commentsJson   Json?
+  subtasks       TeamTaskSubtask[]
+  comments       TeamTaskComment[]
+  tagAssignments TeamTaskTagAssignment[]
   order          Int         @default(0)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -478,7 +507,132 @@ model TeamTask {
   project        TeamProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
-  @@index([columnId])
+  @@unique([projectId, taskNumber])
+  @@index([projectId, columnId, order])
+  @@index([assigneeId])
+}
+
+model ProjectMember {
+  id        String      @id @default(uuid())
+  projectId String
+  userId    String
+  role      WorkspaceRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+
+  project   TeamProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId, role])
+}
+
+model TeamTaskSubtask {
+  id          String   @id @default(uuid())
+  taskId      String
+  title       String
+  completed   Boolean  @default(false)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  task        TeamTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, position])
+}
+
+model TeamTaskComment {
+  id          String   @id @default(uuid())
+  taskId      String
+  authorId    String
+  author      User     @relation("TeamTaskCommentAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  body        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  task        TeamTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@index([authorId])
+}
+
+model TeamTaskTag {
+  id          String   @id @default(uuid())
+  projectId   String
+  name        String
+  createdAt   DateTime @default(now())
+  project     TeamProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignments TeamTaskTagAssignment[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+model TeamTaskTagAssignment {
+  id        String       @id @default(uuid())
+  taskId    String
+  tagId     String
+  task      TeamTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag       TeamTaskTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, tagId])
+  @@index([tagId])
+}
+
+model UserStats {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  focusMinutes       Int      @default(0)
+  pomodoroSessions   Int      @default(0)
+  totalXp            Int      @default(0)
+  userLevel          Int      @default(1)
+  rpgTitle           String   @default("Novice Pioneer")
+  focusScore         Int      @default(100)
+  totalRoiDollars    Float    @default(0)
+  activityHistory    Json     @default("{}")
+  updatedAt          DateTime @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GoogleConnection {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  googleId           String?  @unique
+  email              String   @default("")
+  accessToken        String?
+  refreshToken       String?
+  tokenExpiry        DateTime?
+  calendarId         String   @default("primary")
+  isConnected        Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LegacySnapshot {
+  id             String   @id
+  userId         String?
+  sourceVersion  String
+  payload        Json
+  checksum       String
+  importedAt     DateTime @default(now())
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, importedAt])
+}
+
+model AuthSession {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
 }
 
 model ProjectInvitation {
@@ -486,6 +640,11 @@ model ProjectInvitation {
   projectId       String
   invitedEmail    String
   invitedByUserId String
+  projectName     String        @default("")
+  projectKey      String        @default("")
+  projectColor    String        @default("#6366f1")
+  invitedByName   String        @default("")
+  invitedByEmail  String        @default("")
   role            WorkspaceRole @default(MEMBER)
   status          String        @default("PENDING") // PENDING, ACCEPTED, DECLINED
   createdAt       DateTime      @default(now())
