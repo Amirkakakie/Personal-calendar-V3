@@ -78,6 +78,8 @@ export async function importLegacySnapshotToRelational(
   const partitions = object(snapshot.partitions);
   const userRows = array(snapshot.users).map(object);
   const userIds = new Set(userRows.map(u => text(u.id)).filter(Boolean));
+  const orphanPartitionIds = Object.keys(partitions).filter(id => !userIds.has(id));
+  if (orphanPartitionIds.length) throw new Error('Legacy snapshot contains partitions without matching users: '+orphanPartitionIds.slice(0,20).join(', ')+'. Repair the source snapshot before import; no rows were written.');
   const report = {
     users: 0, workspaces: 0, personalTasks: 0, goals: 0, personalProjects: 0,
     subtasks: 0, keyResults: 0, calendarEvents: 0, timeLogs: 0, skills: 0,
@@ -161,7 +163,7 @@ export async function importLegacySnapshotToRelational(
     // Personal resources are partitioned by user ID in the source snapshot.
     for (const [userId, rawPartition] of Object.entries(partitions)) {
       const p = object(rawPartition);
-      if (!userIds.has(userId)) { report.preservedOrphanPartitions++; continue; }
+      if (!userIds.has(userId)) throw new Error('Legacy partition owner is missing: '+userId);
       const taskRows = array(p.tasks).map(object);
       const projectRows = array(p.projects).map(object);
       const goalRows = array(p.goals).map(object);
@@ -377,7 +379,7 @@ export async function importLegacySnapshotToRelational(
     }
 
     for (const inv of array(snapshot.teamInvitations).map(object)) {
-      if (!teamProjectIds.has(text(inv.projectId)) || !userIds.has(text(inv.invitedByUserId))) continue;
+      if (!teamProjectIds.has(text(inv.projectId)) || !userIds.has(text(inv.invitedByUserId))) throw new Error('Legacy invitation references a missing project or inviter: '+text(inv.id));
       await tx.projectInvitation.create({ data: {
         id: text(inv.id), projectId: text(inv.projectId), invitedEmail: text(inv.invitedEmail).trim().toLowerCase(),
         invitedByUserId: text(inv.invitedByUserId), recipientId: text(userRows.find(u=>text(u.email).toLowerCase()===text(inv.invitedEmail).toLowerCase())?.id) || null, projectName: text(inv.projectName), projectKey: text(inv.projectKey),
