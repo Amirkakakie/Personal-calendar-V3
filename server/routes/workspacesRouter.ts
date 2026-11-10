@@ -121,6 +121,32 @@ router.delete('/team/projects/:id', (req: Request, res: Response) => {
   res.json({ success: true, message: 'Team project deleted successfully' });
 });
 
+// GET /api/team/projects/:id/members - Return authoritative project membership.
+router.get('/team/projects/:id/members', (req: Request, res: Response) => {
+  const members = db.getTeamProjectMembers(req.params.id, req.user!.id);
+  if (!members) return res.status(404).json({ success: false, error: 'Project not found or access denied' });
+  res.json({ success: true, count: members.length, data: members });
+});
+
+// PATCH /api/team/projects/:id/members/:memberId - Change a member's project role.
+router.patch('/team/projects/:id/members/:memberId', (req: Request, res: Response) => {
+  const role = String(req.body?.role || '').toUpperCase() as WorkspaceRole;
+  if (!['ADMIN', 'MEMBER', 'VIEWER'].includes(role)) {
+    return res.status(400).json({ success: false, error: 'A valid project role is required.' });
+  }
+  const updated = db.updateProjectMemberRole(req.params.id, req.params.memberId, role, req.user!.id);
+  if (!updated) return res.status(403).json({ success: false, error: 'Role change is not permitted.' });
+  const members = db.getTeamProjectMembers(req.params.id, req.user!.id);
+  res.json({ success: true, data: members });
+});
+
+// DELETE /api/team/projects/:id/members/:memberId - Remove a member from a project.
+router.delete('/team/projects/:id/members/:memberId', (req: Request, res: Response) => {
+  const removed = db.removeProjectMember(req.params.id, req.params.memberId, req.user!.id);
+  if (!removed) return res.status(403).json({ success: false, error: 'Member removal is not permitted.' });
+  res.json({ success: true, message: 'Project member removed.' });
+});
+
 // GET /api/team/tasks - List tasks for a team project
 router.get('/team/tasks', (req: Request, res: Response) => {
   const userId = req.user!.id;
