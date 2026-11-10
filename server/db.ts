@@ -597,6 +597,54 @@ class Database {
     return null;
   }
 
+  public getTeamProjectMembers(projectId: string, requesterId: string) {
+    const project = this.getTeamProjectById(projectId, requesterId);
+    if (!project) return null;
+    return project.memberIds.map(userId => {
+      const user = this.getUserById(userId);
+      if (!user) return null;
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        title: user.title || '',
+        initials: user.initials || user.name.slice(0, 2).toUpperCase(),
+        avatarColor: user.avatarColor || 'from-indigo-600 to-violet-600',
+        role: this.getProjectRole(projectId, userId) || 'MEMBER',
+        isOnline: false
+      };
+    }).filter(Boolean);
+  }
+
+  public updateProjectMemberRole(projectId: string, targetUserId: string, role: WorkspaceRole, actorId: string): boolean {
+    const project = this.getTeamProjectById(projectId, actorId);
+    if (!project || !project.memberIds.includes(targetUserId)) return false;
+    const actorRole = this.getProjectRole(projectId, actorId);
+    const targetRole = this.getProjectRole(projectId, targetUserId);
+    if (targetUserId === project.ownerId || targetRole === 'OWNER') return false;
+    if (actorRole !== 'OWNER' && actorRole !== 'ADMIN') return false;
+    if (actorRole === 'ADMIN' && (targetRole === 'ADMIN' || role === 'ADMIN' || role === 'OWNER')) return false;
+    if (role === 'OWNER') return false;
+    if (!project.memberRoles) project.memberRoles = { [project.ownerId]: 'OWNER' };
+    project.memberRoles[targetUserId] = role;
+    this.save(this.data);
+    return true;
+  }
+
+  public removeProjectMember(projectId: string, targetUserId: string, actorId: string): boolean {
+    const project = this.getTeamProjectById(projectId, actorId);
+    if (!project || !project.memberIds.includes(targetUserId)) return false;
+    const actorRole = this.getProjectRole(projectId, actorId);
+    const targetRole = this.getProjectRole(projectId, targetUserId);
+    if (targetUserId === project.ownerId || targetRole === 'OWNER') return false;
+    if (actorRole !== 'OWNER' && actorRole !== 'ADMIN') return false;
+    if (actorRole === 'ADMIN' && targetRole === 'ADMIN') return false;
+    project.memberIds = project.memberIds.filter(id => id !== targetUserId);
+    if (project.memberRoles) delete project.memberRoles[targetUserId];
+    this.save(this.data);
+    return true;
+  }
+
   public createTeamProject(proj: TeamProjectRecord): TeamProjectRecord {
     if (!proj.memberRoles) {
       proj.memberRoles = { [proj.ownerId]: 'OWNER' };
