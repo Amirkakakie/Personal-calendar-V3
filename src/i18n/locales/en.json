@@ -32,7 +32,11 @@
     "personal": "Personal",
     "team": "Team",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "title": "Title",
+    "description": "Description",
+    "add": "Add",
+    "clear": "Clear"
   },
   "header": {
     "appName": "Chronos",
@@ -126,7 +130,12 @@
     "deleteConfirm": "Are you sure you want to delete this task?",
     "syncedBadge": "Google Calendar",
     "noTasks": "No tasks match your filter criteria.",
-    "atomizeAi": "AI Atomize"
+    "atomizeAi": "AI Atomize",
+    "newTask": "New task",
+    "allStatus": "All statuses",
+    "noFilteredTasks": "No tasks match these filters",
+    "noFilteredTasksDesc": "Change or clear the filters and try again.",
+    "noTasksDesc": "You haven't added any tasks yet. Add your first task to get started."
   },
   "eisenhower": {
     "title": "Eisenhower Priority Matrix",
@@ -259,7 +268,8 @@
     "workCareer": "Work/Career",
     "academicStudy": "Academic/Study",
     "personalGrowth": "Personal Growth",
-    "healthHabits": "Health & Habits"
+    "healthHabits": "Health & Habits",
+    "allCategories": "All categories"
   },
   "energyLevels": {
     "highFocus": "High Focus",
@@ -330,7 +340,7 @@
     "editTask": "Edit Task",
     "taskDetails": "Task Details",
     "titlePlaceholder": "Task title (e.g., Implement microservice auth tokens...)",
-    "descriptionPlaceholder": "Provide acceptance criteria, architectural notes, or specs...",
+    "descriptionPlaceholder": "Describe the task, acceptance criteria, or technical notes…",
     "assignee": "Assignee",
     "unassigned": "Unassigned",
     "priority": "Priority",
@@ -415,5 +425,3 @@
     "importFailed": "Failed to parse backup file. Please provide a valid Chronos JSON file."
   }
 }
-
-
