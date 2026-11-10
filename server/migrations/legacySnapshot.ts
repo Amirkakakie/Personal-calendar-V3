@@ -95,7 +95,7 @@ export function buildLegacyArchiveRow(exportFile: LegacySnapshotExport): LegacyA
   return {
     id: 'chronos-legacy-root-v1',
     userId: null,
-    sourceVersion: `${exportFile.source.applicationVersion};postgres-row-version=${exportFile.source.version}`,
+    sourceVersion: `${exportFile.source.table};${exportFile.source.applicationVersion};source-version=${exportFile.source.version}`,
     payload: exportFile.snapshot,
     checksum: exportFile.integrity.snapshotSha256
   };
