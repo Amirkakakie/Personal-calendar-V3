@@ -173,7 +173,14 @@ router.get('/google/config', (_req: Request, res: Response) => {
 // POST /api/auth/google - Authenticate, auto-create, or link Google user account
 router.post('/google', async (req: Request, res: Response) => {
   try {
-    const { credential, code, redirectUri } = req.body;
+    const { credential, code } = req.body;
+
+    if (credential !== undefined && (typeof credential !== 'string' || credential.length > 8192)) {
+      return res.status(400).json({ success: false, error: 'Google credential is invalid or too large.' });
+    }
+    if (code !== undefined && (typeof code !== 'string' || code.length > 4096)) {
+      return res.status(400).json({ success: false, error: 'Google authorization code is invalid or too large.' });
+    }
 
     if (!credential && !code) {
       return res.status(400).json({ success: false, error: 'Google credential (ID token) or authorization code is required' });
@@ -275,7 +282,7 @@ router.post('/google', async (req: Request, res: Response) => {
       }
     }
 
-    if (!googlePayload || !googlePayload.email) {
+    if (!googlePayload || typeof googlePayload.email !== 'string' || googlePayload.email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(googlePayload.email) || typeof googlePayload.sub !== 'string' || !googlePayload.sub || googlePayload.sub.length > 255) {
       return res.status(401).json({ success: false, error: 'Failed to verify Google identity credential.' });
     }
 
