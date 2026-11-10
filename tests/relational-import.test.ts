@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { countLegacySnapshot, snapshotSha256, type LegacySnapshotExport } from '../server/migrations/legacySnapshot.ts';
 import { importLegacySnapshotToRelational } from '../server/migrations/relationalImporter.ts';
 import { loadRelationalSnapshot, persistRelationalSnapshot } from '../server/migrations/relationalStore.ts';
+import { decryptGoogleToken, decryptJsonPayload } from '../server/security/dataEncryption.ts';
 
 if (process.env.CHRONOS_RELATIONAL_IMPORT_TEST !== '1') {
   throw new Error('Refusing to run relational import tests without CHRONOS_RELATIONAL_IMPORT_TEST=1 and a dedicated disposable database.');
@@ -10,6 +11,8 @@ if (process.env.CHRONOS_RELATIONAL_IMPORT_TEST !== '1') {
 if (!process.env.DATABASE_URL || !/chronos_import_test/i.test(new URL(process.env.DATABASE_URL).pathname)) {
   throw new Error('Relational importer tests require a dedicated database named chronos_import_test.');
 }
+
+process.env.CHRONOS_DATA_ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 const snapshot = {
   version: 'test-fixture-v1',
@@ -79,6 +82,10 @@ try {
   assert.equal(membership?.role, 'MEMBER');
   const archive = await prisma.legacySnapshot.findUnique({ where: { id: 'chronos-legacy-root-v1' } });
   assert.equal(archive?.checksum, exported.integrity.snapshotSha256);
+  assert.deepEqual(decryptJsonPayload(archive?.payload), snapshot);
+  const storedGoogle = await prisma.googleConnection.findUnique({ where: { userId: 'user-a' } });
+  assert.ok(storedGoogle?.accessToken?.startsWith('chronos-token:v1:'));
+  assert.equal(decryptGoogleToken(storedGoogle?.accessToken), 'fixture-access-token');
   const loaded = await loadRelationalSnapshot(prisma);
   assert.equal(loaded.version, 1n);
   loaded.data.partitions['user-a'].tasks[0].title = 'Updated through relational runtime';
