@@ -68,10 +68,10 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
       <div 
-        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative"
+        className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md max-h-[min(90dvh,760px)] overflow-y-auto overscroll-contain shadow-2xl relative"
         onClick={e => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/40">
+        <div className="sticky top-0 z-10 px-4 sm:px-6 py-4 border-b border-neutral-800 flex items-center justify-between gap-3 bg-neutral-950/95 backdrop-blur">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-400" />
             <h3 className="text-base font-bold text-white tracking-tight">
@@ -87,20 +87,20 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 min-w-0">
           {/* Target Project Pill */}
           {currentProject && (
-            <div className="p-3 bg-neutral-950/70 border border-neutral-800 rounded-xl flex items-center justify-between text-xs">
+            <div className="p-3 bg-neutral-950/70 border border-neutral-800 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs min-w-0">
               <span className="text-neutral-400 flex items-center gap-1.5">
                 <FolderGit2 className="w-3.5 h-3.5 text-indigo-400" />
                 <span>{direction === 'rtl' ? 'پروژه موردنظر:' : 'Target Project:'}</span>
               </span>
-              <div className="flex items-center gap-1.5 font-semibold text-neutral-200">
+              <div className="flex items-center gap-1.5 font-semibold text-neutral-200 min-w-0 max-w-full">
                 <span 
                   className="w-2.5 h-2.5 rounded-full" 
                   style={{ backgroundColor: currentProject.color }}
                 />
-                <span>{currentProject.name}</span>
+                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{currentProject.name}</span>
                 <span className="font-mono text-[10px] text-neutral-400">({currentProject.key})</span>
               </div>
             </div>
