@@ -282,7 +282,7 @@ router.post('/google', async (req: Request, res: Response) => {
       }
     }
 
-    if (!googlePayload || typeof googlePayload.email !== 'string' || googlePayload.email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(googlePayload.email) || typeof googlePayload.sub !== 'string' || !googlePayload.sub || googlePayload.sub.length > 255) {
+    if (!googlePayload || typeof googlePayload.email !== 'string' || googlePayload.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googlePayload.email) || typeof googlePayload.sub !== 'string' || !googlePayload.sub || googlePayload.sub.length > 255) {
       return res.status(401).json({ success: false, error: 'Failed to verify Google identity credential.' });
     }
 
