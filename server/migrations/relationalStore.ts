@@ -121,9 +121,16 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
   });
   const teamTaskRecords: TeamTaskRecord[]=teamTasks.map(t=>{
     const raw=legacy(t.legacyData);
-    const children=teamSubtasks.filter(x=>x.taskId===t.id).sort((a,b)=>a.position-b.position).map(x=>({id:x.id,title:x.title,completed:x.completed}));
-    const comments=teamComments.filter(x=>x.taskId===t.id).map(x=>({...legacy(x.legacyData),id:x.id,authorId:x.authorId,authorName:x.authorName,authorInitials:x.authorInitials,authorColor:x.authorColor,text:x.body,createdAt:iso(x.createdAt)}));
-    const tags=teamTagAssignments.filter(a=>a.taskId===t.id).map(a=>teamTags.find(tag=>tag.id===a.tagId)?.name).filter(Boolean) as string[];
+    const childRows=teamSubtasks.filter(x=>x.taskId===t.id).sort((a,b)=>a.position-b.position).map(x=>({id:x.id,title:x.title,completed:x.completed}));
+    const childrenById=new Map<string,any>(arr(t.subtasksJson).map((x:any)=>[text(x.id),obj(x)]));
+    for(const child of childRows) childrenById.set(child.id,child);
+    const children=Array.from(childrenById.values());
+    const commentRows=teamComments.filter(x=>x.taskId===t.id).map(x=>({...legacy(x.legacyData),id:x.id,authorId:x.authorId,authorName:x.authorName,authorInitials:x.authorInitials,authorColor:x.authorColor,text:x.body,createdAt:iso(x.createdAt)}));
+    const commentsById=new Map<string,any>(arr(t.commentsJson).map((x:any)=>[text(x.id),obj(x)]));
+    for(const comment of commentRows) commentsById.set(comment.id,comment);
+    const comments=Array.from(commentsById.values());
+    const normalizedTags=teamTagAssignments.filter(a=>a.taskId===t.id).map(a=>teamTags.find(tag=>tag.id===a.tagId)?.name).filter(Boolean) as string[];
+    const tags=Array.from(new Set([...arr(t.tagsJson).map(x=>text(x)),...normalizedTags]));
     return {...raw,id:t.id,taskNumber:t.taskNumber,projectId:t.projectId,columnId:t.columnId,title:t.title,description:t.description||undefined,priority:t.priority,assigneeId:t.assigneeId||undefined,dueDate:t.dueDate||undefined,estimatedHours:t.estimatedHours,subtasks:children,tags,comments,order:t.order,createdAt:iso(t.createdAt),updatedAt:iso(t.updatedAt)} as TeamTaskRecord;
   });
   const invitationRecords: ProjectInvitationRecord[]=invitationsRows.map((i:any)=>({...legacy(i.legacyData),id:i.id,projectId:i.projectId,projectName:i.projectName,projectKey:i.projectKey,projectColor:i.projectColor,invitedEmail:i.invitedEmail,invitedByUserId:i.invitedByUserId,invitedByName:i.invitedByName,invitedByEmail:i.invitedByEmail,role:role(i.role),status:(i.status==='ACCEPTED'||i.status==='DECLINED'?'ACCEPTED'===i.status?'ACCEPTED':'DECLINED':'PENDING'),createdAt:iso(i.createdAt)}));
