@@ -81,7 +81,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         e.dataTransfer.effectAllowed = 'move';
       }}
       onClick={() => onOpenDetails(task)}
-      className="group relative bg-neutral-900/90 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer select-none"
+      className="chronos-card group relative bg-neutral-900/90 hover:bg-neutral-900 p-3.5 shadow-sm hover:shadow-md cursor-pointer select-none focus-within:border-indigo-500/50"
     >
       {/* Top row: Key & Priority */}
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -101,7 +101,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               type="button"
               onClick={handleShiftLeft}
               title={t('kanban.moveLeft')}
-              className="p-1 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 rounded transition-colors"
+              className="min-h-8 min-w-8 p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 rounded-lg transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
