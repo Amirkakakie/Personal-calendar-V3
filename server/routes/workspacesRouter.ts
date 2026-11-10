@@ -39,15 +39,16 @@ router.post('/team/projects', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Project name is required' });
   }
 
-  // Multi-tenant check: if workspaceId is provided, verify user is an authorized member
-  if (body.workspaceId) {
-    const hasWorkspaceAccess = db.isUserInWorkspace(body.workspaceId, userId);
-    if (!hasWorkspaceAccess) {
-      return res.status(403).json({
-        success: false,
-        error: 'Forbidden: You do not have permission to attach projects to the specified workspace.'
-      });
-    }
+  // Always bind a team project to a workspace the authenticated user belongs to.
+  // Legacy clients that omit workspaceId are safely assigned their personal workspace.
+  const workspaceId = typeof body.workspaceId === 'string' && body.workspaceId.trim()
+    ? body.workspaceId.trim()
+    : db.getUserById(userId)?.personalWorkspaceId;
+  if (!workspaceId || !db.isUserInWorkspace(workspaceId, userId)) {
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden: You do not have permission to attach projects to the specified workspace.'
+    });
   }
 
   const id = `proj-${Date.now()}`;
@@ -55,7 +56,7 @@ router.post('/team/projects', (req: Request, res: Response) => {
 
   const newProj: TeamProjectRecord = {
     id,
-    workspaceId: body.workspaceId || 'ws-team',
+    workspaceId,
     ownerId: userId,
     ownerEmail: userEmail,
     name: body.name.trim(),
