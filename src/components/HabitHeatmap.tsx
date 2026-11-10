@@ -71,7 +71,7 @@ export const HabitHeatmap: React.FC<HabitHeatmapProps> = ({
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
           <h3 className="text-sm font-bold text-white tracking-tight truncate">
-            {locale === 'fa' ? 'نقشه حرارتی تداوم عادات و وظایف' : 'Habit & Task Heatmap'}
+            {locale === 'fa' ? 'نمای فعالیت روزانه' : 'Habit & Task Heatmap'}
           </h3>
           <span className="text-[11px] font-mono text-neutral-400 px-2 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 tabular-nums shrink-0">
             {formatNumber(totalActions)} {locale === 'fa' ? 'فعالیت' : 'actions'}
@@ -155,11 +155,11 @@ export const HabitHeatmap: React.FC<HabitHeatmapProps> = ({
         <div className="min-h-[1.25rem] text-xs">
           {hoveredDay ? (
             <span>
-              <strong className="text-emerald-400 font-mono tabular-nums">{formatNumber(hoveredDay.completedCount)} {locale === 'fa' ? 'کار انجام شد' : 'tasks'}</strong> {locale === 'fa' ? 'در تاریخ' : 'on'} {formatDate(hoveredDay.date)}
+              <strong className="text-emerald-400 font-mono tabular-nums">{formatNumber(hoveredDay.completedCount)} {locale === 'fa' ? 'کار انجام‌شده' : 'tasks'}</strong> {locale === 'fa' ? 'در تاریخ' : 'on'} {formatDate(hoveredDay.date)}
             </span>
           ) : (
             <span className="text-neutral-500 text-[11px]">
-              {locale === 'fa' ? 'برای مشاهده جزئیات روی خانه‌ها ضربه بزنید' : 'Tap or hover over any square to view daily momentum'}
+              {locale === 'fa' ? 'برای دیدن جزئیات، یکی از خانه‌ها را انتخاب کنید' : 'Tap or hover over any square to view daily momentum'}
             </span>
           )}
         </div>

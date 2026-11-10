@@ -155,12 +155,12 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
               {formatNumber(stats.currentStreakDays)}
             </span>
             <span className="text-xs text-neutral-400 font-medium">
-              {locale === 'fa' ? 'روز پیوسته' : 'days'}
+              {locale === 'fa' ? 'روز پیاپی' : 'days'}
             </span>
           </div>
 
           <p className="text-[10px] text-neutral-500 mt-1 flex items-center gap-1">
-            <span>{locale === 'fa' ? 'رکورد ثبت شده:' : 'Best record:'}</span>
+            <span>{locale === 'fa' ? 'بهترین رکورد:' : 'Best record:'}</span>
             <strong className="text-neutral-300 font-mono font-medium tabular-nums">
               {formatNumber(stats.bestStreakDays)} {locale === 'fa' ? 'روز' : 'days'}
             </strong>
@@ -185,7 +185,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
           </div>
 
           <p className="text-[10px] text-neutral-500 mt-1">
-            {locale === 'fa' ? 'تمرکز عمیق امروز' : 'Deep work logged today'}
+            {locale === 'fa' ? 'زمان تمرکز امروز' : 'Deep work logged today'}
           </p>
         </div>
 
@@ -193,7 +193,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              {locale === 'fa' ? 'همگام تقویم' : 'Synced'}
+              {locale === 'fa' ? 'همگام‌شده' : 'Synced'}
             </span>
             <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
               <CalendarDays className="w-3.5 h-3.5" />
@@ -210,7 +210,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
           </div>
 
           <p className="text-[10px] text-neutral-500 mt-1">
-            {locale === 'fa' ? 'متصل به تقویم گوگل' : 'Active Google Calendar links'}
+            {locale === 'fa' ? 'اتصال‌های فعال به تقویم گوگل' : 'Active Google Calendar links'}
           </p>
         </div>
       </div>
@@ -233,7 +233,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                 }`}
               >
                 <TrendingUp className="w-3 h-3 text-indigo-400" />
-                <span>{locale === 'fa' ? 'روند سرعت' : 'Velocity'}</span>
+                <span>{locale === 'fa' ? 'روند انجام کارها' : 'Velocity'}</span>
               </button>
               <button
                 type="button"
@@ -245,7 +245,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                 }`}
               >
                 <PieChart className="w-3 h-3 text-purple-400" />
-                <span>{locale === 'fa' ? 'نمودار تعادل' : 'Donut'}</span>
+                <span>{locale === 'fa' ? 'سهم دسته‌بندی‌ها' : 'Donut'}</span>
               </button>
             </div>
           </div>

@@ -136,7 +136,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onSucces
     // Helpful guidance when GOOGLE_CLIENT_ID is not configured in env
     setGuidanceNotice(
       direction === 'rtl'
-        ? 'برای فعال‌سازی ورود با گوگل، مقدار GOOGLE_CLIENT_ID را در فایل .env یا تنظیمات محیطی سرور وارد فرمایید. در محیط توسعه محلی می‌توانید از ایمیل و رمز عبور استفاده کنید.'
+        ? 'برای فعال‌کردن ورود با گوگل، مقدار GOOGLE_CLIENT_ID را در فایل .env یا تنظیمات محیطی سرور قرار دهید. تا آن زمان می‌توانید با ایمیل و رمز عبور وارد شوید.'
         : 'Google OAuth requires GOOGLE_CLIENT_ID in your environment variables (.env). Please configure it to enable live Google Sign-In, or use standard email/password authentication.'
     );
   };
@@ -160,7 +160,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onSucces
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
-              <span>{direction === 'rtl' ? 'در حال ورود با گوگل...' : 'Connecting with Google...'}</span>
+              <span>{direction === 'rtl' ? 'در حال اتصال به حساب گوگل…' : 'Connecting with Google...'}</span>
             </>
           ) : (
             <>
@@ -183,7 +183,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onSucces
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>{direction === 'rtl' ? 'ادامه با حساب گوگل' : 'Continue with Google'}</span>
+              <span>{direction === 'rtl' ? 'ورود با حساب گوگل' : 'Continue with Google'}</span>
             </>
           )}
         </button>

@@ -79,7 +79,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
     setIsAutoScheduling(true);
     try {
       const res = await api.autoScheduleCalendar(selectedDate);
-      setStatusMessage(res.message || (locale === 'fa' ? 'وظایف با موفقیت در پنجره‌های انرژی زیستی چیده شدند.' : 'Tasks successfully placed into peak biological energy slots.'));
+      setStatusMessage(res.message || (locale === 'fa' ? 'زمان انجام کارها با موفقیت بر اساس ساعت‌های پربازده تنظیم شد.' : 'Tasks successfully placed into peak biological energy slots.'));
       onRefreshData();
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err) {
@@ -294,11 +294,11 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
               <span>{t('energyLevels.highFocus')} (08:30 - 12:30)</span>
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300">
-              {locale === 'fa' ? 'اوج تمرکز' : 'Peak Cortisol'}
+              {locale === 'fa' ? 'زمان اوج تمرکز' : 'Peak Cortisol'}
             </span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
-            {locale === 'fa' ? 'اختصاص یافته به معماری سامانه و مطالعه عمیق' : 'Dedicated to architecture design, heavy coding & complex study'}
+            {locale === 'fa' ? 'مناسب برای کارهای پیچیده، برنامه‌نویسی و مطالعه عمیق' : 'Dedicated to architecture design, heavy coding & complex study'}
           </p>
         </div>
 
@@ -309,11 +309,11 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
               <span>{t('energyLevels.creative')} (13:30 - 16:30)</span>
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
-              {locale === 'fa' ? 'تفکر خلاق' : 'Divergent Mind'}
+              {locale === 'fa' ? 'زمان کار خلاقانه' : 'Divergent Mind'}
             </span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
-            {locale === 'fa' ? 'طراحی پروتوتایپ، حل مسئله و بازنگری کد' : 'Ideation, collaborative reviews, RFC drafts, and exploration'}
+            {locale === 'fa' ? 'مناسب برای ایده‌پردازی، حل مسئله و بازبینی کد' : 'Ideation, collaborative reviews, RFC drafts, and exploration'}
           </p>
         </div>
 
@@ -324,11 +324,11 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
               <span>{t('energyLevels.lowEnergyAdmin')} (16:30 - 18:30)</span>
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
-              {locale === 'fa' ? 'کارهای سبک' : 'Triage / Recovery'}
+              {locale === 'fa' ? 'زمان کارهای سبک' : 'Triage / Recovery'}
             </span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
-            {locale === 'fa' ? 'پاسخ به ایمیل‌ها، هماهنگی‌ها و فعالیت‌های بدنی' : 'Communication batching, admin tasks, movement & circadian sunset'}
+            {locale === 'fa' ? 'مناسب برای پاسخ به ایمیل‌ها، هماهنگی‌ها و استراحت کوتاه' : 'Communication batching, admin tasks, movement & circadian sunset'}
           </p>
         </div>
       </div>
@@ -343,7 +343,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
             </h3>
           </div>
           <span className="text-xs font-mono text-neutral-400">
-            {formatNumber(dayEvents.length)} {locale === 'fa' ? 'رویداد فعال' : 'active events'}
+            {formatNumber(dayEvents.length)} {locale === 'fa' ? 'رویداد' : 'active events'}
           </span>
         </div>
 
@@ -378,7 +378,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
                       onClick={() => onOpenNewTaskWithTime && onOpenNewTaskWithTime(selectedDate, timeStr)}
                       className="min-h-[40px] border border-dashed border-neutral-800 rounded-lg flex items-center justify-between px-3 text-xs text-neutral-500 cursor-pointer hover:border-neutral-700 transition-colors"
                     >
-                      <span>{locale === 'fa' ? 'بازه زمانی آزاد' : 'Available focus window'}</span>
+                      <span>{locale === 'fa' ? 'زمان آزاد' : 'Available focus window'}</span>
                       {onOpenNewTaskWithTime && (
                         <button
                           type="button"
@@ -389,7 +389,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
                           className="flex sm:opacity-0 sm:group-hover:opacity-100 items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-opacity min-h-[36px] py-1"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>{locale === 'fa' ? 'ثبت کار' : 'Schedule task'}</span>
+                          <span>{locale === 'fa' ? 'افزودن کار' : 'Schedule task'}</span>
                         </button>
                       )}
                     </div>

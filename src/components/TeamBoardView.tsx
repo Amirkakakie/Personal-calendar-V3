@@ -52,11 +52,11 @@ export const TeamBoardView: React.FC<TeamBoardViewProps> = ({ onOpenAuthModal })
           </div>
           <div>
             <h3 className="text-xl font-bold text-white tracking-tight">
-              {direction === 'rtl' ? 'فضای کاری تیمی شما خالی است' : 'No Team Projects Yet'}
+              {direction === 'rtl' ? 'هنوز پروژه‌ای برای تیم ندارید' : 'No Team Projects Yet'}
             </h3>
             <p className="text-xs text-neutral-400 max-w-md mx-auto mt-2 leading-relaxed">
               {direction === 'rtl'
-                ? 'یک پروژه مشارکتی جدید بسازید یا از طریق ایمیل به پروژه‌های همکاران خود ملحق شوید.'
+                ? 'یک پروژه مشترک بسازید یا با دعوت‌نامه‌ای که از همکارانتان دریافت کرده‌اید به پروژه آن‌ها بپیوندید.'
                 : 'Create your first collaborative project board with a unique key prefix, or accept an invitation from teammates in your inbox.'}
             </p>
           </div>
@@ -68,7 +68,7 @@ export const TeamBoardView: React.FC<TeamBoardViewProps> = ({ onOpenAuthModal })
               className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              <span>{direction === 'rtl' ? 'ایجاد اولین پروژه' : 'Create First Project'}</span>
+              <span>{direction === 'rtl' ? 'ساخت اولین پروژه' : 'Create First Project'}</span>
             </button>
           </div>
         </div>

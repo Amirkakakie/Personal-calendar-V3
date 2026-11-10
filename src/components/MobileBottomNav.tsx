@@ -41,11 +41,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   ];
 
   const secondaryTabs: { id: NavigationTab; labelKey: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
-    { id: 'projects', labelKey: 'nav.projects', icon: FolderGit2, desc: locale === 'fa' ? 'پروژه‌ها و مخازن' : 'Projects & Milestones' },
-    { id: 'skills', labelKey: 'nav.skills', icon: Zap, desc: locale === 'fa' ? 'درخت مهارت‌های بازی‌وار' : 'RPG Skill Mastery' },
-    { id: 'stopwatch', labelKey: 'nav.stopwatch', icon: Clock, desc: locale === 'fa' ? 'کرنومتر و ردیابی ارزش زمان' : 'Time ROI & Billable Tracking' },
+    { id: 'projects', labelKey: 'nav.projects', icon: FolderGit2, desc: locale === 'fa' ? 'پروژه‌ها' : 'Projects & Milestones' },
+    { id: 'skills', labelKey: 'nav.skills', icon: Zap, desc: locale === 'fa' ? 'مسیر مهارت‌ها' : 'RPG Skill Mastery' },
+    { id: 'stopwatch', labelKey: 'nav.stopwatch', icon: Clock, desc: locale === 'fa' ? 'ثبت زمان و تمرکز' : 'Time ROI & Billable Tracking' },
     { id: 'goals', labelKey: 'nav.goals', icon: Target, desc: locale === 'fa' ? 'اهداف و نتایج کلیدی OKR' : 'Strategic Goals & OKRs' },
-    { id: 'coach', labelKey: 'nav.coach', icon: Sparkles, desc: locale === 'fa' ? 'مربی هوش مصنوعی جمینای' : 'Gemini AI Productivity Coach' },
+    { id: 'coach', labelKey: 'nav.coach', icon: Sparkles, desc: locale === 'fa' ? 'راهنمای هوشمند' : 'Gemini AI Productivity Coach' },
   ];
 
   const isMoreActive = secondaryTabs.some(tab => tab.id === currentTab);
@@ -68,10 +68,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/5">
               <div>
                 <h3 className="text-sm font-bold text-white">
-                  {locale === 'fa' ? 'ماژول‌ها و ابزارهای سیستم' : 'Productivity Modules'}
+                  {locale === 'fa' ? 'بخش‌ها و ابزارها' : 'Productivity Modules'}
                 </h3>
                 <p className="text-xs text-neutral-400">
-                  {locale === 'fa' ? 'دسترسی سریع به تمام بخش‌های کرونوس' : 'Quick access to all Chronos features'}
+                  {locale === 'fa' ? 'دسترسی سریع به بخش‌های مختلف برنامه' : 'Quick access to all Chronos features'}
                 </p>
               </div>
               <button
@@ -94,7 +94,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               className="w-full mb-4 flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98]"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>{locale === 'fa' ? 'ایجاد وظیفه جدید' : 'Create New Task'}</span>
+              <span>{locale === 'fa' ? 'افزودن کار جدید' : 'Create New Task'}</span>
             </button>
 
             {/* Grid of Secondary Modules */}

@@ -254,7 +254,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                 {formatClock(elapsedSeconds)}
               </div>
               <div className="text-xs font-mono text-neutral-400 mt-2 uppercase tracking-widest">
-                {locale === 'fa' ? 'زمان سپری‌شده کار عمیق' : 'Elapsed Focus Time'}
+                {locale === 'fa' ? 'زمان تمرکز' : 'Elapsed Focus Time'}
               </div>
             </div>
 
@@ -262,7 +262,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold">
               <DollarSign className="w-4 h-4" />
               <span>
-                {locale === 'fa' ? `بازده دلاری این جلسه: ${currentRoi} دلار` : `Live Session Yield: $${currentRoi}`}
+                {locale === 'fa' ? `ارزش این جلسه: ${currentRoi} دلار` : `Live Session Yield: $${currentRoi}`}
               </span>
             </div>
 
@@ -319,7 +319,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
           {/* Configuration Panel */}
           <div className="lg:col-span-5 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-4">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-400">
-              {locale === 'fa' ? 'پارامترهای تمرکز و نسبت‌دهی' : 'Focus Parameters & Attribution'}
+              {locale === 'fa' ? 'تنظیمات ثبت زمان' : 'Focus Parameters & Attribution'}
             </h3>
 
             {/* Project Selection */}
@@ -332,7 +332,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                 onChange={e => handleProjectChange(e.target.value)}
                 className="app-select"
               >
-                <option value="">{locale === 'fa' ? '-- بدون پروژه (عمومی) --' : '-- No Project (General) --'}</option>
+                <option value="">{locale === 'fa' ? '-- بدون پروژه --' : '-- No Project (General) --'}</option>
                 {projects.map(p => (
                   <option key={p.id} value={p.id}>
                     {p.name} (${formatNumber(p.hourlyValuation || 100)}/hr)
@@ -351,7 +351,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                 onChange={e => setSelectedTaskId(e.target.value)}
                 className="app-select"
               >
-                <option value="">{locale === 'fa' ? '-- جلسه آزاد بدون وظیفه خاص --' : '-- Unlinked Sprint --'}</option>
+                <option value="">{locale === 'fa' ? '-- بدون کار مشخص --' : '-- Unlinked Sprint --'}</option>
                 {tasks
                   .filter(t => t.status !== 'completed')
                   .map(t => (
@@ -381,7 +381,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
 
               <div>
                 <label className="text-[11px] font-medium text-neutral-300 mb-1.5 block">
-                  {locale === 'fa' ? 'ریتم انرژی زیستی' : 'Biological Energy'}
+                  {locale === 'fa' ? 'سطح انرژی' : 'Biological Energy'}
                 </label>
                 <select
                   value={energyBand}
@@ -398,7 +398,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             {/* Efficiency Rate Slider */}
             <div>
               <div className="flex items-center justify-between text-[11px] font-medium text-neutral-300 mb-1">
-                <span>{locale === 'fa' ? 'سنجش راندمان تمرکز' : 'Focus Efficiency Rating'}</span>
+                <span>{locale === 'fa' ? 'سنجش بازده تمرکز' : 'Focus Efficiency Rating'}</span>
                 <span className="font-mono text-indigo-400 font-bold">{formatNumber(efficiencyRate)}%</span>
               </div>
               <input
@@ -415,7 +415,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <div>
               <input
                 type="text"
-                placeholder={locale === 'fa' ? 'در این بازه چه کاری انجام دادید؟ (مثال: پیاده‌سازی اینترسپتور gRPC)' : 'What did you execute in this sprint? (e.g. Implemented gRPC interceptor)'}
+                placeholder={locale === 'fa' ? 'در این مدت چه کاری انجام دادید؟ (مثلاً: پیاده‌سازی یک قابلیت جدید)' : 'What did you execute in this sprint? (e.g. Implemented gRPC interceptor)'}
                 value={sessionNote}
                 onChange={e => setSessionNote(e.target.value)}
                 className="app-input placeholder:text-neutral-600"
@@ -430,7 +430,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
         <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-neutral-400 font-medium">
-              {locale === 'fa' ? 'کل ساعت کار عمیق' : 'Logged Deep Work'}
+              {locale === 'fa' ? 'مجموع زمان تمرکز' : 'Logged Deep Work'}
             </div>
             <div className="text-xl font-bold font-mono text-white mt-1 tabular-nums">
               {formatNumber(Number(totalLogsHours.toFixed(1)))} {t('common.hours')}
@@ -444,7 +444,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
         <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-neutral-400 font-medium">
-              {locale === 'fa' ? 'کل ارزش دلاری خلق‌شده' : 'Total ROI Valuation'}
+              {locale === 'fa' ? 'مجموع ارزش ایجادشده' : 'Total ROI Valuation'}
             </div>
             <div className="text-xl font-bold font-mono text-emerald-400 mt-1 tabular-nums">
               ${formatNumber(Math.round(totalLogsRoi))}
@@ -522,12 +522,12 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
             <table className="w-full text-start border-collapse">
               <thead>
                 <tr className="border-b border-neutral-800/80 bg-neutral-950/40 text-[11px] font-mono text-neutral-400 uppercase">
-                  <th className="py-3 px-6 text-start">{locale === 'fa' ? 'پروژه / وظیفه' : 'Project / Attribution'}</th>
+                  <th className="py-3 px-6 text-start">{locale === 'fa' ? 'پروژه / کار' : 'Project / Attribution'}</th>
                   <th className="py-3 px-4 text-start">{locale === 'fa' ? 'مدت' : 'Duration'}</th>
                   <th className="py-3 px-4 text-start">{locale === 'fa' ? 'نرخ' : 'Rate'}</th>
                   <th className="py-3 px-4 text-start">{locale === 'fa' ? 'بازده' : 'ROI Yield'}</th>
                   <th className="py-3 px-4 text-start">{locale === 'fa' ? 'انرژی' : 'Energy'}</th>
-                  <th className="py-3 px-4 text-start">{locale === 'fa' ? 'راندمان' : 'Efficiency'}</th>
+                  <th className="py-3 px-4 text-start">{locale === 'fa' ? 'بازده' : 'Efficiency'}</th>
                   <th className="py-3 px-6 text-end">{locale === 'fa' ? 'تاریخ' : 'Date'}</th>
                 </tr>
               </thead>
@@ -538,7 +538,7 @@ export const TimeRoiStopwatch: React.FC<TimeRoiStopwatchProps> = ({
                     <tr key={log.id} className="hover:bg-neutral-800/30 transition-colors">
                       <td className="py-3.5 px-6 font-sans">
                         <div className="font-semibold text-white">
-                          {log.projectName || log.taskTitle || (locale === 'fa' ? 'کار عمیق متفرقه' : 'Ad-hoc Deep Work')}
+                          {log.projectName || log.taskTitle || (locale === 'fa' ? 'کار بدون پروژه مشخص' : 'Ad-hoc Deep Work')}
                         </div>
                         {log.note && (
                           <div className="text-[11px] text-neutral-400 font-normal truncate max-w-xs mt-0.5">

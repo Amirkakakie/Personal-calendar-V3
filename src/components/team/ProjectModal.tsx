@@ -52,7 +52,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
       return;
     }
     if (!key.trim()) {
-      setError(direction === 'rtl' ? 'پیشوند شناسه پروژه الزامی است.' : 'Project key prefix is required.');
+      setError(direction === 'rtl' ? 'شناسه کوتاه پروژه را وارد کنید.' : 'Project key prefix is required.');
       return;
     }
 
@@ -75,7 +75,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose }) =
         setDescription('');
         onClose();
       } else {
-        setError(direction === 'rtl' ? 'خطا در ایجاد پروژه. لطفاً مجدداً تلاش کنید.' : 'Failed to create project. Please try again.');
+        setError(direction === 'rtl' ? 'ساخت پروژه انجام نشد. دوباره تلاش کنید.' : 'Failed to create project. Please try again.');
       }
     } catch (err: any) {
       console.error('[ProjectModal] Create project failed:', err);

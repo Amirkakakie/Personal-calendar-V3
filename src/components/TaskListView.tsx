@@ -115,7 +115,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
 
   const getPriorityLabel = (priority: string) => {
     switch (priority) {
-      case 'High': return locale === 'fa' ? 'فوری/بالا' : 'High';
+      case 'High': return locale === 'fa' ? 'زیاد' : 'High';
       case 'Medium': return locale === 'fa' ? 'متوسط' : 'Medium';
       case 'Low': return locale === 'fa' ? 'پایین' : 'Low';
       default: return priority;
@@ -227,7 +227,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                 className="bg-transparent text-neutral-300 text-xs focus:outline-none cursor-pointer py-1"
                 aria-label="Sort tasks"
               >
-                <option value="date" className="bg-neutral-900 text-white">{locale === 'fa' ? 'مهلت زمانی' : 'Due Date'}</option>
+                <option value="date" className="bg-neutral-900 text-white">{locale === 'fa' ? 'موعد انجام' : 'Due Date'}</option>
                 <option value="priority" className="bg-neutral-900 text-white">{locale === 'fa' ? 'اولویت' : 'Priority'}</option>
                 <option value="duration" className="bg-neutral-900 text-white">{locale === 'fa' ? 'مدت تخمینی' : 'Duration'}</option>
                 <option value="title" className="bg-neutral-900 text-white">{locale === 'fa' ? 'عنوان' : 'Title'}</option>
@@ -285,7 +285,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           {formatNumber(sortedTasks.length)} {sortedTasks.length === 1 ? 'task' : 'tasks'}
         </span>
         <span>
-          {formatNumber(sortedTasks.filter(t => t.status === 'completed').length)} {locale === 'fa' ? 'تکمیل شده' : 'completed'}
+          {formatNumber(sortedTasks.filter(t => t.status === 'completed').length)} {locale === 'fa' ? 'انجام‌شده' : 'completed'}
         </span>
       </div>
 
@@ -423,7 +423,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-400">
-                            {locale === 'fa' ? 'مراحل و اقدامات خرد:' : 'Checklist Steps:'}
+                            {locale === 'fa' ? 'مراحل انجام کار:' : 'Checklist Steps:'}
                           </div>
                           <div className="space-y-1.5">
                             {subtasks.map(st => (
@@ -475,7 +475,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                             }}
                             className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold transition-colors"
                           >
-                            {locale === 'fa' ? 'تأیید حذف' : 'Delete'}
+                            {locale === 'fa' ? 'حذف کار' : 'Delete'}
                           </button>
                           <button
                             type="button"
@@ -597,7 +597,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                   ) : (
                     <div className="h-32 border border-dashed border-neutral-800 rounded-xl flex items-center justify-center p-4 text-center">
                       <span className="text-xs text-neutral-500">
-                        {locale === 'fa' ? 'هیچ کاری در این بخش نیست' : 'No tasks in this lane'}
+                        {locale === 'fa' ? 'کاری در این بخش وجود ندارد' : 'No tasks in this lane'}
                       </span>
                     </div>
                   )}

@@ -92,14 +92,14 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white tracking-tight">{stats.rpgTitle}</h2>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  {locale === 'fa' ? 'رتبه استادی' : 'Mastery Tier'}
+                  {locale === 'fa' ? 'سطح مهارت' : 'Mastery Tier'}
                 </span>
               </div>
               <p className="text-[12px] text-neutral-500 mt-1">
-                {locale === 'fa' ? 'کل امتیاز تجربه: ' : 'Total XP: '}
+                {locale === 'fa' ? 'مجموع امتیاز تجربه: ' : 'Total XP: '}
                 <span className="font-mono text-indigo-300 font-semibold">{formatNumber(stats.totalXp)} XP</span>
                 {' • '}
-                {locale === 'fa' ? 'مدال‌های آزاد شده: ' : 'Unlocked Badges: '}
+                {locale === 'fa' ? 'نشان‌های دریافت‌شده: ' : 'Unlocked Badges: '}
                 <span className="font-mono text-amber-300 font-semibold">{formatNumber(unlockedBadgesCount)} / {formatNumber(badges.length)}</span>
               </p>
             </div>
@@ -108,7 +108,7 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
           <div className="flex items-center gap-4">
             <div className="bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 min-w-[130px]">
               <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
-                {locale === 'fa' ? 'ارزش اقتصادی خلق‌شده' : 'Cognitive Value'}
+                {locale === 'fa' ? 'ارزش کار انجام‌شده' : 'Cognitive Value'}
               </div>
               <div className="text-base font-bold font-mono text-emerald-400 mt-0.5">
                 ${formatNumber(stats.totalRoiGenerated)}
@@ -116,7 +116,7 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
             </div>
             <div className="bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 min-w-[130px]">
               <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
-                {locale === 'fa' ? 'امتیاز تمرکز' : 'Focus Efficiency'}
+                {locale === 'fa' ? 'بازده تمرکز' : 'Focus Efficiency'}
               </div>
               <div className="text-base font-bold font-mono text-indigo-400 mt-0.5">
                 {formatNumber(stats.focusScore)} / 100
@@ -151,7 +151,7 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
           ))}
         </div>
         <div className="text-xs text-neutral-500 font-mono">
-          {formatNumber(filteredSkills.length)} {locale === 'fa' ? 'شاخه فعال مهارت' : 'active skill nodes'}
+          {formatNumber(filteredSkills.length)} {locale === 'fa' ? 'مهارت فعال' : 'active skill nodes'}
         </div>
       </div>
 

@@ -38,7 +38,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
 
   // Initial greeting based on locale
   const initialGreeting = locale === 'fa'
-    ? "درود! من مربی هوشمند بهره‌وری و مدیریت تمرکز کرونوس هستم. می‌توانم برنامه زمانی شما را بهینه‌سازی کنم، به شما در غلبه بر خستگی یا اهمال‌کاری کمک کنم و اهدافتان را ساختار دهم. امروز در چه زمینه‌ای همراهی کنم؟"
+    ? "درود! من راهنمای هوشمند برنامه‌ریزی و تمرکز کرونوس هستم. می‌توانم به تنظیم برنامه روزانه‌تان کمک کنم، به شما در غلبه بر خستگی یا اهمال‌کاری کمک کنم و اهدافتان را ساختار دهم. امروز در چه زمینه‌ای همراهی کنم؟"
     : "Hello! I am your Chronos AI Productivity Coach. I can analyze your schedule, help you overcome study or work resistance, balance your deep work blocks, and structure your goals. How can I assist your focus today?";
 
   // Chat state
@@ -106,7 +106,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
   };
 
   const suggestedPrompts = locale === 'fa' ? [
-    'چطور روی وظایف سنگین بخش ۲ آیزنهاور تمرکز کنم و اهمال‌کاری را کنار بگذارم؟',
+    'چطور روی کارهای مهم و غیرفوری در بخش دوم ماتریس آیزنهاور تمرکز کنم و اهمال‌کاری را کنار بگذارم؟',
     'آیا حجم کاری فعلی من خطر فرسودگی دارد؟ بررسی و پیشنهاد بده.',
     'یک استراتژی کار عمیق ۳ ساعته برای ساعات اوج انرژی بعدازظهر پیشنهاد کن.',
     'چگونه بین اهداف یادگیری و کارهای روزمره شغلی تعادل برقرار کنم؟'
@@ -188,7 +188,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
         <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <p className="text-xs text-neutral-300 leading-relaxed max-w-xl">
             {locale === 'fa'
-              ? 'مدل هوش مصنوعی وظایف و اهداف جاری شما را ارزیابی کرده و برنامه بهینه‌ای منطبق با اوج انرژی زیستی شما پیشنهاد می‌دهد.'
+              ? 'هوش مصنوعی کارها و هدف‌های فعلی شما را بررسی می‌کند و با توجه به زمان‌های مناسب تمرکز، برنامه‌ای پیشنهادی ارائه می‌دهد.'
               : 'Our executive performance agent assesses your queue, calculates cognitive load, and designs an adaptive plan.'}
           </p>
 
@@ -218,7 +218,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
             <div className="bg-neutral-950/60 border border-neutral-800 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-violet-300 uppercase tracking-wider">
-                  {locale === 'fa' ? 'خلاصه راهبردی روزانه' : 'Executive State Summary'}
+                  {locale === 'fa' ? 'خلاصه برنامه امروز' : 'Executive State Summary'}
                 </span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
                   brief.burnoutRisk === 'High' 
@@ -249,7 +249,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
                     <div key={idx} className="p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800 text-xs text-neutral-300 leading-relaxed">
                       <div className="flex items-center gap-2 mb-1.5 text-emerald-400 font-semibold">
                         <CheckCircle className="w-3.5 h-3.5" />
-                        <span>{locale === 'fa' ? `راهبرد ${idx + 1}` : `Directive ${idx + 1}`}</span>
+                        <span>{locale === 'fa' ? `پیشنهاد ${idx + 1}` : `Directive ${idx + 1}`}</span>
                       </div>
                       {advice}
                     </div>
@@ -282,7 +282,7 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
                           onClick={() => onScheduleSlotSelect(item.suggestedTaskTitle || '', item.timeSlot)}
                           className="self-end sm:self-auto px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold transition-colors border border-indigo-500/30"
                         >
-                          {locale === 'fa' ? 'قفل در تقویم' : 'Lock in Calendar'}
+                          {locale === 'fa' ? 'افزودن به تقویم' : 'Lock in Calendar'}
                         </button>
                       )}
                     </div>

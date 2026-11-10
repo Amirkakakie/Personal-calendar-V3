@@ -62,14 +62,14 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
       shortLabel: 'Q1',
       title: t('eisenhower.q1Title'),
       subtitle: t('eisenhower.q1Subtitle'),
-      badge: locale === 'fa' ? 'فوری + حیاتی (انجام سریع)' : 'Do First • Critical & Pressing',
-      description: locale === 'fa' ? 'بحران‌ها، موعدهای نزدیک و کارهای اضطراری' : 'Crises, immediate deadlines, critical problems',
+      badge: locale === 'fa' ? 'فوری و مهم؛ همین حالا انجام دهید' : 'Do First • Critical & Pressing',
+      description: locale === 'fa' ? 'کارهای فوری، موعدهای نزدیک و موارد ضروری' : 'Crises, immediate deadlines, critical problems',
       headerBg: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
       badgeStyle: 'text-rose-400 font-semibold',
       borderColor: 'border-rose-900/40 hover:border-rose-700/60',
       accentColor: 'text-rose-400',
       emptyAdvice: locale === 'fa' 
-        ? 'آرامش در منطقه اضطرار! هیچ کار فوری و حیاتی باقی نمانده است. انرژی خود را صرف بخش ۲ کنید.'
+        ? 'هیچ کار فوری و مهمی باقی نمانده است. می‌توانید روی کارهای مهم و بلندمدت تمرکز کنید.'
         : 'Zero fires burning! No urgent crises right now. Invest this high-leverage focus into Quadrant 2.'
     },
     {
@@ -77,14 +77,14 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
       shortLabel: 'Q2',
       title: t('eisenhower.q2Title'),
       subtitle: t('eisenhower.q2Subtitle'),
-      badge: locale === 'fa' ? 'رشد بلندمدت (برنامه‌ریزی دقیق)' : 'Schedule • Strategic Growth',
-      description: locale === 'fa' ? 'توسعه مهارت، برنامه‌ریزی استراتژیک، سلامت و نوآوری' : 'Deep work, skill acquisition, long-term leverage & health',
+      badge: locale === 'fa' ? 'مهم و غیرفوری؛ برنامه‌ریزی کنید' : 'Schedule • Strategic Growth',
+      description: locale === 'fa' ? 'یادگیری، توسعه مهارت، سلامت و برنامه‌ریزی بلندمدت' : 'Deep work, skill acquisition, long-term leverage & health',
       headerBg: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
       badgeStyle: 'text-emerald-400 font-semibold',
       borderColor: 'border-emerald-900/40 hover:border-emerald-700/60',
       accentColor: 'text-emerald-400',
       emptyAdvice: locale === 'fa'
-        ? 'بخش دوم کلید موفقیت پایدار است. یک هدف استراتژیک یا یادگیری عمیق به این بخش اضافه کنید.'
+        ? 'این بخش به پیشرفت بلندمدت شما کمک می‌کند. یک کار مهم یا هدف یادگیری به آن اضافه کنید.'
         : 'The Quadrant of Mastery is empty! Add high-impact goals, research, or skill practice here.'
     },
     {
@@ -92,14 +92,14 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
       shortLabel: 'Q3',
       title: t('eisenhower.q3Title'),
       subtitle: t('eisenhower.q3Subtitle'),
-      badge: locale === 'fa' ? 'واگذاری یا تجمیع (فوری غیرحیاتی)' : 'Delegate / Batch • Time Traps',
-      description: locale === 'fa' ? 'وقفه‌ها، جلسات کم‌اثر و درخواست‌های فوری دیگران' : 'Interruptions, busywork, urgent requests from others',
+      badge: locale === 'fa' ? 'فوری و کم‌اهمیت؛ واگذار کنید' : 'Delegate / Batch • Time Traps',
+      description: locale === 'fa' ? 'تماس‌ها، وقفه‌ها و درخواست‌هایی که بهتر است واگذار شوند' : 'Interruptions, busywork, urgent requests from others',
       headerBg: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
       badgeStyle: 'text-amber-400 font-semibold',
       borderColor: 'border-amber-900/40 hover:border-amber-700/60',
       accentColor: 'text-amber-400',
       emptyAdvice: locale === 'fa'
-        ? 'عالی است! هیچ تله زمانی و درخواست فوری بی‌اثر وجود ندارد.'
+        ? 'کار فوری و کم‌اهمیتی در این بخش ندارید.'
         : 'No interruptions or busywork currently cataloged. Guard your calendar ruthlessly.'
     },
     {
@@ -107,14 +107,14 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
       shortLabel: 'Q4',
       title: t('eisenhower.q4Title'),
       subtitle: t('eisenhower.q4Subtitle'),
-      badge: locale === 'fa' ? 'حذف و پاکسازی (فاقد ارزش)' : 'Eliminate • Low Leverage',
-      description: locale === 'fa' ? 'اتلاف وقت، فعالیت‌های حاشیه‌ای و کارهای غیرضروری' : 'Distractions, busywork loops, escapism, low-value noise',
+      badge: locale === 'fa' ? 'غیرضروری؛ حذف کنید' : 'Eliminate • Low Leverage',
+      description: locale === 'fa' ? 'حواس‌پرتی‌ها و کارهایی که ارزش چندانی ایجاد نمی‌کنند' : 'Distractions, busywork loops, escapism, low-value noise',
       headerBg: 'bg-neutral-800 text-neutral-300 border-neutral-700/60',
       badgeStyle: 'text-neutral-400 font-semibold',
       borderColor: 'border-neutral-800 hover:border-neutral-700',
       accentColor: 'text-neutral-400',
       emptyAdvice: locale === 'fa'
-        ? 'فضای ذهنی تمیز! هیچ فعالیت اتلاف وقتی در این بخش ثبت نشده است.'
+        ? 'در حال حاضر کار غیرضروری‌ای در این بخش ندارید.'
         : 'Clear backlog! No low-leverage distractions clogging your cognitive capacity.'
     }
   ];
@@ -366,7 +366,7 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                                     setActiveMoveMenuTaskId(isMoveMenuOpen ? null : task.id);
                                   }}
                                   className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
-                                  title={locale === 'fa' ? 'تغییر ربع آیزنهاور' : 'Move to another quadrant'}
+                                  title={locale === 'fa' ? 'تغییر بخش در ماتریس آیزنهاور' : 'Move to another quadrant'}
                                   aria-label="Change quadrant"
                                 >
                                   <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -378,7 +378,7 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-neutral-400">
-                                      {locale === 'fa' ? 'انتقال به ربع' : 'Move to'}
+                                      {locale === 'fa' ? 'انتقال به بخش' : 'Move to'}
                                     </div>
                                     {quadrants.map(targetQ => (
                                       <button

@@ -92,7 +92,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({
         }));
         setGeneratedTasks(withSelection);
       } else {
-        throw new Error(locale === 'fa' ? 'امکان تفکیک خودکار برای این هدف فراهم نشد.' : 'No actionable items could be synthesized for this objective.');
+        throw new Error(locale === 'fa' ? 'نتوانستیم این هدف را به کارهای کوچک‌تر تقسیم کنیم.' : 'No actionable items could be synthesized for this objective.');
       }
     } catch (err: any) {
       console.error('AI breakdown error:', err);
@@ -138,7 +138,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({
       onClose();
     } catch (err) {
       console.error('Error importing tasks:', err);
-      setErrorMsg(locale === 'fa' ? 'خطا در ثبت وظایف واردشده.' : 'Failed to import tasks to database.');
+      setErrorMsg(locale === 'fa' ? 'ثبت کارهای انتخاب‌شده با خطا روبه‌رو شد.' : 'Failed to import tasks to database.');
     } finally {
       setIsImporting(false);
     }
@@ -174,7 +174,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({
         <div className="mt-5 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-              {locale === 'fa' ? 'هدف اصلی یا سرفصل پروژه' : 'High-Level Objective'} *
+              {locale === 'fa' ? 'هدف اصلی یا موضوع پروژه' : 'High-Level Objective'} *
             </label>
             <input
               type="text"
@@ -226,7 +226,7 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1">
-                {locale === 'fa' ? 'پیش‌نیاز یا توضیحات تکمیلی' : 'Context / Constraints'}
+                {locale === 'fa' ? 'توضیحات و پیش‌نیازها' : 'Context / Constraints'}
               </label>
               <input
                 type="text"
@@ -274,10 +274,10 @@ export const AIBreakdownModal: React.FC<AIBreakdownModalProps> = ({
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>{locale === 'fa' ? `اقدامات تفکیک‌شده (${formatNumber(generatedTasks.length)})` : `Decomposed Action Items (${generatedTasks.length})`}</span>
+                  <span>{locale === 'fa' ? `کارهای پیشنهادی (${formatNumber(generatedTasks.length)})` : `Decomposed Action Items (${generatedTasks.length})`}</span>
                 </h3>
                 <p className="text-xs text-neutral-400">
-                  {locale === 'fa' ? 'موارد مورد نظر را برای ثبت در تقویم و سیستم انتخاب نمایید.' : 'Select tasks to add to your schedule and Google Calendar.'}
+                  {locale === 'fa' ? 'کارهایی را که می‌خواهید به فهرستتان اضافه شوند انتخاب کنید.' : 'Select tasks to add to your schedule and Google Calendar.'}
                 </p>
               </div>
 
