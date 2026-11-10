@@ -31,7 +31,7 @@ router.post('/signup', async (req: Request, res: Response) => {
     if (!email || typeof email !== 'string' || email.trim().length > 254 || !emailRegex.test(email.trim())) {
       return res.status(400).json({ success: false, error: 'Valid email address is required' });
     }
-    // Enforce robust password length (minimum 8 characters)
+    // Enforce a 12-character minimum and bcrypt's 72-byte input limit.
     if (!password || typeof password !== 'string' || password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
       return res.status(400).json({ success: false, error: 'Password must be at least 12 characters and no more than 72 UTF-8 bytes.' });
     }
@@ -223,7 +223,7 @@ router.post('/google', async (req: Request, res: Response) => {
 
           if (tokenRes.ok) {
             const data: any = await tokenRes.json();
-            // Validate audience if GOOGLE_CLIENT_ID is configured
+            // Require the configured OAuth client audience.
             if (!process.env.GOOGLE_CLIENT_ID || data.aud !== process.env.GOOGLE_CLIENT_ID) {
               return res.status(401).json({ success: false, error: 'Google token audience mismatch' });
             }
