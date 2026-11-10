@@ -89,7 +89,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-bold text-white tracking-tight">
-              {locale === 'fa' ? 'توزیع وظایف در حوزه‌های چهارگانه' : 'Domain Life Balance'}
+              {locale === 'fa' ? 'توزیع کارها در چهار حوزه' : 'Domain Life Balance'}
             </h4>
             <p className="text-[11px] text-neutral-400">
               {locale === 'fa' ? 'تعادل زمان و تمرکز در پروژه‌ها' : 'Distribution across personal pillars'}
@@ -173,7 +173,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
                   {formatNumber(totalTasks)}
                 </span>
                 <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">
-                  {locale === 'fa' ? 'وظیفه کل' : 'Total Tasks'}
+                  {locale === 'fa' ? 'مجموع کارها' : 'Total Tasks'}
                 </span>
               </>
             )}
