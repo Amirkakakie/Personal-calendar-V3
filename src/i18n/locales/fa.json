@@ -32,7 +32,11 @@
     "personal": "شخصی",
     "team": "تیمی",
     "collapse": "بستن نوار",
-    "expand": "باز کردن نوار"
+    "expand": "باز کردن نوار",
+    "title": "عنوان",
+    "description": "توضیحات",
+    "add": "افزودن",
+    "clear": "پاک‌کردن"
   },
   "header": {
     "appName": "کرونوس",
@@ -126,7 +130,12 @@
     "deleteConfirm": "از حذف این کار مطمئن هستید؟",
     "syncedBadge": "تقویم گوگل",
     "noTasks": "کاری با این مشخصات پیدا نشد.",
-    "atomizeAi": "تقسیم کار به گام‌های کوچک با هوش مصنوعی"
+    "atomizeAi": "تقسیم کار به گام‌های کوچک با هوش مصنوعی",
+    "newTask": "کار جدید",
+    "allStatus": "همه وضعیت‌ها",
+    "noFilteredTasks": "کاری با این فیلترها پیدا نشد",
+    "noFilteredTasksDesc": "فیلترها را تغییر دهید یا پاک کنید و دوباره تلاش کنید.",
+    "noTasksDesc": "هنوز کاری ثبت نکرده‌اید. اولین کارتان را اضافه کنید."
   },
   "eisenhower": {
     "title": "ماتریس اولویت‌بندی آیزنهاور",
@@ -259,7 +268,8 @@
     "workCareer": "کار و شغل",
     "academicStudy": "تحصیل و یادگیری",
     "personalGrowth": "رشد فردی",
-    "healthHabits": "سلامت و عادت‌ها"
+    "healthHabits": "سلامت و عادت‌ها",
+    "allCategories": "همه دسته‌بندی‌ها"
   },
   "energyLevels": {
     "highFocus": "تمرکز زیاد (کار عمیق)",
