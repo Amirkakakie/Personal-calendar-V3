@@ -392,10 +392,30 @@ export async function importLegacySnapshotToRelational(
 
     await tx.databaseRevision.create({ data: { id: 'root', version: 1n } });
     const verify = await countTarget(tx);
-    if (verify.user !== report.users || verify.goalOKR !== report.goals || verify.project !== report.personalProjects ||
-        verify.task !== report.personalTasks || verify.calendarEvent !== report.calendarEvents ||
-        verify.timeLog !== report.timeLogs || verify.teamProject !== report.teamProjects ||
-        verify.teamTask !== report.teamTasks || verify.legacySnapshot !== 1) {
+    if (
+      verify.user !== report.users ||
+      verify.workspace !== report.workspaces ||
+      verify.goalOKR !== report.goals ||
+      verify.keyResult !== report.keyResults ||
+      verify.project !== report.personalProjects ||
+      verify.task !== report.personalTasks ||
+      verify.subTask !== report.subtasks ||
+      verify.calendarEvent !== report.calendarEvents ||
+      verify.timeLog !== report.timeLogs ||
+      verify.skill !== report.skills ||
+      verify.userSkill !== report.userSkills ||
+      verify.userBadge !== report.badges ||
+      verify.teamProject !== report.teamProjects ||
+      verify.teamTask !== report.teamTasks ||
+      verify.teamTaskSubtask !== report.teamSubtasks ||
+      verify.teamTaskComment !== report.teamComments ||
+      verify.teamTaskTagAssignment !== report.teamTags ||
+      verify.projectInvitation !== report.invitations ||
+      verify.userStats !== report.stats ||
+      verify.googleConnection !== report.googleConnections ||
+      verify.legacySnapshot !== 1 ||
+      verify.databaseRevision !== 1
+    ) {
       throw new Error('Post-import row-count reconciliation failed; transaction rolled back. '+JSON.stringify({verify,report}));
     }
     return { status: 'IMPORTED', archiveId: archive.id, checksum: archive.checksum, report, targetCounts: verify };
