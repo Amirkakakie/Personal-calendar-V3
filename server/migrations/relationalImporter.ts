@@ -166,7 +166,6 @@ export async function importLegacySnapshotToRelational(
       const projectRows = array(p.projects).map(object);
       const goalRows = array(p.goals).map(object);
       const taskIds = new Set(taskRows.map(t => text(t.id)));
-      const usedTaskNumbers = new Set<number>();
       const projectIds = new Set(projectRows.map(x => text(x.id)));
       const goalIds = new Set(goalRows.map(x => text(x.id)));
 
@@ -335,14 +334,17 @@ export async function importLegacySnapshotToRelational(
 
     const teamTaskRows = array(snapshot.teamTasks).map(object);
     const teamProjectIds = new Set(teamProjects.map(p=>text(p.id)));
+    const usedTaskNumbersByProject = new Map<string, Set<number>>();
     for (const t of teamTaskRows) {
       if (!teamProjectIds.has(text(t.projectId))) throw new Error('Team task references a missing project: '+text(t.id));
       const ownerId = text(teamProjects.find(p=>text(p.id)===text(t.projectId))?.ownerId);
       const assigneeId = userIds.has(text(t.assigneeId)) ? text(t.assigneeId) : null;
       const subtasks = array(t.subtasks).map(object), comments = array(t.comments).map(object), tags = array(t.tags).map(x=>text(x));
+      const projectTaskNumbers = usedTaskNumbersByProject.get(text(t.projectId)) || new Set<number>();
       let taskNumber = Math.max(1, Math.floor(number(t.taskNumber, report.teamTasks+1)));
-      while (usedTaskNumbers.has(taskNumber)) taskNumber++;
-      usedTaskNumbers.add(taskNumber);
+      while (projectTaskNumbers.has(taskNumber)) taskNumber++;
+      projectTaskNumbers.add(taskNumber);
+      usedTaskNumbersByProject.set(text(t.projectId), projectTaskNumbers);
       await tx.teamTask.create({ data: {
         id: text(t.id), projectId: text(t.projectId), taskNumber,
         columnId: text(t.columnId, 'todo'), title: text(t.title, 'Untitled team task'), description: nullable(t.description),
