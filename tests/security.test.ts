@@ -75,6 +75,12 @@ async function runSecurityTestSuite() {
   console.log(`[Test Server] Ephemeral test instance listening on port ${port}\n`);
 
   try {
+    // Browser origins must be explicitly allowed; absent Origin remains valid for non-browser clients.
+    const blockedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'https://attacker.invalid' } });
+    assert(blockedOrigin.status === 403, 'Untrusted browser Origin is rejected');
+    const allowedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'http://localhost:3000' } });
+    assert(allowedOrigin.status === 200 && allowedOrigin.headers.get('access-control-allow-origin') === 'http://localhost:3000', 'Configured development Origin receives an exact CORS allowlist response');
+
     // ---------------------------------------------------------
     // Setup: Create User A & User B
     // ---------------------------------------------------------
@@ -286,6 +292,7 @@ async function runSecurityTestSuite() {
     });
     const dataRegC = await resRegC.json();
     const tokenC = dataRegC.token;
+    const userC = dataRegC.user;
 
     // Check tasks
     const resTasksC = await fetch(`${BASE_URL}/tasks`, {
@@ -319,7 +326,24 @@ async function runSecurityTestSuite() {
     // SCENARIO 8: WORKSPACE ACCESS & INVITATIONS
     // ---------------------------------------------------------
     console.log(`\n${BOLD}[SCENARIO 8] Workspace Access & Invitation Flow${RESET}`);
-    // User A creates a team project
+    // User A creates a workspace and then a project inside that authorized workspace.
+    const resWorkspaceA = await fetch(`${BASE_URL}/workspaces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` },
+      body: JSON.stringify({ name: 'Alice Team Workspace' })
+    });
+    const dataWorkspaceA = await resWorkspaceA.json();
+    assert(resWorkspaceA.status === 201 && !!dataWorkspaceA.data?.id, 'User A creates an owned workspace');
+    const workspaceAId = dataWorkspaceA.data.id;
+
+    // User B must not be able to attach a project to User A's workspace.
+    const resForeignWorkspaceProject = await fetch(`${BASE_URL}/team/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenB}` },
+      body: JSON.stringify({ name: 'Foreign Workspace Attempt', workspaceId: workspaceAId })
+    });
+    assert(resForeignWorkspaceProject.status === 403, 'A user cannot create a team project in another user workspace');
+
     const resTeamProjA = await fetch(`${BASE_URL}/team/projects`, {
       method: 'POST',
       headers: {
@@ -328,13 +352,22 @@ async function runSecurityTestSuite() {
       },
       body: JSON.stringify({
         name: 'Project Orion',
-        workspaceId: 'ws-team',
+        workspaceId: workspaceAId,
         description: 'Joint spacecraft design'
       })
     });
     const dataTeamProjA = await resTeamProjA.json();
     assert(resTeamProjA.status === 201 && !!dataTeamProjA.data?.id, 'User A creates team project');
     const teamProjId = dataTeamProjA.data.id;
+
+    // Owner cannot move a project into another user's workspace.
+    const foreignWorkspaceId = userB.personalWorkspaceId;
+    const resMoveForeignWorkspace = await fetch(`${BASE_URL}/team/projects/${teamProjId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` },
+      body: JSON.stringify({ workspaceId: foreignWorkspaceId })
+    });
+    assert(resMoveForeignWorkspace.status === 404, 'Project cannot be moved into a workspace the owner does not belong to');
 
     // User B (non-member) tries to list tasks in Project Orion
     const resTeamTasksBBefore = await fetch(`${BASE_URL}/team/tasks?projectId=${teamProjId}`, {

@@ -25,14 +25,15 @@ function getSigningKey(): Uint8Array {
 router.post('/signup', async (req: Request, res: Response) => {
   try {
     const { name, email, password, title } = req.body;
+    if (name !== undefined && (typeof name !== 'string' || name.trim().length > 80)) return res.status(400).json({ success: false, error: 'Name must be a string of at most 80 characters.' });
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+    if (!email || typeof email !== 'string' || email.trim().length > 254 || !emailRegex.test(email.trim())) {
       return res.status(400).json({ success: false, error: 'Valid email address is required' });
     }
-    // Enforce robust password length (minimum 8 characters)
-    if (!password || typeof password !== 'string' || password.length < 8) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+    // Enforce a 12-character minimum and bcrypt's 72-byte input limit.
+    if (!password || typeof password !== 'string' || password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 12 characters and no more than 72 UTF-8 bytes.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -104,7 +105,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+    if (!email || !password || typeof email !== 'string' || email.trim().length > 254 || typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72) {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
     }
 
@@ -172,7 +173,14 @@ router.get('/google/config', (_req: Request, res: Response) => {
 // POST /api/auth/google - Authenticate, auto-create, or link Google user account
 router.post('/google', async (req: Request, res: Response) => {
   try {
-    const { credential, code, redirectUri } = req.body;
+    const { credential, code } = req.body;
+
+    if (credential !== undefined && (typeof credential !== 'string' || credential.length > 8192)) {
+      return res.status(400).json({ success: false, error: 'Google credential is invalid or too large.' });
+    }
+    if (code !== undefined && (typeof code !== 'string' || code.length > 4096)) {
+      return res.status(400).json({ success: false, error: 'Google authorization code is invalid or too large.' });
+    }
 
     if (!credential && !code) {
       return res.status(400).json({ success: false, error: 'Google credential (ID token) or authorization code is required' });
@@ -184,7 +192,9 @@ router.post('/google', async (req: Request, res: Response) => {
       name?: string;
       picture?: string;
       email_verified?: boolean | string;
+      aud?: string; iss?: string; exp?: string;
     } | null = null;
+    let isMockCredential = false;
 
     if (credential) {
       if (typeof credential !== 'string' || !credential.trim()) {
@@ -193,6 +203,7 @@ router.post('/google', async (req: Request, res: Response) => {
 
       // Check for mock/test credentials in non-production test runs
       if (process.env.NODE_ENV !== 'production' && credential.startsWith('test-mock-google-token')) {
+        isMockCredential = true;
         const parts = credential.split(':');
         const testEmail = parts[1] || 'google.test@chronos.ai';
         googlePayload = {
@@ -200,7 +211,7 @@ router.post('/google', async (req: Request, res: Response) => {
           email: testEmail,
           name: 'Google Test User',
           picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-          email_verified: true
+          email_verified: true, aud: process.env.GOOGLE_CLIENT_ID || 'test-client', iss: 'https://accounts.google.com', exp: String(Math.floor(Date.now() / 1000) + 300)
         };
       } else {
         // Official Google Token Verification via tokeninfo endpoint
@@ -212,8 +223,8 @@ router.post('/google', async (req: Request, res: Response) => {
 
           if (tokenRes.ok) {
             const data: any = await tokenRes.json();
-            // Validate audience if GOOGLE_CLIENT_ID is configured
-            if (process.env.GOOGLE_CLIENT_ID && data.aud && data.aud !== process.env.GOOGLE_CLIENT_ID) {
+            // Require the configured OAuth client audience.
+            if (!process.env.GOOGLE_CLIENT_ID || data.aud !== process.env.GOOGLE_CLIENT_ID) {
               return res.status(401).json({ success: false, error: 'Google token audience mismatch' });
             }
             googlePayload = {
@@ -221,7 +232,7 @@ router.post('/google', async (req: Request, res: Response) => {
               email: data.email,
               name: data.name,
               picture: data.picture,
-              email_verified: data.email_verified
+              email_verified: data.email_verified, aud: data.aud, iss: data.iss, exp: data.exp
             };
           } else {
             const errBody = await tokenRes.text().catch(() => '');
@@ -233,7 +244,7 @@ router.post('/google', async (req: Request, res: Response) => {
       }
     } else if (code) {
       // Exchange authorization code for tokens
-      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REDIRECT_URI) {
         return res.status(500).json({ success: false, error: 'Google OAuth client secret not configured on server' });
       }
 
@@ -245,7 +256,7 @@ router.post('/google', async (req: Request, res: Response) => {
             code,
             client_id: process.env.GOOGLE_CLIENT_ID,
             client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            redirect_uri: redirectUri || `${req.protocol}://${req.get('host')}/api/auth/google/callback`,
+            redirect_uri: process.env.GOOGLE_REDIRECT_URI,
             grant_type: 'authorization_code'
           })
         });
@@ -261,7 +272,7 @@ router.post('/google', async (req: Request, res: Response) => {
                 email: data.email,
                 name: data.name,
                 picture: data.picture,
-                email_verified: data.email_verified
+                email_verified: data.email_verified, aud: data.aud, iss: data.iss, exp: data.exp
               };
             }
           }
@@ -271,8 +282,12 @@ router.post('/google', async (req: Request, res: Response) => {
       }
     }
 
-    if (!googlePayload || !googlePayload.email) {
+    if (!googlePayload || typeof googlePayload.email !== 'string' || googlePayload.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googlePayload.email) || typeof googlePayload.sub !== 'string' || !googlePayload.sub || googlePayload.sub.length > 255) {
       return res.status(401).json({ success: false, error: 'Failed to verify Google identity credential.' });
+    }
+
+    if (!isMockCredential && (!process.env.GOOGLE_CLIENT_ID || googlePayload.aud !== process.env.GOOGLE_CLIENT_ID || !['accounts.google.com', 'https://accounts.google.com'].includes(googlePayload.iss || '') || !googlePayload.exp || Number(googlePayload.exp) * 1000 <= Date.now() || !googlePayload.sub)) {
+      return res.status(401).json({ success: false, error: 'Google identity token claims are invalid.' });
     }
 
     // Require verified email address from Google

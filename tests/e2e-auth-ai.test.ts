@@ -62,7 +62,7 @@ async function runAllTests() {
     let userToken = '';
     let userId = '';
 
-    await test('Registration enforces minimum 8-character password', async () => {
+    await test('Registration enforces minimum 12-character password', async () => {
       const res = await fetch(`${baseUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,7 +74,7 @@ async function runAllTests() {
       });
       assert.strictEqual(res.status, 400);
       const body = await res.json();
-      assert.ok(body.error?.includes('8 characters'));
+      assert.ok(body.error?.includes('12 characters'));
     });
 
     await test('Registration succeeds with strong password and normalizes email', async () => {
