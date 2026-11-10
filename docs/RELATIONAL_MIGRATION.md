@@ -26,7 +26,7 @@ $bytes = New-Object byte[] 32
 $env:CHRONOS_DATA_ENCRYPTION_KEY = [Convert]::ToBase64String($bytes)
 ```
 
-Do not rotate or lose this key without a planned re-encryption procedure. It protects the archived snapshot and Google OAuth tokens.
+Do not rotate or lose this key without a planned re-encryption procedure. It protects the archived snapshot stored in PostgreSQL and Google OAuth tokens. The exported JSON file itself is plaintext; keep it on an encrypted volume or encrypt it separately before moving or backing it up.
 
 6. Configure a PostgreSQL `DATABASE_URL` for the target database, then apply the committed migrations:
 
