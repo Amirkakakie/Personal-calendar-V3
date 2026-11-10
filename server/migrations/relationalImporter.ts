@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { buildLegacyArchiveRow, validateLegacyExport, type LegacySnapshotExport } from './legacySnapshot.ts';
 import { encryptGoogleToken, encryptJsonPayload } from '../security/dataEncryption.ts';
 
@@ -115,11 +116,12 @@ export async function importLegacySnapshotToRelational(
       const stats = object(p.stats);
       const safeUser = { ...u };
       for (const key of ['password','passwordHash','googleAccessToken','googleRefreshToken','googleTokenExpiry']) delete safeUser[key];
+      const importedPasswordHash = text(u.passwordHash) || (typeof u.password === 'string' && u.password.length >= 8 ? await bcrypt.hash(u.password, 10) : null);
       await tx.user.create({ data: {
         id: text(u.id), email: text(u.email).trim().toLowerCase(), name: text(u.name, text(u.email).split('@')[0]),
         avatarUrl: nullable(u.avatarUrl), avatarColor: text(u.avatarColor, 'from-violet-600 to-indigo-600'),
         initials: text(u.initials), title: text(u.title), role: text(u.role, 'Member'),
-        joinedAt: date(u.joinedAt), passwordHash: nullable(u.passwordHash),
+        joinedAt: date(u.joinedAt), passwordHash: nullable(importedPasswordHash),
         googleId: nullable(u.googleId), totalXp: number(stats.totalXp), level: number(stats.userLevel, 1),
         rpgTitle: text(stats.rpgTitle, 'Novice Pioneer'), focusScore: number(stats.focusScore, 100),
         legacyData: legacy(safeUser)
