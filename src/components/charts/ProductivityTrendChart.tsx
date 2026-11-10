@@ -67,7 +67,7 @@ export const ProductivityTrendChart: React.FC<ProductivityTrendChartProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-bold text-white tracking-tight">
-              {locale === 'fa' ? 'روند سرعت انجام وظایف (۷ روز گذشته)' : 'Execution Velocity Trend (7 Days)'}
+              {locale === 'fa' ? 'روند تکمیل کارها در ۷ روز گذشته' : 'Execution Velocity Trend (7 Days)'}
             </h4>
             <p className="text-[11px] text-neutral-400">
               {locale === 'fa' 
