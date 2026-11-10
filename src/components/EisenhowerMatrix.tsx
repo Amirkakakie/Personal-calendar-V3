@@ -266,7 +266,7 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
                         className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 font-medium hover:underline flex items-center gap-1 min-h-[36px] items-center"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>{t('tasks.newTask')}</span>
+                        <span>{t('header.newTask')}</span>
                       </button>
                     )}
                   </div>
