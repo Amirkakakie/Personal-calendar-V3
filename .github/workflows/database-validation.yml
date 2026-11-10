@@ -109,5 +109,8 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
 
+      - name: Legacy snapshot integrity tests
+        run: npm run test:legacy-export
+
       - name: Production frontend build
         run: npm run build

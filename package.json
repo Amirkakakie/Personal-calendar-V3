@@ -17,7 +17,10 @@
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "db:export-legacy": "tsx scripts/export-legacy-postgres.ts",
+    "db:verify-legacy-export": "tsx scripts/verify-legacy-export.ts",
+    "test:legacy-export": "tsx tests/legacy-snapshot.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
