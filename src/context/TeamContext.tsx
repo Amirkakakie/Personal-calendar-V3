@@ -122,6 +122,22 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
     syncBackendTeamData();
   }, [currentUserId]);
 
+
+
+  // STRICT ACCESS CONTROL: Only projects where currentUser is owner or accepted member
+  const userProjects = useMemo(() => {
+    if (!currentUser) return [];
+    const uid = currentUser.id;
+    return allProjects.filter(p => p.ownerId === uid || (Array.isArray(p.memberIds) && p.memberIds.includes(uid)));
+  }, [allProjects, currentUser]);
+
+  // Current project resolution
+  const currentProject = useMemo(() => {
+    if (userProjects.length === 0) return null;
+    const found = userProjects.find(p => p.id === currentProjectId);
+    return found || userProjects[0];
+  }, [userProjects, currentProjectId]);
+
   // Load project tasks whenever active project changes
   useEffect(() => {
     if (!currentUserId || !currentProject?.id) return;
@@ -138,20 +154,6 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
       .catch(() => {});
   }, [currentUserId, currentProject?.id]);
-
-  // STRICT ACCESS CONTROL: Only projects where currentUser is owner or accepted member
-  const userProjects = useMemo(() => {
-    if (!currentUser) return [];
-    const uid = currentUser.id;
-    return allProjects.filter(p => p.ownerId === uid || (Array.isArray(p.memberIds) && p.memberIds.includes(uid)));
-  }, [allProjects, currentUser]);
-
-  // Current project resolution
-  const currentProject = useMemo(() => {
-    if (userProjects.length === 0) return null;
-    const found = userProjects.find(p => p.id === currentProjectId);
-    return found || userProjects[0];
-  }, [userProjects, currentProjectId]);
 
   const setCurrentProjectId = useCallback((id: string) => {
     setCurrentProjectIdState(id);
