@@ -41,6 +41,11 @@ const validExport: LegacySnapshotExport = {
   snapshot
 };
 assert.doesNotThrow(() => validateLegacyExport(validExport));
+const localFileExport = structuredClone(validExport);
+localFileExport.source = { table: 'local_json_file', key: 'root', version: 1, applicationVersion: 'legacy-test' };
+assert.doesNotThrow(() => validateLegacyExport(localFileExport));
+assert.equal(buildLegacyArchiveRow(localFileExport).sourceVersion, 'local_json_file;legacy-test;source-version=1');
+
 
 const tampered = structuredClone(validExport);
 tampered.snapshot.users[0].id = 'tampered';

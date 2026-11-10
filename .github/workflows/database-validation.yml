@@ -127,6 +127,7 @@ jobs:
           createdb --host=127.0.0.1 --username=chronos chronos_security
           createdb --host=127.0.0.1 --username=chronos chronos_e2e
           createdb --host=127.0.0.1 --username=chronos chronos_migrate
+          createdb --host=127.0.0.1 --username=chronos chronos_import_test
         env:
           PGPASSWORD: chronos
 
@@ -135,11 +136,33 @@ jobs:
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_migrate?schema=public
 
+      - name: Validate relational import target schema
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_import_test?schema=public
+
+      - name: Validate security test database schema
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_security?schema=public
+
+      - name: Validate E2E test database schema
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_e2e?schema=public
+
+      - name: Relational legacy import integration tests
+        run: npm run test:relational-import
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_import_test?schema=public
+          CHRONOS_RELATIONAL_IMPORT_TEST: '1'
+
       - name: Security tests
         run: npm run test:security
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_security?schema=public
           NODE_ENV: test
+          CHRONOS_ALLOW_EMPTY_DB_INIT: 'true'
           JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
 
       - name: Authentication and AI E2E tests
@@ -147,6 +170,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_e2e?schema=public
           NODE_ENV: test
+          CHRONOS_ALLOW_EMPTY_DB_INIT: 'true'
           JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
 
       - name: Legacy snapshot integrity and archive preparation tests

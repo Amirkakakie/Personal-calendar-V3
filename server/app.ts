@@ -78,16 +78,14 @@ app.use('/api/auth/google', authRateLimiter);
 app.use('/api/ai', aiRateLimiter);
 
 // Persistent database request boundary.
-// Every authenticated API request reads the latest committed snapshot before
-// authorization/business logic. Responses are held until all writes from that
-// request have been durably acknowledged by PostgreSQL.
+// Every API request receives an isolated relational snapshot and revision.
+// Responses are held until its writes have been durably acknowledged by PostgreSQL.
 app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
   const path = req.path;
   if (req.method === 'OPTIONS' || path === '/health' || path === '/health/db') return next();
 
   try {
     await db.ready();
-    await db.refresh();
 
     const originalSend = res.send.bind(res);
     let sending = false;
@@ -111,7 +109,7 @@ app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
       return res;
     };
 
-    next();
+    await db.runWithRequest(() => next());
   } catch (error: any) {
     console.error('[Chronos DB] Request blocked because persistence is unavailable:', error);
     res.status(503).json({

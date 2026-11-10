@@ -21,7 +21,8 @@
     "db:export-legacy": "tsx scripts/export-legacy-postgres.ts",
     "db:verify-legacy-export": "tsx scripts/verify-legacy-export.ts",
     "test:legacy-export": "tsx tests/legacy-snapshot.test.ts",
-    "db:import-legacy-archive": "tsx scripts/import-legacy-archive.ts"
+    "db:import-legacy-archive": "tsx scripts/import-legacy-archive.ts",
+    "test:relational-import": "tsx tests/relational-import.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

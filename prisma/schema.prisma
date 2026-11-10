@@ -122,6 +122,8 @@ model User {
   updatedAt        DateTime     @updatedAt
 
   @@index([email])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -147,7 +149,10 @@ model Domain {
   updatedAt   DateTime       @updatedAt
 
   @@unique([userId, type])
+  @@unique([id, userId])
   @@index([userId])
+  legacyData Json?
+
 }
 
 model GoalOKR {
@@ -155,7 +160,7 @@ model GoalOKR {
   userId          String
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   domainId        String?
-  domain          Domain?        @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  domain          Domain?        @relation(fields: [domainId, userId], references: [id, userId], onDelete: Restrict)
   category        LifeDomainType @default(WORK_CAREER)
   
   title           String
@@ -172,7 +177,10 @@ model GoalOKR {
   updatedAt       DateTime       @updatedAt
 
   @@index([userId, timeframe])
+  @@unique([id, userId])
   @@index([domainId])
+  legacyData Json?
+
 }
 
 model KeyResult {
@@ -200,9 +208,9 @@ model Project {
   userId          String
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   domainId        String?
-  domain          Domain?        @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  domain          Domain?        @relation(fields: [domainId, userId], references: [id, userId], onDelete: Restrict)
   goalId          String?
-  goal            GoalOKR?       @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goal            GoalOKR?       @relation(fields: [goalId, userId], references: [id, userId], onDelete: Restrict)
   
   name            String
   description     String?
@@ -220,8 +228,11 @@ model Project {
   updatedAt       DateTime       @updatedAt
 
   @@index([userId, status])
+  @@unique([id, userId])
   @@index([domainId])
   @@index([goalId])
+  legacyData Json?
+
 }
 
 model Task {
@@ -229,11 +240,11 @@ model Task {
   userId                String
   user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   domainId              String?
-  domain                Domain?               @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  domain                Domain?               @relation(fields: [domainId, userId], references: [id, userId], onDelete: Restrict)
   goalId                String?
-  goal                  GoalOKR?              @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goal                  GoalOKR?              @relation(fields: [goalId, userId], references: [id, userId], onDelete: Restrict)
   projectId             String?
-  project               Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project               Project?              @relation(fields: [projectId, userId], references: [id, userId], onDelete: Restrict)
   
   title                 String
   description           String?
@@ -270,11 +281,14 @@ model Task {
   updatedAt             DateTime              @updatedAt
 
   @@index([userId, status])
+  @@unique([id, userId])
   @@index([dueDate, dueTime])
   @@index([projectId])
   @@index([goalId])
   @@index([domainId])
   @@index([linkedSkillId])
+  legacyData Json?
+
 }
 
 model SubTask {
@@ -300,9 +314,9 @@ model TimeLog {
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   taskId          String?
-  task            Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task            Task?    @relation(fields: [taskId, userId], references: [id, userId], onDelete: Restrict)
   projectId       String?
-  project         Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project         Project? @relation(fields: [projectId, userId], references: [id, userId], onDelete: Restrict)
   
   durationSeconds Int
   hourlyRate      Float    @default(75.0)
@@ -317,6 +331,8 @@ model TimeLog {
   @@index([userId, startedAt])
   @@index([taskId])
   @@index([projectId])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -325,7 +341,7 @@ model TimeLog {
 
 model Skill {
   id          String      @id @default(uuid())
-  name        String      @unique
+  name        String
   category    String      // e.g. "Distributed Systems", "AI & ML", "Systems Design", "Biohacking"
   tier        SkillTier   @default(NOVICE)
   icon        String      @default("Zap")
@@ -340,7 +356,10 @@ model Skill {
 
   createdAt   DateTime    @default(now())
 
+  @@index([name])
   @@index([parentSkillId])
+  legacyData Json?
+
 }
 
 model UserSkill {
@@ -361,6 +380,8 @@ model UserSkill {
   @@unique([userId, skillId])
   @@index([userId])
   @@index([skillId])
+  legacyData Json?
+
 }
 
 model UserBadge {
@@ -377,6 +398,8 @@ model UserBadge {
 
   @@unique([userId, badgeId])
   @@index([userId])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -397,7 +420,7 @@ model CalendarEvent {
   googleEventId String?
   htmlLink      String?
   taskId        String?
-  task          Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task          Task?    @relation(fields: [taskId, userId], references: [id, userId], onDelete: Restrict)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -405,6 +428,8 @@ model CalendarEvent {
   @@index([userId, startTime])
   @@index([taskId])
   @@index([googleEventId])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -439,6 +464,8 @@ model Workspace {
 
   @@index([ownerId])
   @@index([ownerId, isPersonal])
+  legacyData Json?
+
 }
 
 model WorkspaceMember {
@@ -478,6 +505,8 @@ model TeamProject {
 
   @@index([workspaceId])
   @@index([ownerId])
+  legacyData Json?
+
 }
 
 model TeamTask {
@@ -510,6 +539,8 @@ model TeamTask {
   @@unique([projectId, taskNumber])
   @@index([projectId, columnId, order])
   @@index([assigneeId])
+  legacyData Json?
+
 }
 
 model ProjectMember {
@@ -546,6 +577,9 @@ model TeamTaskComment {
   authorId    String
   author      User     @relation("TeamTaskCommentAuthor", fields: [authorId], references: [id], onDelete: Restrict)
   body        String
+  authorName String @default("")
+  authorInitials String @default("")
+  authorColor String @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -553,6 +587,8 @@ model TeamTaskComment {
 
   @@index([taskId, createdAt])
   @@index([authorId])
+  legacyData Json?
+
 }
 
 model TeamTaskTag {
@@ -592,6 +628,8 @@ model UserStats {
   updatedAt          DateTime @updatedAt
 
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legacyData Json?
+
 }
 
 model GoogleConnection {
@@ -607,6 +645,8 @@ model GoogleConnection {
   updatedAt          DateTime @updatedAt
 
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legacyData Json?
+
 }
 
 model LegacySnapshot {
@@ -619,6 +659,12 @@ model LegacySnapshot {
   user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, importedAt])
+}
+
+model DatabaseRevision {
+  id        String   @id
+  version   BigInt   @default(1)
+  updatedAt DateTime @updatedAt
 }
 
 model AuthSession {
@@ -639,6 +685,7 @@ model ProjectInvitation {
   id              String        @id @default(uuid())
   projectId       String
   invitedEmail    String
+  recipientId     String?
   invitedByUserId String
   projectName     String        @default("")
   projectKey      String        @default("")
@@ -651,8 +698,10 @@ model ProjectInvitation {
 
   project         TeamProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   invitedBy       User          @relation("SentInvites", fields: [invitedByUserId], references: [id], onDelete: Cascade)
-  recipient       User?         @relation("ReceivedInvites", fields: [invitedEmail], references: [email])
+  recipient       User?         @relation("ReceivedInvites", fields: [recipientId], references: [id], onDelete: SetNull)
 
   @@index([invitedEmail])
   @@index([projectId])
+  legacyData Json?
+
 }

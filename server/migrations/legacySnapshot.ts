@@ -19,7 +19,7 @@ export interface LegacySnapshotExport {
   formatVersion: 1;
   exportedAt: string;
   source: {
-    table: 'chronos_data';
+    table: 'chronos_data' | 'local_json_file';
     key: 'root';
     version: number;
     applicationVersion: string;
@@ -67,7 +67,7 @@ export function validateLegacyExport(value: any): asserts value is LegacySnapsho
   if (!value.snapshot || typeof value.snapshot !== 'object' || Array.isArray(value.snapshot)) {
     throw new Error('Export does not contain a valid snapshot object.');
   }
-  if (value.source?.table !== 'chronos_data' || value.source?.key !== 'root' || !Number.isFinite(Number(value.source?.version))) {
+  if ((value.source?.table !== 'chronos_data' && value.source?.table !== 'local_json_file') || value.source?.key !== 'root' || !Number.isFinite(Number(value.source?.version))) {
     throw new Error('Export source metadata is invalid.');
   }
   const expected = value.integrity?.snapshotSha256;
@@ -95,7 +95,7 @@ export function buildLegacyArchiveRow(exportFile: LegacySnapshotExport): LegacyA
   return {
     id: 'chronos-legacy-root-v1',
     userId: null,
-    sourceVersion: `${exportFile.source.applicationVersion};postgres-row-version=${exportFile.source.version}`,
+    sourceVersion: `${exportFile.source.table};${exportFile.source.applicationVersion};source-version=${exportFile.source.version}`,
     payload: exportFile.snapshot,
     checksum: exportFile.integrity.snapshotSha256
   };
