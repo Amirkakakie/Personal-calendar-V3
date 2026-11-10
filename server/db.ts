@@ -259,7 +259,7 @@ class Database {
       throw new Error(this.configurationError || 'Prisma PostgreSQL persistence is unavailable.');
     }
     try {
-      await this.prisma.$queryRaw\`SELECT 1\`;
+      await this.prisma.$queryRaw`SELECT 1`;
       this.prismaConnected = true;
     } catch {
       this.prismaConnected = false;
@@ -322,9 +322,9 @@ class Database {
 
     const existingRevision = await this.prisma.databaseRevision.findUnique({ where: { id: 'root' } });
     if (!existingRevision) {
-      const tableCheck = await this.prisma.$queryRaw<Array<{ table_name: string | null }>>\`
+      const tableCheck = await this.prisma.$queryRaw<Array<{ table_name: string | null }>>`
         SELECT to_regclass('public.chronos_data')::text AS table_name
-      \`;
+      `;
       if (tableCheck[0]?.table_name) {
         const legacyRoot = await this.prisma.$queryRawUnsafe<Array<{ version: number }>>(
           "SELECT version FROM chronos_data WHERE key = 'root' LIMIT 1"
