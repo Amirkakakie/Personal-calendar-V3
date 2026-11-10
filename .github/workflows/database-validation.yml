@@ -104,7 +104,7 @@ jobs:
         run: |
           mkdir -p prisma/migrations/20261110000000_init
           npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/20261110000000_init/migration.sql
-          printf 'provider = "postgresql"\\n' > prisma/migrations/migration_lock.toml
+          printf 'provider = "postgresql"\n' > prisma/migrations/migration_lock.toml
           git add prisma/migrations
           if ! git diff --cached --quiet; then
             git commit -m "feat(db): add reviewed relational baseline migration"
