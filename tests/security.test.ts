@@ -292,6 +292,7 @@ async function runSecurityTestSuite() {
     });
     const dataRegC = await resRegC.json();
     const tokenC = dataRegC.token;
+    const userC = dataRegC.user;
 
     // Check tasks
     const resTasksC = await fetch(`${BASE_URL}/tasks`, {
