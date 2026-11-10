@@ -43,7 +43,7 @@
     "badge": "AI + Calendar",
     "tagline": "Personal Growth & Task Optimization",
     "dayStreak": "{{count}} Day Streak",
-    "focusTimer": "Focus Timer",
+    "focusTimer": "Focus timer",
     "connectGoogle": "Connect Google",
     "connected": "Connected",
     "disconnectGoogle": "Disconnect Google Account",
@@ -52,7 +52,12 @@
     "aiDecompose": "AI Goal Breakdown",
     "newTask": "New Task",
     "language": "Language",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "searchCommands": "Search or jump to a section",
+    "searchCommandsHint": "Search and shortcuts (Ctrl/⌘ + K)",
+    "notifications": "Notifications",
+    "teamWorkspace": "Team workspace",
+    "personalWorkspace": "Personal workspace"
   },
   "nav": {
     "dashboard": "Executive OS",
@@ -121,7 +126,7 @@
     "todo": "To Do",
     "inProgress": "In Progress",
     "completed": "Completed",
-    "dueDate": "Due Date",
+    "dueDate": "Due date",
     "dueToday": "Due Today",
     "overdue": "Overdue",
     "duration": "Duration",
@@ -244,7 +249,7 @@
     "priority": "Priority",
     "eisenhower": "Eisenhower Quadrant",
     "energyLevel": "Energy Window Required",
-    "dueDate": "Due Date",
+    "dueDate": "Due date",
     "dueTime": "Scheduled Time",
     "duration": "Estimated Duration (Minutes)",
     "xpReward": "XP Reward",
@@ -348,7 +353,7 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low",
-    "dueDate": "Due Date",
+    "dueDate": "Due date",
     "estimatedHours": "Estimated Hours",
     "subtasks": "Checklist & Subtasks",
     "addSubtask": "+ Add checklist item...",
@@ -363,7 +368,8 @@
     "moveTo": "Move to column...",
     "deleteTask": "Delete Task",
     "deleteTaskConfirm": "Are you sure you want to permanently delete this task?",
-    "dragTip": "Drag and drop cards across columns or use arrows for quick shifts"
+    "dragTip": "Drag and drop cards across columns or use arrows for quick shifts",
+    "dropCardHere": "Drop card here"
   },
   "team": {
     "workspace": "Workspace",
@@ -410,7 +416,7 @@
     "language": "Language",
     "calendarType": "Calendar System",
     "quickTools": "Productivity & AI Tools",
-    "focusTimer": "Focus Timer (Pomodoro)",
+    "focusTimer": "Focus timer (Pomodoro)",
     "aiDecompose": "AI Goal Breakdown",
     "integrations": "Cloud & Data Management",
     "googleCalendar": "Google Calendar Sync",
@@ -423,5 +429,9 @@
     "backupSuccess": "System backup file downloaded successfully",
     "importSuccess": "Backup restored successfully. Refreshing data...",
     "importFailed": "Failed to parse backup file. Please provide a valid Chronos JSON file."
+  },
+  "commandPalette": {
+    "actions": "Actions",
+    "navigation": "Navigation"
   }
 }
