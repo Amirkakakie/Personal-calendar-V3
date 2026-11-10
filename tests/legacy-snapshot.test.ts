@@ -4,7 +4,8 @@ import {
   buildLegacyArchiveRow,
   countLegacySnapshot,
   snapshotSha256,
-  validateLegacyExport
+  validateLegacyExport,
+  type LegacySnapshotExport
 } from '../server/migrations/legacySnapshot.ts';
 
 const snapshot = {
@@ -30,7 +31,7 @@ assert.equal(counts.users, 1);
 assert.equal(counts.personalTasks, 1);
 assert.equal(counts.teamProjects, 1);
 
-const validExport = {
+const validExport: LegacySnapshotExport = {
   format: 'chronos-legacy-postgres-export',
   formatVersion: 1,
   exportedAt: new Date(0).toISOString(),
