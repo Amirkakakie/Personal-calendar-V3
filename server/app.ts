@@ -28,7 +28,10 @@ if (process.env.NODE_ENV === 'production') {
 export const app = express();
 
 // Trust reverse proxy (Vercel, AWS, Cloudflare, etc.) for correct client IP detection
-app.set('trust proxy', 1);
+const configuredProxyHops = process.env.TRUST_PROXY_HOPS;
+if (configuredProxyHops && /^\\d+$/.test(configuredProxyHops)) app.set('trust proxy', Number(configuredProxyHops));
+else if (process.env.VERCEL) app.set('trust proxy', 1);
+else app.set('trust proxy', false);
 
 // Normalize URL path for serverless / proxy environments
 // Ensures /api routes match whether called as /api/tasks or rewritten to /tasks
