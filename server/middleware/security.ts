@@ -90,9 +90,8 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
   // APP_URL/CORS_ORIGIN being manually duplicated in deployment settings.
   const requestHost = req.get('host');
   if (requestHost) {
-    const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
-    const protocol = forwardedProto === 'https' || req.secure ? 'https' : 'http';
-    addOrigin(`${protocol}://${requestHost}`);
+    // Express derives req.protocol from the configured trusted-proxy policy.
+    addOrigin(`${req.protocol}://${requestHost}`);
   }
   addOrigin(process.env.APP_URL);
   for (const value of (process.env.CORS_ORIGIN || '').split(',')) addOrigin(value.trim());
