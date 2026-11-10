@@ -152,7 +152,7 @@ export async function importLegacySnapshotToRelational(
         seen.add(userId);
         await tx.workspaceMember.create({ data: {
           id: text(m.id, 'wm-'+text(w.id)+'-'+userId), workspaceId: text(w.id), userId,
-          role: role(m.role), joinedAt: date(m.joinedAt)
+          role: userId === text(w.ownerId) ? 'OWNER' : role(m.role), joinedAt: date(m.joinedAt)
         }});
       }
       if (!seen.has(text(w.ownerId))) await tx.workspaceMember.create({ data: {
@@ -333,7 +333,7 @@ export async function importLegacySnapshotToRelational(
       for (const memberId of memberIds) if (userIds.has(memberId)) {
         await tx.projectMember.create({ data: {
           id: 'pm-'+text(p.id)+'-'+memberId, projectId: text(p.id), userId: memberId,
-          role: role(object(p.memberRoles)[memberId] || (memberId===ownerId?'OWNER':'MEMBER')), joinedAt: date(p.createdAt)
+          role: memberId===ownerId ? 'OWNER' : role(object(p.memberRoles)[memberId] || 'MEMBER'), joinedAt: date(p.createdAt)
         }});
       }
       report.teamProjects++;
