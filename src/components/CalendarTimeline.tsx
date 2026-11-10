@@ -94,9 +94,9 @@ export const CalendarTimeline: React.FC<CalendarTimelineProps> = ({
   };
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+    <div className="chronos-card p-3.5 sm:p-5 lg:p-6 space-y-5 min-w-0">
       {/* Date Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/[0.07]">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
             <CalendarIcon className="w-5 h-5" />
@@ -115,7 +115,7 @@ export const CalendarTimeline: React.FC<CalendarTimelineProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => changeDay(-1)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            className="min-h-10 min-w-10 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-white/5"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -127,7 +127,7 @@ export const CalendarTimeline: React.FC<CalendarTimelineProps> = ({
               setSelectedDate(e.target.value);
               setSlotSuggestions([]);
             }}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
+            className="app-input bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium w-full sm:w-auto"
           />
 
           <button
@@ -150,7 +150,7 @@ export const CalendarTimeline: React.FC<CalendarTimelineProps> = ({
       </div>
 
       {/* Action Banner: Smart Slots & Quick Schedule */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-800/40 border border-white/[0.07]">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span className="text-xs text-slate-200">
@@ -199,7 +199,7 @@ export const CalendarTimeline: React.FC<CalendarTimelineProps> = ({
       )}
 
       {/* Timeline Schedule List */}
-      <div className="space-y-3">
+      <div className="space-y-3 chronos-scroll">
         {dayEvents.length === 0 ? (
           <div className="p-8 text-center border border-dashed border-slate-800 rounded-xl text-slate-500">
             <CalendarIcon className="w-8 h-8 mx-auto mb-2 text-slate-600" />
