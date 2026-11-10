@@ -38,8 +38,11 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Project name is required' });
   }
 
+  const id = (body.id && typeof body.id === 'string' && body.id.trim())
+    ? body.id.trim()
+    : `proj-${Date.now()}`;
   const newProject: Project = {
-    id: `proj-${Date.now()}`,
+    id,
     userId,
     name: body.name.trim(),
     description: body.description?.trim() || '',

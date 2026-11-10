@@ -22,13 +22,15 @@ interface EnergyCalendarViewProps {
   tasks: Task[];
   onRefreshData: () => void;
   onOpenNewTaskWithTime?: (date: string, time: string) => void;
+  onExportIcal?: () => void;
 }
 
 export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
   events,
   tasks,
   onRefreshData,
-  onOpenNewTaskWithTime
+  onOpenNewTaskWithTime,
+  onExportIcal
 }) => {
   const { t, locale, formatNumber, formatDate, formatTime, direction } = useI18n();
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -102,9 +104,25 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
     }
   };
 
-  // Export iCal
+  // Export iCal (Safe Blob Download)
   const handleExportIcal = () => {
-    window.location.href = '/api/calendar/export/ical';
+    if (onExportIcal) {
+      onExportIcal();
+      return;
+    }
+    fetch('/api/calendar/export/ical')
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `chronos-schedule-${selectedDate}.ics`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      })
+      .catch(err => console.error('Export failed:', err));
   };
 
   const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8:00 to 20:00
@@ -117,7 +135,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
         badge: 'High Focus',
         color: 'text-indigo-400',
         bg: 'bg-indigo-500/5',
-        border: 'border-l-indigo-500/50'
+        border: 'border-indigo-500/20'
       };
     }
     if (hour >= 13 && hour < 17) {
@@ -126,7 +144,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
         badge: 'Creative Mind',
         color: 'text-purple-400',
         bg: 'bg-purple-500/5',
-        border: 'border-l-purple-500/50'
+        border: 'border-purple-500/20'
       };
     }
     return {
@@ -134,7 +152,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
       badge: 'Recovery / Admin',
       color: 'text-amber-400',
       bg: 'bg-amber-500/5',
-      border: 'border-l-amber-500/50'
+      border: 'border-amber-500/20'
     };
   };
 
@@ -341,7 +359,7 @@ export const EnergyCalendarView: React.FC<EnergyCalendarViewProps> = ({
             return (
               <div 
                 key={hour} 
-                className={`flex items-start gap-4 py-2.5 px-3 rounded-xl border border-neutral-800/60 ${zone.bg} transition-colors group`}
+                className={`flex items-start gap-4 py-2.5 px-3 rounded-xl border ${zone.border} ${zone.bg} transition-colors group`}
               >
                 {/* Time & Zone indicator */}
                 <div className="w-20 pt-1 shrink-0">

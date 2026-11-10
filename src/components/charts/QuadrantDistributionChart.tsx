@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, ArrowRight } from 'lucide-react';
+import { Target, ArrowRight, ArrowLeft } from 'lucide-react';
 import type { Task, EisenhowerQuadrant } from '../../types/index.ts';
 import { useI18n } from '../../i18n/I18nContext.tsx';
 
@@ -12,7 +12,7 @@ export const QuadrantDistributionChart: React.FC<QuadrantDistributionChartProps>
   tasks,
   onSelectQuadrant
 }) => {
-  const { t, formatNumber, locale } = useI18n();
+  const { t, formatNumber, locale, direction } = useI18n();
 
   const quadrants: {
     id: EisenhowerQuadrant;
@@ -81,7 +81,7 @@ export const QuadrantDistributionChart: React.FC<QuadrantDistributionChartProps>
             className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 font-medium"
           >
             <span>{locale === 'fa' ? 'مشاهده ماتریس' : 'Open Matrix'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {direction === 'rtl' ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
           </button>
         )}
       </div>

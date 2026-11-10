@@ -71,7 +71,9 @@ router.post('/', (req: Request, res: Response) => {
     }
   }
 
-  const id = `task-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const id = (body.id && typeof body.id === 'string' && body.id.trim()) 
+    ? body.id.trim() 
+    : `task-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const newTask: Task = {
     id,
     userId, // Server authoritative identity
@@ -189,7 +191,36 @@ router.put('/:id', (req: Request, res: Response) => {
 // TOGGLE status (todo -> completed or vice versa)
 router.patch('/:id/toggle', (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const task = db.getTaskById(req.params.id, userId);
+  let task = db.getTaskById(req.params.id, userId);
+
+  // If task was cached on client before initial sync, auto-recover from client body
+  if (!task && req.body && req.body.title) {
+    const recoveredTask: Task = {
+      id: req.params.id,
+      userId,
+      title: String(req.body.title).trim(),
+      description: req.body.description ? String(req.body.description).trim() : '',
+      category: req.body.category || 'Work/Career',
+      priority: req.body.priority || 'Medium',
+      status: req.body.status || 'todo',
+      eisenhower: req.body.eisenhower || 'q2_not_urgent_important',
+      dueDate: req.body.dueDate || new Date().toISOString().split('T')[0],
+      dueTime: req.body.dueTime,
+      durationMinutes: Number(req.body.durationMinutes) || 45,
+      subtasks: Array.isArray(req.body.subtasks) ? req.body.subtasks : [],
+      goalId: req.body.goalId,
+      projectId: req.body.projectId,
+      tags: Array.isArray(req.body.tags) ? req.body.tags : [],
+      syncedToGoogle: Boolean(req.body.syncedToGoogle),
+      recurrence: req.body.recurrence || 'none',
+      pomodoroSessions: req.body.pomodoroSessions || 0,
+      createdAt: req.body.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    db.createTask(recoveredTask, userId);
+    task = recoveredTask;
+  }
+
   if (!task) {
     return res.status(404).json({ success: false, error: 'Task not found or access denied' });
   }

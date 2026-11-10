@@ -54,6 +54,7 @@ import { TaskListView } from './components/TaskListView.tsx';
 import { EisenhowerMatrix } from './components/EisenhowerMatrix.tsx';
 import { GoalsView } from './components/GoalsView.tsx';
 import { AICoachPanel } from './components/AICoachPanel.tsx';
+import { AICoachSnapshot } from './components/AICoachSnapshot.tsx';
 import { TaskModal } from './components/TaskModal.tsx';
 import { GoalModal } from './components/GoalModal.tsx';
 import { AIBreakdownModal } from './components/AIBreakdownModal.tsx';
@@ -542,8 +543,8 @@ function ChronosWorkspace() {
                       />
                     </div>
 
-                    {/* Habit Heatmap */}
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
+                    {/* Habit Heatmap & Strategic Focus Snapshot */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8 items-stretch">
                       <div className="xl:col-span-2">
                         <HabitHeatmap 
                           activityData={stats?.weeklyActivity}
@@ -552,8 +553,12 @@ function ChronosWorkspace() {
                           bestStreak={stats?.bestStreakDays}
                         />
                       </div>
-                      <div className="space-y-6">
-                        <AICoachPanel onScheduleSlotSelect={(title) => handleOpenNewTask()} />
+                      <div>
+                        <AICoachSnapshot
+                          tasks={tasks}
+                          onOpenFullCoach={() => setCurrentTab('coach')}
+                          onOpenNewTaskWithTime={(date, time) => handleOpenNewTaskWithTime(date, time)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -586,6 +591,7 @@ function ChronosWorkspace() {
                     tasks={tasks}
                     onRefreshData={refreshAllData}
                     onOpenNewTaskWithTime={(date, time) => handleOpenNewTaskWithTime(date, time)}
+                    onExportIcal={handleExportIcal}
                   />
                 )}
 

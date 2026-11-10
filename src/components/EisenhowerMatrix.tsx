@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Target, 
   Clock, 
@@ -36,6 +36,13 @@ export const EisenhowerMatrix: React.FC<EisenhowerMatrixProps> = ({
   const { t, formatNumber, formatDate, locale } = useI18n();
   const [activeMoveMenuTaskId, setActiveMoveMenuTaskId] = useState<string | null>(null);
   const [mobileQuadrantFilter, setMobileQuadrantFilter] = useState<'all' | EisenhowerQuadrant>('all');
+
+  useEffect(() => {
+    if (!activeMoveMenuTaskId) return;
+    const handleGlobalClick = () => setActiveMoveMenuTaskId(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [activeMoveMenuTaskId]);
 
   const quadrants: {
     id: EisenhowerQuadrant;

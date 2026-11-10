@@ -55,19 +55,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside 
-      className={`fixed top-[57px] ${direction === 'rtl' ? 'right-0' : 'left-0'} bottom-0 z-30 flex flex-col border-e border-white/5 bg-neutral-950 transition-all duration-300 ease-in-out ${
+      className={`fixed top-14 ${direction === 'rtl' ? 'right-0' : 'left-0'} bottom-0 z-30 flex flex-col border-e border-white/5 bg-neutral-950 transition-all duration-300 ease-in-out ${
         collapsed ? 'w-16' : 'w-64'
       } hidden lg:flex`}
     >
-      <div className="flex-1 py-6 px-3 space-y-1 custom-scrollbar overflow-y-auto">
+      <div className="flex-1 py-4 px-2 space-y-1 custom-scrollbar overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
+          const label = t(item.labelKey);
           return (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all group relative ${
+              title={label}
+              aria-label={label}
+              className={`w-full flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-xl text-[13px] font-medium transition-all group relative ${
                 isActive 
                   ? 'bg-white/[0.04] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-white/5' 
                   : 'text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.02] border border-transparent'
@@ -75,12 +78,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-indigo-400' : 'text-neutral-500 group-hover:text-neutral-400'}`} />
               {!collapsed && (
-                <span className="truncate opacity-100 transition-opacity duration-300">
-                  {t(item.labelKey)}
+                <span className="truncate opacity-100 transition-opacity duration-300 text-start flex-1">
+                  {label}
                 </span>
               )}
               {isActive && (
-                <div className={`absolute ${direction === 'rtl' ? '-right-3' : '-left-3'} top-1.5 bottom-1.5 w-0.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)]`} />
+                <div className={`absolute ${direction === 'rtl' ? 'right-0 rounded-l-full' : 'left-0 rounded-r-full'} top-2 bottom-2 w-1 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]`} />
               )}
             </button>
           );

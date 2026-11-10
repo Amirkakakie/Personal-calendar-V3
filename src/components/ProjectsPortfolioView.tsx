@@ -40,6 +40,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | TaskStatus>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<string | null>(null);
 
   // Modal State (Create or Edit)
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -114,16 +115,12 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    const confirmPrompt = locale === 'fa' 
-      ? 'آیا از حذف این پروژه اطمینان دارید؟ وظایف مرتبط حفظ خواهند شد.' 
-      : 'Delete this project? Associated tasks will remain in the backlog.';
-    if (confirm(confirmPrompt)) {
-      try {
-        await deleteProject(id);
-        onRefreshData();
-      } catch (err: any) {
-        showToast(err.message || 'Failed to delete project', 'error');
-      }
+    try {
+      await deleteProject(id);
+      setConfirmDeleteProjectId(null);
+      onRefreshData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete project', 'error');
     }
   };
 
@@ -313,14 +310,40 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(project.id)}
-                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
-                        title={t('common.delete')}
-                        aria-label="Delete project"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {confirmDeleteProjectId === project.id ? (
+                        <div className="flex items-center gap-1 bg-rose-950/80 border border-rose-500/40 rounded-lg p-0.5 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(project.id);
+                            }}
+                            className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold transition-colors"
+                          >
+                            {locale === 'fa' ? 'حذف' : 'Delete'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteProjectId(null);
+                            }}
+                            className="p-1 text-neutral-400 hover:text-white transition-colors"
+                            aria-label="Cancel"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteProjectId(project.id)}
+                          className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
+                          title={t('common.delete')}
+                          aria-label="Delete project"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

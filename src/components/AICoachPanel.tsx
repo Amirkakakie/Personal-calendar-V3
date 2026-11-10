@@ -118,9 +118,9 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
   ];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Daily Executive Briefing Generator */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-6 backdrop-blur-md">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-fadeIn items-start pb-8">
+      {/* Column 1: Daily Executive Briefing Generator & Circadian Directives */}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 sm:p-6 backdrop-blur-md space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -294,8 +294,8 @@ export const AICoachPanel: React.FC<AICoachPanelProps> = ({
         )}
       </div>
 
-      {/* Interactive Coaching Chat */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 sm:p-6 flex flex-col h-[520px]">
+      {/* Column 2: Interactive Coaching Chat Studio */}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 sm:p-6 flex flex-col h-[600px] xl:sticky xl:top-20 shadow-xl">
         <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-neutral-800">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-indigo-400" />

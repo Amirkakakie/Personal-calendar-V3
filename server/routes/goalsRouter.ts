@@ -44,8 +44,11 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Title and category are required' });
   }
 
+  const id = (body.id && typeof body.id === 'string' && body.id.trim())
+    ? body.id.trim()
+    : `goal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const newGoal: GoalOKR = {
-    id: `goal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    id,
     userId,
     title: body.title.trim(),
     description: body.description?.trim() || '',

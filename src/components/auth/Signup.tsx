@@ -34,8 +34,8 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage(direction === 'rtl' ? 'رمز عبور باید حداقل ۶ کاراکتر باشد.' : 'Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setErrorMessage(direction === 'rtl' ? 'رمز عبور باید حداقل ۸ کاراکتر باشد.' : 'Password must be at least 8 characters.');
       return;
     }
 
@@ -56,7 +56,7 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     }
   };
 
-  const ArrowIcon = direction === 'rtl' ? ArrowRight : ArrowLeft;
+  const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-center relative overflow-hidden px-4 py-12 selection:bg-indigo-500/30">
@@ -70,7 +70,7 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <Layers className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg text-white tracking-tight">Chronos Team</span>
+          <span className="font-bold text-lg text-white tracking-tight">Chronos</span>
         </div>
         <LanguageSwitcher />
       </div>

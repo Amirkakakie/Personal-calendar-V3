@@ -153,9 +153,10 @@ export const api = {
     return json.data;
   },
 
-  async toggleTask(id: string): Promise<Task> {
+  async toggleTask(id: string, fallbackTask?: Partial<Task>): Promise<Task> {
     const json = await request<{ success: boolean; data: Task }>(`/tasks/${id}/toggle`, {
       method: 'PATCH',
+      body: fallbackTask ? JSON.stringify(fallbackTask) : undefined,
     });
     return json.data;
   },

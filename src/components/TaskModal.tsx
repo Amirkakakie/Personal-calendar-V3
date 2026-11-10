@@ -90,6 +90,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -253,16 +254,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
   const handleDelete = async () => {
     if (!currentTask || !onDelete) return;
-    if (window.confirm(t('tasks.deleteConfirm'))) {
-      setIsDeleting(true);
-      try {
-        await onDelete(currentTask.id);
-        onClose();
-      } catch (err: any) {
-        setValidationError(err.message || 'Failed to delete task');
-      } finally {
-        setIsDeleting(false);
-      }
+    if (!isConfirmingDelete) {
+      setIsConfirmingDelete(true);
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await onDelete(currentTask.id);
+      onClose();
+    } catch (err: any) {
+      setValidationError(err.message || 'Failed to delete task');
+    } finally {
+      setIsDeleting(false);
+      setIsConfirmingDelete(false);
     }
   };
 
@@ -797,10 +801,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 type="button"
                 disabled={isSubmitting || isDeleting}
                 onClick={handleDelete}
-                className="px-3 py-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                  isConfirmingDelete 
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
+                    : 'text-rose-400 hover:text-rose-300 hover:bg-rose-500/10'
+                }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{isDeleting ? t('common.loading') : t('common.delete')}</span>
+                <span>
+                  {isDeleting
+                    ? t('common.loading')
+                    : isConfirmingDelete
+                    ? (locale === 'fa' ? 'تأیید حذف کار؟' : 'Confirm Delete?')
+                    : t('common.delete')}
+                </span>
               </button>
             ) : <div />}
 

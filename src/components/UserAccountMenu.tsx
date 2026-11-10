@@ -298,7 +298,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="text-rose-400 hover:text-rose-300 font-medium"
                   >
-                    Disconnect
+                    {t('header.disconnectGoogle') || 'Disconnect'}
                   </button>
                 </div>
               ) : (
@@ -311,7 +311,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="flex-1 py-1 px-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-medium transition-colors text-center"
                   >
-                    Connect
+                    {t('header.connectGoogle') || 'Connect'}
                   </button>
                   <button
                     type="button"
@@ -321,7 +321,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="py-1 px-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-[11px] transition-colors"
                   >
-                    Setup Guide
+                    {t('header.setupGuide') || 'Setup Guide'}
                   </button>
                 </div>
               )}
