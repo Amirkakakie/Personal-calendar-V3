@@ -200,7 +200,7 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
       if(!usersById.has(text(w.ownerId))) throw new Error('Workspace references a missing owner: '+text(w.id));
       const members=arr(w.members).map(obj);
       if(!members.some(m=>text(m.userId)===text(w.ownerId))) members.push({userId:text(w.ownerId),role:'OWNER',joinedAt:iso(w.createdAt)});
-      for(const m of members) if(usersById.has(text(m.userId))) await (tx as any).workspaceMember.upsert({where:{workspaceId_userId:{workspaceId:text(w.id),userId:text(m.userId)}},create:{id:'wm-'+text(w.id)+'-'+text(m.userId),workspaceId:text(w.id),userId:text(m.userId),role:text(m.userId)===text(w.ownerId)?'OWNER':role(m.role),joinedAt:asDate(m.joinedAt)},update:{role:role(m.role),joinedAt:asDate(m.joinedAt)}});
+      for(const m of members) if(usersById.has(text(m.userId))) await (tx as any).workspaceMember.upsert({where:{workspaceId_userId:{workspaceId:text(w.id),userId:text(m.userId)}},create:{id:'wm-'+text(w.id)+'-'+text(m.userId),workspaceId:text(w.id),userId:text(m.userId),role:text(m.userId)===text(w.ownerId)?'OWNER':role(m.role),joinedAt:asDate(m.joinedAt)},update:{role:text(m.userId)===text(w.ownerId)?'OWNER':role(m.role),joinedAt:asDate(m.joinedAt)}});
     }
     for(const g of allGoals){
       await upsert('goalOKR',text(g.id),{userId:text(g.userId),category:category(g.category),title:text(g.title,'Untitled goal'),description:nullable(g.description),timeframe:timeframe(g.timeframe),targetDate:asDate(g.targetDate),progressPercent:num(g.progressPercent),createdAt:asDate(g.createdAt),updatedAt:asDate(g.updatedAt||g.createdAt),legacyData:json(g)});
