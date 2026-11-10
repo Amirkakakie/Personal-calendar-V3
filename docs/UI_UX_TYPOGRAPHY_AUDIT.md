@@ -37,3 +37,18 @@ The API key must never be committed or exposed in browser code. Configure `GEMIN
 ## Known limitation
 
 This is a source-level audit and shared styling improvement. A real browser visual regression pass and runtime Gemini verification require a running deployment/local environment and a valid server-side key; neither is available to this GitHub-only change.
+
+
+## Phase 2: workflow-level UI polish
+
+- Refined the task list toolbar and task-row spacing so filters and task content remain readable at narrow widths.
+- Improved goal key-result rows for small screens, including flexible wrapping of progress controls.
+- Reworked the team board header into a more resilient responsive toolbar and reduced unnecessary minimum height on smaller screens.
+- Unified calendar surfaces with the shared Chronos card treatment, increased date-navigation touch targets, and improved the responsive action layout.
+- Improved Kanban board horizontal scrolling and column sizing; added clearer card surfaces and larger quick-move controls.
+- Added shared surface, toolbar, scroll, modal, and metric utility styles plus consistent focus-visible and disabled states.
+- Improved task and goal modal viewport handling and mobile padding.
+
+### Phase 2 validation status
+
+These changes have been reviewed at source level. Browser-based interaction, visual regression, and real-device testing still require running the app locally or in a preview deployment. Automated CI results must be checked against the final commit before treating the branch as validated.
