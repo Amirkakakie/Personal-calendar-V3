@@ -200,7 +200,7 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
       if(!usersById.has(text(w.ownerId))) throw new Error('Workspace references a missing owner: '+text(w.id));
       const members=arr(w.members).map(obj);
       if(!members.some(m=>text(m.userId)===text(w.ownerId))) members.push({userId:text(w.ownerId),role:'OWNER',joinedAt:iso(w.createdAt)});
-      for(const m of members) if(usersById.has(text(m.userId))) await (tx as any).workspaceMember.upsert({where:{workspaceId_userId:{workspaceId:text(w.id),userId:text(m.userId)}},create:{id:'wm-'+text(w.id)+'-'+text(m.userId),workspaceId:text(w.id),userId:text(m.userId),role:role(m.role),joinedAt:asDate(m.joinedAt)},update:{role:role(m.role),joinedAt:asDate(m.joinedAt)}});
+      for(const m of members) if(usersById.has(text(m.userId))) await (tx as any).workspaceMember.upsert({where:{workspaceId_userId:{workspaceId:text(w.id),userId:text(m.userId)}},create:{id:'wm-'+text(w.id)+'-'+text(m.userId),workspaceId:text(w.id),userId:text(m.userId),role:text(m.userId)===text(w.ownerId)?'OWNER':role(m.role),joinedAt:asDate(m.joinedAt)},update:{role:role(m.role),joinedAt:asDate(m.joinedAt)}});
     }
     for(const g of allGoals){
       await upsert('goalOKR',text(g.id),{userId:text(g.userId),category:category(g.category),title:text(g.title,'Untitled goal'),description:nullable(g.description),timeframe:timeframe(g.timeframe),targetDate:asDate(g.targetDate),progressPercent:num(g.progressPercent),createdAt:asDate(g.createdAt),updatedAt:asDate(g.updatedAt||g.createdAt),legacyData:json(g)});
@@ -229,7 +229,7 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
       await upsert('teamProject',text(p.id),{workspaceId:text(p.workspaceId),ownerId:text(p.ownerId),ownerEmail:text(p.ownerEmail,text(usersById.get(text(p.ownerId))?.email)),name:text(p.name),key:text(p.key),description:nullable(p.description),color:text(p.color,'#6366f1'),icon:text(p.icon,'ShieldCheck'),targetDate:nullable(p.targetDate),createdAt:asDate(p.createdAt),legacyData:json(p)});
       for(const memberId of Array.from(new Set([text(p.ownerId),...arr(p.memberIds).map(x=>text(x))]))){
         if(!usersById.has(memberId)) continue;
-        await (tx as any).projectMember.upsert({where:{projectId_userId:{projectId:text(p.id),userId:memberId}},create:{id:'pm-'+text(p.id)+'-'+memberId,projectId:text(p.id),userId:memberId,role:role(obj(p.memberRoles)[memberId]||(memberId===text(p.ownerId)?'OWNER':'MEMBER'))},update:{role:role(obj(p.memberRoles)[memberId]||(memberId===text(p.ownerId)?'OWNER':'MEMBER'))}});
+        await (tx as any).projectMember.upsert({where:{projectId_userId:{projectId:text(p.id),userId:memberId}},create:{id:'pm-'+text(p.id)+'-'+memberId,projectId:text(p.id),userId:memberId,role:memberId===text(p.ownerId)?'OWNER':role(obj(p.memberRoles)[memberId]||'MEMBER')},update:{role:memberId===text(p.ownerId)?'OWNER':role(obj(p.memberRoles)[memberId]||'MEMBER')}});
       }
     }
     const teamTasks=arr(snapshot.teamTasks).map(obj), numbers=new Map<string,Set<number>>();
