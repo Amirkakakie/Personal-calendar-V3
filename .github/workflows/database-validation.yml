@@ -125,7 +125,8 @@ jobs:
       - name: Create isolated test databases
         run: |
           createdb --host=127.0.0.1 --username=chronos chronos_security
-          createdb --host=127.0.0.1 --username=chronos chronos_e2e\n          createdb --host=127.0.0.1 --username=chronos chronos_migrate
+          createdb --host=127.0.0.1 --username=chronos chronos_e2e
+          createdb --host=127.0.0.1 --username=chronos chronos_migrate
         env:
           PGPASSWORD: chronos
 
