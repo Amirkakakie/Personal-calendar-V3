@@ -26,7 +26,7 @@ async function main() {
   if(arg('--expected-sha256')!==exported.integrity.snapshotSha256) {
     throw new Error('The --expected-sha256 value must exactly match the verified export digest.');
   }
-  if(!process.env.DATABASE_URL || !/^postgres(?:ql)?:\\/\\//i.test(process.env.DATABASE_URL)) {
+  if(!process.env.DATABASE_URL || !/^postgres(?:ql)?:\/\//i.test(process.env.DATABASE_URL)) {
     throw new Error('A valid target PostgreSQL DATABASE_URL is required. The URL is never printed.');
   }
 
