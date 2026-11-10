@@ -267,7 +267,8 @@
     "contextPlaceholder": "Additional context, existing knowledge, or constraints...",
     "decomposeAction": "Deconstruct into Action Items",
     "decomposing": "Architecting plan with Gemini...",
-    "importPlan": "Import All Items into System"
+    "importPlan": "Import All Items into System",
+    "createTaskSubtitle": "Add a title and schedule to create a new task."
   },
   "categories": {
     "workCareer": "Work/Career",
