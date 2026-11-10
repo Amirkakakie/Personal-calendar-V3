@@ -28,7 +28,7 @@ function status(v: any): 'TODO'|'IN_PROGRESS'|'COMPLETED'|'ARCHIVED' {
   const s = text(v).toLowerCase();
   if (s === 'completed' || s === 'done') return 'COMPLETED';
   if (s === 'archived') return 'ARCHIVED';
-  if (s === 'in_progress' || s === 'in-progress' || s === 'doing') return 'IN_PROGRESS';
+  if (s === 'in_progress' || s === 'in-progress' || s === 'doing' || s === 'active') return 'IN_PROGRESS';
   return 'TODO';
 }
 function priority(v: any): 'HIGH'|'MEDIUM'|'LOW' {
