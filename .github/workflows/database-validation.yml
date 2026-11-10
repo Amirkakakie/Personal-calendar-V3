@@ -77,6 +77,11 @@ jobs:
           path: package-lock.json
           if-no-files-found: error
 
+      - name: Validate local PostgreSQL Compose configuration
+        run: docker compose config --quiet
+        env:
+          CHRONOS_POSTGRES_PASSWORD: ci-only-compose-validation-password
+
       - name: Validate Prisma schema
         run: npm run prisma:validate
 

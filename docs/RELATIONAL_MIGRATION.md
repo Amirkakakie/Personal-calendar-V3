@@ -2,6 +2,43 @@
 
 The application now has a Prisma/PostgreSQL relational runtime. The legacy JSON file and legacy PostgreSQL `chronos_data` root are treated as migration sources only; they are not deleted by this process.
 
+## Start a local PostgreSQL database on Windows
+
+The repository includes a Docker Compose service for a local PostgreSQL 16 instance. It binds only to `127.0.0.1` and stores database files in a named Docker volume.
+
+1. Install and start Docker Desktop.
+2. In PowerShell, from the repository root, set a strong local-only password and start PostgreSQL:
+
+```powershell
+$bytes = New-Object byte[] 24
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$env:CHRONOS_POSTGRES_PASSWORD = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+docker compose up -d postgres
+```
+
+3. Configure the connection string in the same PowerShell session. The generated password is hexadecimal, so it does not require URL encoding:
+
+```powershell
+$env:NODE_ENV = "development"
+$env:DATABASE_URL = "postgresql://chronos:$env:CHRONOS_POSTGRES_PASSWORD@localhost:5432/chronos?schema=public"
+$keyBytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($keyBytes)
+$env:CHRONOS_DATA_ENCRYPTION_KEY = [Convert]::ToBase64String($keyBytes)
+```
+
+For a durable setup across terminal sessions, store these values in a local untracked `.env` file or a secrets manager. Never commit that file. Back up the encryption key separately; losing it prevents decryption of the archived legacy snapshot and stored OAuth tokens.
+
+4. Check PostgreSQL health and apply the schema:
+
+```powershell
+docker compose ps
+npm run prisma:migrate:deploy
+```
+
+5. Follow the local JSON migration steps below before starting the app with `DATABASE_URL`. Once imported, run `npm run dev` in the same environment. Without `DATABASE_URL`, local development continues to use `data/db.json`.
+
+To stop PostgreSQL without deleting data, run `docker compose down`. Do **not** run `docker compose down -v` unless you intentionally want to permanently delete the local database volume.
+
 ## Local development data (`data/db.json`)
 
 1. Stop the local Chronos server so the JSON file is not being modified during export.
