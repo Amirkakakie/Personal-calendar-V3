@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import pg from 'pg';
-const { Pool } = pg;
+import { PrismaClient } from '@prisma/client';
+import { loadRelationalSnapshot, persistRelationalSnapshot } from './migrations/relationalStore.ts';
 import type { 
   Task, 
   GoalOKR, 
@@ -221,12 +221,13 @@ class Database {
   private data: DatabaseSchema;
   private dbPath: string;
   private isServerless: boolean = false;
-  private pgPool: pg.Pool | null = null;
-  private pgConnected: boolean = false;
-  private pgInitPromise: Promise<void> | null = null;
-  private pgVersion = 0;
+  private prisma: PrismaClient | null = null;
+  private prismaConnected = false;
+  private prismaInitPromise: Promise<void> | null = null;
+  private prismaVersion = 0n;
   private writeQueue: Promise<void> = Promise.resolve();
   private readonly requiresPostgres: boolean;
+  private readonly relationalEnabled: boolean;
   private configurationError: string | null = null;
 
   constructor() {
@@ -234,15 +235,14 @@ class Database {
     this.dbPath = targetFile;
     this.isServerless = isServerless;
     this.requiresPostgres = process.env.NODE_ENV === 'production' || isServerless;
-    this.data = this.requiresPostgres
-      ? this.createEmptyState()
-      : this.load();
+    this.relationalEnabled = this.requiresPostgres || isValidPostgresUrl(process.env.DATABASE_URL);
+    this.data = this.relationalEnabled ? this.createEmptyState() : this.load();
     this.initPostgres();
   }
 
   private createEmptyState(): DatabaseSchema {
     return {
-      version: '3.0-relational-migration-pending',
+      version: '3.0-prisma-relational',
       users: [],
       workspaces: [],
       partitions: {},
@@ -252,185 +252,111 @@ class Database {
     };
   }
 
-  /**
-   * Wait until the configured persistence engine is ready.
-   * Production and serverless deployments must never silently fall back to
-   * ephemeral filesystem or in-memory storage.
-   */
   public async ready(): Promise<void> {
-    if (this.pgInitPromise) await this.pgInitPromise;
-    if (!this.requiresPostgres && !this.pgPool) return;
-    if (!this.pgPool) {
-      throw new Error(this.configurationError || 'PostgreSQL is required but is not configured.');
+    if (this.prismaInitPromise) await this.prismaInitPromise;
+    if (!this.relationalEnabled) return;
+    if (!this.prisma || !this.prismaConnected) {
+      throw new Error(this.configurationError || 'Prisma PostgreSQL persistence is unavailable.');
     }
     try {
-      await this.pgPool.query('SELECT 1');
-      this.pgConnected = true;
-    } catch (error) {
-      this.pgConnected = false;
+      await this.prisma.$queryRaw\`SELECT 1\`;
+      this.prismaConnected = true;
+    } catch {
+      this.prismaConnected = false;
       throw new Error('PostgreSQL is unavailable; requests requiring persistence are blocked.');
     }
   }
 
-  /**
-   * Refresh the compatibility snapshot at the start of each API request.
-   * Version-checked writes prevent one serverless instance from silently
-   * overwriting a newer snapshot written by another instance.
-   */
   public async refresh(): Promise<void> {
     await this.ready();
-    if (!this.pgPool) return;
+    if (!this.relationalEnabled || !this.prisma) return;
     try {
       await this.flush();
     } catch (error) {
-      // The previous request already received a persistence failure. Discard
-      // that rejected local queue and recover from the authoritative DB row.
-      // The failed request is never replayed implicitly.
-      console.error('[Chronos DB] Recovering after a rejected write:', error);
+      console.error('[Chronos DB] Recovering after a rejected relational write:', error);
       this.writeQueue = Promise.resolve();
     }
-    const result = await this.pgPool.query(
-      "SELECT data, version FROM chronos_data WHERE key = 'root' LIMIT 1"
-    );
-    if (!result.rows.length) {
-      throw new Error('Chronos database state row is missing; refusing to recreate it implicitly.');
-    }
-    this.data = this.sanitizeParsedData(result.rows[0].data);
-    this.pgVersion = Number(result.rows[0].version);
+    const loaded = await loadRelationalSnapshot(this.prisma);
+    this.data = this.sanitizeParsedData(loaded.data);
+    this.prismaVersion = loaded.version;
   }
 
-  /** Wait for all pending writes and surface persistence failures to callers. */
   public async flush(): Promise<void> {
     await this.writeQueue;
-    if (this.requiresPostgres && (!this.pgPool || !this.pgConnected)) {
-      throw new Error('Persistent database connection is not available.');
+    if (this.relationalEnabled && (!this.prisma || !this.prismaConnected)) {
+      throw new Error('Persistent relational database connection is not available.');
     }
   }
 
-  private initPostgres() {
+  private initPostgres(): void {
     const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl || !isValidPostgresUrl(dbUrl)) {
+    if (!this.relationalEnabled) {
       if (this.requiresPostgres) {
         this.configurationError = !dbUrl
           ? 'DATABASE_URL is required in production and serverless deployments.'
           : 'DATABASE_URL must be a valid PostgreSQL connection string.';
         console.error(`[Chronos DB] ${this.configurationError}`);
-      } else if (dbUrl) {
-        console.warn('[Chronos DB] Invalid DATABASE_URL. Local file storage is available only in development.');
       } else {
-        console.log('[Chronos DB] Local development file persistence active at:', this.dbPath);
+        console.log('[Chronos DB] Local development JSON persistence active at:', this.dbPath);
       }
       return;
     }
 
     try {
-      console.log('[Chronos DB] Connecting to PostgreSQL pool...');
-      const isLocalhost = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
-      this.pgPool = new Pool({
-        connectionString: dbUrl,
-        ssl: isLocalhost ? false : { rejectUnauthorized: false },
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+      console.log('[Chronos DB] Connecting to Prisma PostgreSQL relational store...');
+      this.prisma = new PrismaClient();
+      this.prismaInitPromise = this.setupRelationalStore().catch((error: any) => {
+        this.prismaConnected = false;
+        this.configurationError = error?.message || 'Prisma relational initialization failed.';
+        console.error('[Chronos DB] Relational initialization failed:', this.configurationError);
       });
-
-      this.pgPool.on('error', (err) => {
-        console.warn('[Chronos DB] PostgreSQL client warning:', err.message);
-        this.pgConnected = false;
-      });
-
-      this.pgInitPromise = this.setupPostgresStore();
-    } catch (err: any) {
-      console.error('[Chronos DB] Failed to initialize PostgreSQL:', err.message);
-      this.pgConnected = false;
-      void this.pgPool?.end().catch(() => undefined);
-      this.pgPool = null;
+    } catch (error: any) {
+      this.configurationError = error?.message || 'Failed to initialize Prisma PostgreSQL client.';
+      this.prismaConnected = false;
     }
   }
 
-  private async setupPostgresStore() {
-    if (!this.pgPool) return;
-    try {
-      await this.pgPool.query(`
-        CREATE TABLE IF NOT EXISTS chronos_data (
-          key VARCHAR(100) PRIMARY KEY,
-          data JSONB NOT NULL,
-          version BIGINT NOT NULL DEFAULT 1,
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-      await this.pgPool.query(
-        'ALTER TABLE chronos_data ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 1'
-      );
+  private async setupRelationalStore(): Promise<void> {
+    if (!this.prisma) throw new Error('Prisma client was not initialized.');
+    await this.prisma.$connect();
 
-      const existing = await this.pgPool.query(
-        "SELECT data, version FROM chronos_data WHERE key = 'root' LIMIT 1"
-      );
-      if (existing.rows.length > 0) {
-        this.data = this.sanitizeParsedData(existing.rows[0].data);
-        this.pgVersion = Number(existing.rows[0].version);
-        console.log('[Chronos DB] Loaded persistent PostgreSQL state.');
-      } else {
-        // Never create an empty production root row implicitly: doing so can
-        // make an uninitialized database look like a successful migration and
-        // hide existing legacy data that still needs to be imported.
-        const allowExplicitBootstrap = process.env.CHRONOS_ALLOW_EMPTY_DB_INIT === 'true';
-        if (this.requiresPostgres && !allowExplicitBootstrap) {
-          this.configurationError =
-            'The production Chronos database has no legacy root row. Restore or import a verified backup first. Set CHRONOS_ALLOW_EMPTY_DB_INIT=true only for an intentional first-time installation.';
-          throw new Error(this.configurationError);
-        }
-
-        const initialState = this.createEmptyState();
-        const inserted = await this.pgPool.query(
-          `INSERT INTO chronos_data (key, data, version, updated_at)
-           VALUES ('root', $1, 1, CURRENT_TIMESTAMP)
-           ON CONFLICT (key) DO NOTHING
-           RETURNING version`,
-          [JSON.stringify(initialState)]
+    const existingRevision = await this.prisma.databaseRevision.findUnique({ where: { id: 'root' } });
+    if (!existingRevision) {
+      const tableCheck = await this.prisma.$queryRaw<Array<{ table_name: string | null }>>\`
+        SELECT to_regclass('public.chronos_data')::text AS table_name
+      \`;
+      if (tableCheck[0]?.table_name) {
+        const legacyRoot = await this.prisma.$queryRawUnsafe<Array<{ version: number }>>(
+          "SELECT version FROM chronos_data WHERE key = 'root' LIMIT 1"
         );
-        if (inserted.rows.length) {
-          this.data = initialState;
-          this.pgVersion = 1;
-        } else {
-          const raced = await this.pgPool.query(
-            "SELECT data, version FROM chronos_data WHERE key = 'root' LIMIT 1"
-          );
-          if (!raced.rows.length) throw new Error('Unable to initialize the PostgreSQL state row.');
-          this.data = this.sanitizeParsedData(raced.rows[0].data);
-          this.pgVersion = Number(raced.rows[0].version);
+        if (legacyRoot.length) {
+          throw new Error('Legacy JSONB root data still exists. Export it, run the verified relational importer, and only then enable Prisma runtime.');
         }
-        console.log('[Chronos DB] Initialized an empty PostgreSQL state after explicit bootstrap permission.');
       }
-      this.pgConnected = true;
-    } catch (err: any) {
-      console.error('[Chronos DB] PostgreSQL initialization failed:', err.message);
-      this.pgConnected = false;
-      try {
-        await this.pgPool.end();
-      } catch {}
-      this.pgPool = null;
+
+      const existingUsers = await this.prisma.user.count();
+      const existingArchives = await this.prisma.legacySnapshot.count();
+      if (existingUsers || existingArchives) {
+        throw new Error('Relational tables contain data but DatabaseRevision is missing. Refusing to initialize an inconsistent database.');
+      }
+      if (this.requiresPostgres && process.env.CHRONOS_ALLOW_EMPTY_DB_INIT !== 'true') {
+        throw new Error('Relational database is not initialized. Import a verified legacy snapshot, or explicitly set CHRONOS_ALLOW_EMPTY_DB_INIT=true for a new installation.');
+      }
+      await this.prisma.databaseRevision.create({ data: { id: 'root', version: 1n } });
     }
+
+    const loaded = await loadRelationalSnapshot(this.prisma);
+    this.data = this.sanitizeParsedData(loaded.data);
+    this.prismaVersion = loaded.version;
+    this.prismaConnected = true;
+    console.log('[Chronos DB] Prisma relational persistence is ready.');
   }
 
-  private async syncToPostgres(data: DatabaseSchema) {
-    if (!this.pgPool || !this.pgConnected) {
-      throw new Error('PostgreSQL is not connected; refusing to acknowledge a write.');
+  private async syncToPrisma(data: DatabaseSchema): Promise<void> {
+    if (!this.prisma || !this.prismaConnected) {
+      throw new Error('Prisma PostgreSQL is not connected; refusing to acknowledge a write.');
     }
-
-    const result = await this.pgPool.query(
-      `UPDATE chronos_data
-       SET data = $1, version = version + 1, updated_at = CURRENT_TIMESTAMP
-       WHERE key = 'root' AND version = $2
-       RETURNING version`,
-      [JSON.stringify(data), this.pgVersion]
-    );
-
-    if (!result.rows.length) {
-      throw new Error('Database state changed in another application instance. Refresh and retry the operation.');
-    }
-
-    this.pgVersion = Number(result.rows[0].version);
+    this.prismaVersion = await persistRelationalSnapshot(this.prisma, data, this.prismaVersion);
   }
 
   private load(): DatabaseSchema {
@@ -470,12 +396,10 @@ class Database {
   }
 
   private save(data: DatabaseSchema) {
-    if (this.pgPool || this.requiresPostgres) {
+    if (this.relationalEnabled) {
       // Capture an immutable snapshot at mutation time and serialize writes.
       const snapshot = JSON.parse(JSON.stringify(data)) as DatabaseSchema;
-      this.writeQueue = this.writeQueue
-        .catch(() => undefined)
-        .then(() => this.syncToPostgres(snapshot));
+      this.writeQueue = this.writeQueue.then(() => this.syncToPrisma(snapshot));
       return;
     }
 
@@ -494,21 +418,21 @@ class Database {
   public getHealthInfo() {
     const dbUrl = process.env.DATABASE_URL;
     const isValidUrl = isValidPostgresUrl(dbUrl);
-    const postgresReady = Boolean(this.pgPool && this.pgConnected);
-    const localDevelopment = !this.requiresPostgres && !this.pgPool;
+    const relationalReady = Boolean(this.prisma && this.prismaConnected);
+    const localDevelopment = !this.relationalEnabled;
     return {
-      status: postgresReady || localDevelopment ? 'healthy' : 'unavailable',
-      persistenceEngine: postgresReady
-        ? 'postgresql_legacy_snapshot'
+      status: relationalReady || localDevelopment ? 'healthy' : 'unavailable',
+      persistenceEngine: relationalReady
+        ? 'postgresql_prisma_relational'
         : localDevelopment ? 'local_json_development' : 'unavailable',
       isServerless: this.isServerless,
       databaseUrlConfigured: Boolean(dbUrl),
       databaseUrlValid: isValidUrl,
-      pgConnected: this.pgConnected,
+      pgConnected: this.prismaConnected,
       usersCount: this.data.users.length,
-      storagePath: this.requiresPostgres ? undefined : this.dbPath,
-      serverlessWarning: this.requiresPostgres && !postgresReady
-        ? (this.configurationError || 'PostgreSQL is required for persistent production storage.')
+      storagePath: this.relationalEnabled ? undefined : this.dbPath,
+      serverlessWarning: this.relationalEnabled && !relationalReady
+        ? (this.configurationError || 'Prisma PostgreSQL relational persistence is unavailable.')
         : undefined
     };
   }
