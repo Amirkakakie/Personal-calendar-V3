@@ -306,8 +306,13 @@ export async function importLegacySnapshotToRelational(
       if (!workspaceIds.has(workspaceId)) {
         workspaceId = 'legacy-team-workspace-'+ownerId;
         if (!workspaceIds.has(workspaceId)) {
+          const baseSlug = ('legacy-team-'+ownerId).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+          let fallbackSlug = baseSlug;
+          let fallbackSuffix = 1;
+          while (usedSlugs.has(fallbackSlug)) fallbackSlug = baseSlug+'-'+(++fallbackSuffix);
+          usedSlugs.add(fallbackSlug);
           await tx.workspace.create({ data: {
-            id: workspaceId, name: 'Imported team workspace', slug: 'legacy-team-'+ownerId,
+            id: workspaceId, name: 'Imported team workspace', slug: fallbackSlug,
             type: 'TEAM', isPersonal: false, ownerId, createdAt: date(p.createdAt),
             legacyData: json({ sourceWorkspaceId: p.workspaceId })
           }});
