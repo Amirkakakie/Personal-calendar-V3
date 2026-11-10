@@ -142,9 +142,22 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // Database & Persistence Engine Diagnostic Health Endpoint
-app.get('/api/health/db', (_req: Request, res: Response) => {
-  const health = db.getHealthInfo();
-  res.status(health.status === 'healthy' ? 200 : 503).json(health);
+app.get('/api/health/db', async (_req: Request, res: Response) => {
+  // Health is intentionally outside the general API persistence boundary so
+  // it can report outages. Still await initialization to avoid a false 503
+  // during a cold start while PostgreSQL is connecting.
+  try {
+    await db.ready();
+    const health = db.getHealthInfo();
+    res.status(health.status === 'healthy' ? 200 : 503).json(health);
+  } catch (error: any) {
+    const health = db.getHealthInfo();
+    res.status(503).json({
+      ...health,
+      status: 'unavailable',
+      serverlessWarning: error?.message || health.serverlessWarning
+    });
+  }
 });
 
 // Direct Productivity Stats endpoint (strictly user-scoped)
