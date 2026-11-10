@@ -9,13 +9,13 @@ The application now has a Prisma/PostgreSQL relational runtime. The legacy JSON 
 3. Export the local snapshot to a path outside the repository:
 
 ```powershell
-npm run db:export-legacy -- --source-file "D:\\project\\Personal-calendar-V3\\data\\db.json" --output "D:\\secure-backups\\chronos-local-export.json"
+npm run db:export-legacy -- --source-file "D:\project\Personal-calendar-V3\data\db.json" --output "D:\secure-backups\chronos-local-export.json"
 ```
 
 4. Verify the export checksum and manifest:
 
 ```powershell
-npm run db:verify-legacy-export -- "D:\\secure-backups\\chronos-local-export.json"
+npm run db:verify-legacy-export -- "D:\secure-backups\chronos-local-export.json"
 ```
 
 5. Configure a PostgreSQL `DATABASE_URL` for the target database, then apply the committed migrations:
@@ -27,13 +27,13 @@ npm run prisma:migrate:deploy
 6. Run the import in dry-run mode first:
 
 ```powershell
-npm run db:import-legacy-archive -- --file "D:\\secure-backups\\chronos-local-export.json"
+npm run db:import-legacy-archive -- --file "D:\secure-backups\chronos-local-export.json"
 ```
 
 7. Copy the SHA-256 digest printed by dry-run and apply the exact export:
 
 ```powershell
-npm run db:import-legacy-archive -- --file "D:\\secure-backups\\chronos-local-export.json" --apply --expected-sha256 YOUR_EXACT_SHA256
+npm run db:import-legacy-archive -- --file "D:\secure-backups\chronos-local-export.json" --apply --expected-sha256 YOUR_EXACT_SHA256
 ```
 
 8. Keep the original JSON and export until all user accounts, tasks, goals, projects, calendar events, time logs, skills, team projects, comments, invitations and account switching have been checked against the imported database.
