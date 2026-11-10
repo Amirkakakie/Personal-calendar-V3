@@ -379,7 +379,7 @@ function ChronosWorkspace() {
         )}
 
         <main className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 pb-28 lg:pb-8 ${
-          workspaceMode === 'personal' ? (sidebarCollapsed ? 'lg:ms-16' : 'lg:ms-64') : ''
+          workspaceMode === 'personal' ? (sidebarCollapsed ? 'lg:ms-[4.5rem]' : 'lg:ms-[17rem]') : ''
         }`}>
           <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-5 lg:px-8 2xl:px-10 py-5 sm:py-7 lg:py-8">
             {workspaceMode === 'team' ? (
