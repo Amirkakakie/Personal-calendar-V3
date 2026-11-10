@@ -210,8 +210,11 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     }
     for(const p of allProjects) await upsert('project',text(p.id),{userId:text(p.userId),goalId:goalOwnerById.get(text(p.goalId))===text(p.userId)?nullable(p.goalId):null,name:text(p.name,'Untitled project'),description:nullable(p.description),color:text(p.color,'blue'),status:taskStatus(p.status),targetHours:num(p.targetHours,20),loggedHours:num(p.loggedHours),hourlyValuation:num(p.hourlyValuation,85),driveFolderUrl:nullable(p.driveFolderUrl),createdAt:asDate(p.createdAt),updatedAt:asDate(p.updatedAt||p.createdAt),legacyData:json(p)});
     for(const sk of allSkills){
-      await upsert('skill',text(sk.id),{name:text(sk.name,'Skill'),category:text(sk.category,'General'),tier:tier(sk.level),icon:text(sk.icon,'Zap'),description:text(sk.description),parentSkillId:nullable(sk.parentSkillId),requiredXp:num(sk.requiredXp,500),legacyData:json(sk)});
+      await upsert('skill',text(sk.id),{name:text(sk.name,'Skill'),category:text(sk.category,'General'),tier:tier(sk.level),icon:text(sk.icon,'Zap'),description:text(sk.description),parentSkillId:null,requiredXp:num(sk.requiredXp,500),legacyData:json(sk)});
       await (tx as any).userSkill.upsert({where:{userId_skillId:{userId:text(sk.userId),skillId:text(sk.id)}},create:{id:'us-'+text(sk.userId)+'-'+text(sk.id),userId:text(sk.userId),skillId:text(sk.id),currentXp:num(sk.currentXp),level:num(sk.level,1),masteryPct:num(sk.masteryPct,10),isUnlocked:bool(sk.unlocked),legacyData:json(sk)},update:{currentXp:num(sk.currentXp),level:num(sk.level,1),masteryPct:num(sk.masteryPct,10),isUnlocked:bool(sk.unlocked),legacyData:json(sk)}});
+    }
+    for(const sk of allSkills) if(sk.parentSkillId && skillIds.has(text(sk.parentSkillId))) {
+      await (tx as any).skill.update({where:{id:text(sk.id)},data:{parentSkillId:text(sk.parentSkillId)}});
     }
     for(const t of allTasks){
       const skillId=skillIds.has(text(t.linkedSkillId))?nullable(t.linkedSkillId):null;
