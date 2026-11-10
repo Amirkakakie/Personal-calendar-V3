@@ -1,7 +1,17 @@
 import assert from 'assert';
 import http from 'http';
-import app from '../server/app.ts';
-import { db } from '../server/db.ts';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+// E2E data is isolated from the developer's local database and repository.
+process.env.NODE_ENV = 'test';
+const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chronos-e2e-'));
+process.env.CHRONOS_DATA_FILE = path.join(testDataDir, 'db.json');
+const [{ default: app }, { db }] = await Promise.all([
+  import('../server/app.ts'),
+  import('../server/db.ts')
+]);
 
 async function runAllTests() {
   console.log('\n======================================================');
@@ -304,6 +314,7 @@ async function runAllTests() {
     console.log(`======================================================\n`);
   } finally {
     server.close();
+    fs.rmSync(testDataDir, { recursive: true, force: true });
   }
 }
 

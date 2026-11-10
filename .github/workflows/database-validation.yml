@@ -1,0 +1,156 @@
+name: Database and application validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/relational-database-architecture]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: chronos-db-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Prisma, TypeScript and application tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: chronos
+          POSTGRES_PASSWORD: chronos
+          POSTGRES_DB: chronos_validation
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chronos -d chronos_validation"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_validation?schema=public
+      JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Generate lockfile for the exact declared dependencies
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Install dependencies from generated lockfile
+        run: npm ci --no-audit --no-fund
+
+      # Keep the committed lockfile reproducible. This runs only on a push to
+      # the dedicated feature branch, never from forked pull_request contexts.
+      - name: Commit synchronized npm lockfile
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/relational-database-architecture'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): sync npm lockfile"
+            git push origin "HEAD:feat/relational-database-architecture"
+            gh workflow run database-validation.yml --ref feat/relational-database-architecture
+          fi
+
+      - name: Upload generated package lock for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: chronos-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+
+      - name: Validate Prisma schema
+        run: npm run prisma:validate
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Generate relational baseline SQL
+        run: npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/chronos-relational-baseline.sql
+
+      - name: Apply generated baseline to disposable PostgreSQL
+        run: psql "postgresql://chronos:chronos@127.0.0.1:5432/chronos_validation" -v ON_ERROR_STOP=1 -f /tmp/chronos-relational-baseline.sql
+
+      - name: Verify relational tables were created
+        run: |
+          TABLE_COUNT=$(psql "postgresql://chronos:chronos@127.0.0.1:5432/chronos_validation" -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
+          echo "Created $TABLE_COUNT relational tables"
+          test "$TABLE_COUNT" -ge 20
+
+      # Commit the exact schema SQL that was generated and applied above.
+      # This creates a reproducible Prisma baseline; it does not migrate user data.
+      - name: Commit relational baseline migration
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/relational-database-architecture'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p prisma/migrations/20261110000000_init
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/20261110000000_init/migration.sql
+          printf 'provider = "postgresql"\n' > prisma/migrations/migration_lock.toml
+          git add prisma/migrations
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(db): add reviewed relational baseline migration"
+            git push origin "HEAD:feat/relational-database-architecture"
+            gh workflow run database-validation.yml --ref feat/relational-database-architecture
+          fi
+
+      - name: Upload generated baseline SQL for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: chronos-relational-baseline-sql
+          path: /tmp/chronos-relational-baseline.sql
+          if-no-files-found: error
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Create isolated test databases
+        run: |
+          createdb --host=127.0.0.1 --username=chronos chronos_security
+          createdb --host=127.0.0.1 --username=chronos chronos_e2e
+          createdb --host=127.0.0.1 --username=chronos chronos_migrate
+        env:
+          PGPASSWORD: chronos
+
+      - name: Validate committed Prisma migrations on a fresh database
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_migrate?schema=public
+
+      - name: Security tests
+        run: npm run test:security
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_security?schema=public
+          NODE_ENV: test
+          JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
+
+      - name: Authentication and AI E2E tests
+        run: npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_e2e?schema=public
+          NODE_ENV: test
+          JWT_SECRET: ci-only-secret-that-is-not-used-in-production-32bytes-min
+
+      - name: Legacy snapshot integrity and archive preparation tests
+        run: npm run test:legacy-export
+
+      - name: Production frontend build
+        run: npm run build

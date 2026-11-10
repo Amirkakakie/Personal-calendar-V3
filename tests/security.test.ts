@@ -1,5 +1,15 @@
 import http from 'http';
-import app from '../server/app.ts';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+// Each test process gets a disposable database file. Test fixtures must never
+// be written into the developer's tracked data directory.
+process.env.NODE_ENV = 'test';
+const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chronos-security-'));
+const testDataFile = path.join(testDataDir, 'db.json');
+process.env.CHRONOS_DATA_FILE = testDataFile;
+const { default: app } = await import('../server/app.ts');
 
 // ANSI terminal colors for clean test reporting
 const GREEN = '\x1b[32m';
@@ -761,6 +771,7 @@ async function runSecurityTestSuite() {
     console.log(`${BOLD}${GREEN}======================================================${RESET}\n`);
   } finally {
     server.close();
+    fs.rmSync(testDataDir, { recursive: true, force: true });
   }
 }
 

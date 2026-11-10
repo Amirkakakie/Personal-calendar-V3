@@ -12,7 +12,16 @@
     "lint": "tsc --noEmit",
     "test:security": "tsx tests/security.test.ts",
     "test:e2e": "tsx tests/e2e-auth-ai.test.ts",
-    "test": "tsx tests/security.test.ts && tsx tests/e2e-auth-ai.test.ts"
+    "test": "tsx tests/security.test.ts && tsx tests/e2e-auth-ai.test.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "db:export-legacy": "tsx scripts/export-legacy-postgres.ts",
+    "db:verify-legacy-export": "tsx scripts/verify-legacy-export.ts",
+    "test:legacy-export": "tsx tests/legacy-snapshot.test.ts",
+    "db:import-legacy-archive": "tsx scripts/import-legacy-archive.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -30,7 +39,8 @@
     "pg": "^8.23.1",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "@prisma/client": "^6.19.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -43,6 +53,7 @@
     "esbuild": "^0.28.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "prisma": "^6.19.0"
   }
 }
