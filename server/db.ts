@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
@@ -218,7 +219,10 @@ function isValidPostgresUrl(url?: string): boolean {
 }
 
 class Database {
-  private data: DatabaseSchema;
+  private sharedData!: DatabaseSchema;
+  private readonly requestStorage = new AsyncLocalStorage<{ data: DatabaseSchema; version: bigint }>();
+  private get data(): DatabaseSchema { return this.requestStorage.getStore()?.data ?? this.sharedData; }
+  private set data(value: DatabaseSchema) { const context=this.requestStorage.getStore(); if(context) context.data=value; else this.sharedData=value; }
   private dbPath: string;
   private isServerless: boolean = false;
   private prisma: PrismaClient | null = null;
@@ -278,7 +282,31 @@ class Database {
     }
     const loaded = await loadRelationalSnapshot(this.prisma);
     this.data = this.sanitizeParsedData(loaded.data);
-    this.prismaVersion = loaded.version;
+    const context=this.requestStorage.getStore();
+    if(context) context.version=loaded.version;
+    else this.prismaVersion=loaded.version;
+  }
+
+  /**
+   * Give each API request its own immutable starting snapshot and revision.
+   * Concurrent writers therefore cannot mutate one shared in-memory object or
+   * accidentally persist a stale full snapshot over a newer commit.
+   */
+  public async runWithRequest(callback: () => void): Promise<void> {
+    await this.ready();
+    if (!this.relationalEnabled || !this.prisma) {
+      callback();
+      return;
+    }
+    try {
+      await this.flush();
+    } catch (error) {
+      console.error('[Chronos DB] Resetting failed request write queue before refresh:', error);
+      this.writeQueue = Promise.resolve();
+    }
+    const loaded=await loadRelationalSnapshot(this.prisma);
+    const context={data:this.sanitizeParsedData(loaded.data),version:loaded.version};
+    this.requestStorage.run(context,callback);
   }
 
   public async flush(): Promise<void> {
@@ -352,11 +380,14 @@ class Database {
     console.log('[Chronos DB] Prisma relational persistence is ready.');
   }
 
-  private async syncToPrisma(data: DatabaseSchema): Promise<void> {
+  private async syncToPrisma(data: DatabaseSchema, context?: { data: DatabaseSchema; version: bigint }): Promise<void> {
     if (!this.prisma || !this.prismaConnected) {
       throw new Error('Prisma PostgreSQL is not connected; refusing to acknowledge a write.');
     }
-    this.prismaVersion = await persistRelationalSnapshot(this.prisma, data, this.prismaVersion);
+    const expectedVersion=context?.version ?? this.prismaVersion;
+    const nextVersion=await persistRelationalSnapshot(this.prisma,data,expectedVersion);
+    this.prismaVersion=nextVersion;
+    if(context) context.version=nextVersion;
   }
 
   private load(): DatabaseSchema {
@@ -399,7 +430,8 @@ class Database {
     if (this.relationalEnabled) {
       // Capture an immutable snapshot at mutation time and serialize writes.
       const snapshot = JSON.parse(JSON.stringify(data)) as DatabaseSchema;
-      this.writeQueue = this.writeQueue.then(() => this.syncToPrisma(snapshot));
+      const context=this.requestStorage.getStore();
+      this.writeQueue = this.writeQueue.then(() => this.syncToPrisma(snapshot,context));
       return;
     }
 
