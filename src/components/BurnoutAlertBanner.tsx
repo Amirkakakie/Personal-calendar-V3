@@ -51,7 +51,9 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
 
   return (
     <div
-      className={`rounded-2xl border p-4 sm:p-5 transition-all ${
+      role={data.riskLevel === "Critical" ? "alert" : "status"}
+      aria-live={data.riskLevel === "Critical" ? "assertive" : "polite"}
+      className={`relative overflow-hidden rounded-2xl border p-4 shadow-[0_16px_45px_-34px_rgba(0,0,0,0.9)] transition-all duration-300 sm:p-5 ${
         isCritical
           ? 'bg-gradient-to-r from-rose-950/40 via-neutral-900 to-neutral-900 border-rose-500/30 text-rose-200'
           : isModerate
@@ -59,8 +61,9 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
           : 'bg-gradient-to-r from-emerald-950/20 via-neutral-900 to-neutral-900 border-emerald-500/20 text-emerald-200'
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
+      <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 start-0 w-1 ${isCritical ? "bg-rose-400" : isModerate ? "bg-amber-400" : "bg-emerald-400"}`} />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
           <div
             className={`p-2.5 rounded-xl shrink-0 ${
               isCritical
@@ -79,8 +82,8 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
             )}
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
                 {t('burnout.title')}
               </h4>
@@ -97,7 +100,7 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
               </span>
             </div>
 
-            <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+            <p className="mt-2 text-sm leading-6 text-neutral-300">
               {locale === 'fa' && isCritical
                 ? t('burnout.imminentWarning', { count: data.deadlineAlerts.length, minutes: data.totalImminentMinutes })
                 : data.recommendation}
@@ -105,7 +108,7 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
 
             {data.deadlineAlerts.length > 0 && (
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-mono text-neutral-400">
+                <span className="text-xs leading-5 text-neutral-400">
                   {locale === 'fa' 
                     ? `${formatNumber(data.deadlineAlerts.length)} کار در ۴۸ ساعت آینده (${formatDuration(data.totalImminentMinutes)} کار تخمینی):`
                     : `${data.deadlineAlerts.length} task(s) due within 48h (${Math.round(data.totalImminentMinutes / 60)}h workload):`}
@@ -113,7 +116,7 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
                 {data.deadlineAlerts.slice(0, 3).map(alert => (
                   <span
                     key={alert.taskId}
-                    className="px-2 py-0.5 rounded bg-neutral-800 text-[11px] font-mono text-neutral-300 border border-neutral-700"
+                    className="rounded-lg border border-white/[0.07] bg-neutral-800/80 px-2.5 py-1 text-[11px] text-neutral-200"
                   >
                     {alert.taskTitle} ({formatNumber(alert.estimatedRemainingMinutes)}m)
                   </span>
@@ -123,17 +126,20 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+        <div className="flex shrink-0 items-center gap-2 self-stretch sm:self-center">
           <button
+            type="button"
             onClick={onNavigateToCalendar}
-            className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-colors flex items-center gap-1.5"
+            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:flex-none"
           >
             <span>{t('burnout.resolveNow')}</span>
             {direction === 'rtl' ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
           </button>
           <button
+            type="button"
             onClick={() => setIsDismissed(true)}
-            className="text-xs text-neutral-500 hover:text-neutral-400 px-2 py-1"
+            aria-label={locale === "fa" ? "بستن هشدار" : "Dismiss alert"}
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl px-3 py-2 text-xs text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white"
           >
             {t('common.close')}
           </button>
