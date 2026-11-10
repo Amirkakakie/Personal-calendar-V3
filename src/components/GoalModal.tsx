@@ -35,6 +35,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -352,15 +353,25 @@ export const GoalModal: React.FC<GoalModalProps> = ({
                 type="button"
                 disabled={isSubmitting}
                 onClick={async () => {
-                  if (window.confirm(t('common.delete') + '?')) {
-                    await onDelete(currentGoal.id);
-                    onClose();
+                  if (!isConfirmingDelete) {
+                    setIsConfirmingDelete(true);
+                    return;
                   }
+                  await onDelete(currentGoal.id);
+                  onClose();
                 }}
-                className="px-3.5 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40"
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40 ${
+                  isConfirmingDelete
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
+                    : 'text-rose-400 hover:text-rose-300 hover:bg-rose-500/10'
+                }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{t('common.delete')}</span>
+                <span>
+                  {isConfirmingDelete
+                    ? (locale === 'fa' ? 'تأیید حذف هدف؟' : 'Confirm Delete?')
+                    : t('common.delete')}
+                </span>
               </button>
             ) : <div />}
 

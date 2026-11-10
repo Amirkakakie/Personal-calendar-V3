@@ -50,10 +50,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <Layers className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg text-white tracking-tight">Chronos Team</span>
-          <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
-            v2.0
-          </span>
+          <span className="font-bold text-lg text-white tracking-tight">Chronos</span>
         </div>
         <LanguageSwitcher />
       </div>

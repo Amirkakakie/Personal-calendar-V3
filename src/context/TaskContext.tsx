@@ -245,7 +245,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (isEdit) {
         await api.updateTask(taskId, taskData);
       } else {
-        await api.createTask(finalTask);
+        const created = await api.createTask(finalTask);
+        if (created && created.id && created.id !== finalTask.id) {
+          const remapped = tasks.map(t => (t.id === finalTask.id ? { ...t, id: created.id } : t));
+          setTasks(remapped);
+          LocalStore.setTasks(remapped, currentUserId);
+        }
       }
     } catch (err: any) {
       console.warn('[Chronos API] Asynchronous task sync failed, cached locally:', err.message);
@@ -290,9 +295,9 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     LocalStore.setTasks(updatedTasks, currentUserId);
     syncDerivedStats(updatedTasks, timeLogs);
 
-    // Background API Sync
+    // Background API Sync with resilient task fallback payload
     try {
-      await api.toggleTask(id);
+      await api.toggleTask(id, task);
     } catch (err: any) {
       console.warn('[Chronos API] Toggle task async sync failed, saved locally:', err.message);
     }

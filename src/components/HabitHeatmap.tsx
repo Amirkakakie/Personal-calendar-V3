@@ -165,13 +165,13 @@ export const HabitHeatmap: React.FC<HabitHeatmapProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-mono">
-          <span>Less</span>
+          <span>{locale === 'fa' ? 'کمتر' : 'Less'}</span>
           <div className="w-2.5 h-2.5 rounded-[3px] bg-neutral-850 border border-neutral-800" />
           <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-950/60 border border-emerald-500/30" />
           <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-600/50" />
           <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-500" />
           <div className="w-2.5 h-2.5 rounded-[3px] bg-emerald-400" />
-          <span>More</span>
+          <span>{locale === 'fa' ? 'بیشتر' : 'More'}</span>
         </div>
       </div>
     </div>

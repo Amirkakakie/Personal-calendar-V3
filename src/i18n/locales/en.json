@@ -28,7 +28,11 @@
     "synced": "Synced",
     "unlocked": "Unlocked",
     "locked": "Locked",
-    "none": "None"
+    "none": "None",
+    "personal": "Personal",
+    "team": "Team",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "header": {
     "appName": "Chronos",
@@ -69,7 +73,11 @@
     "noEvents": "No calendar blocks scheduled for today yet.",
     "autoSchedulePrompt": "Click 'Auto-Schedule' in the calendar to fit tasks into your peak circadian energy windows.",
     "quickStats": "Productivity Signals",
-    "burnoutTitle": "Cognitive Load & Burnout Alert"
+    "burnoutTitle": "Cognitive Load & Burnout Alert",
+    "aiFocusSnapshot": "AI Strategic Directive",
+    "aiFocusSnapshotSubtitle": "Circadian intelligence tailored to your cognitive queue",
+    "openAiCoach": "Open AI Coach Studio",
+    "quickBrief": "Refresh Directive"
   },
   "burnout": {
     "title": "48-Hour High Cognitive Load Alert",
