@@ -405,3 +405,40 @@ body[dir="rtl"],
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.45);
 }
+
+/* ========================================================
+   Global Interaction & Accessibility Baseline
+   ======================================================== */
+:where(button, a, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 3px;
+}
+
+:where(button, a, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, [role="button"]):disabled {
+  cursor: not-allowed;
+}
+
+:where(input, textarea, select) {
+  color-scheme: dark;
+  accent-color: #6366f1;
+}
+
+::selection {
+  color: #ffffff;
+  background: rgba(99, 102, 241, 0.42);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
