@@ -26,7 +26,7 @@ setInterval(() => {
 export function createRateLimiter(options: { windowMs: number; max: number; message?: string }) {
   return (req: Request, res: Response, next: NextFunction): void => {
     // If in serverless environment, avoid blocking if rate limiting store is fresh
-    const ip = req.ip || (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     const key = `${ip}:${req.baseUrl || req.path}`;
 
@@ -61,7 +61,6 @@ export function createRateLimiter(options: { windowMs: number; max: number; mess
  */
 export function securityHeaders(req: Request, res: Response, next: NextFunction): void {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
@@ -71,7 +70,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // Safe CSP allowing applet iframe execution while restricting dangerous sources
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: https: blob:; connect-src 'self' https: ws: wss:; frame-ancestors 'self' https:;"
+    "default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https: blob:; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com; frame-src https://accounts.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;"
   );
   next();
 }
@@ -81,67 +80,31 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
  */
 export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
   const origin = req.headers.origin;
-
-  const isAllowedOrigin = (orig: string): boolean => {
-    if (!orig) return true;
-
-    try {
-      const parsed = new URL(orig);
-      // Strictly allow localhost and loopback by parsed hostname
-      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') return true;
-
-      // Strictly allow vercel.app domains (*.vercel.app)
-      if (parsed.hostname === 'vercel.app' || parsed.hostname.endsWith('.vercel.app')) return true;
-
-      // Allow Google Cloud Run domains (*.run.app)
-      if (parsed.hostname === 'run.app' || parsed.hostname.endsWith('.run.app')) return true;
-
-      // Allow explicit APP_URL or CORS_ORIGIN
-      if (process.env.APP_URL) {
-        try {
-          const appUrl = new URL(process.env.APP_URL);
-          if (parsed.origin === appUrl.origin) return true;
-        } catch {}
-      }
-      if (process.env.CORS_ORIGIN && (process.env.CORS_ORIGIN === '*' || orig === process.env.CORS_ORIGIN)) {
-        return true;
-      }
-
-      // Allow VERCEL_URL if set by Vercel environment
-      if (process.env.VERCEL_URL) {
-        const vercelHost = process.env.VERCEL_URL.replace(/^https?:\/\//, '');
-        if (parsed.host === vercelHost) return true;
-      }
-
-      // Explicit override only if CORS_ALLOW_ALL is deliberately enabled
-      if (process.env.CORS_ALLOW_ALL === 'true') {
-        return true;
-      }
-    } catch {
-      return false;
-    }
-
-    return false;
+  const allowedOrigins = new Set<string>();
+  const addOrigin = (value?: string) => {
+    if (!value) return;
+    try { const parsed = new URL(value); if (parsed.protocol === 'https:' || parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') allowedOrigins.add(parsed.origin); } catch {}
   };
-
-  if (origin && isAllowedOrigin(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+  addOrigin(process.env.APP_URL);
+  for (const value of (process.env.CORS_ORIGIN || '').split(',')) addOrigin(value.trim());
+  if (process.env.VERCEL_URL) addOrigin('https://' + process.env.VERCEL_URL.replace(/^https?:\\/\\//, ''));
+  if (process.env.NODE_ENV !== 'production') {
+    addOrigin('http://localhost:3000'); addOrigin('http://localhost:5173');
+    addOrigin('http://127.0.0.1:3000'); addOrigin('http://127.0.0.1:5173');
   }
-
+  res.vary('Origin');
+  if (origin) {
+    let normalized = ''; try { normalized = new URL(origin).origin; } catch {}
+    if (!normalized || !allowedOrigins.has(normalized)) { res.status(403).json({ success: false, error: 'Origin is not allowed.' }); return; }
+    res.setHeader('Access-Control-Allow-Origin', normalized);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-    return;
-  }
-
+  res.setHeader('Access-Control-Max-Age', '600');
+  if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
   next();
 }
-
 /**
  * Body string sanitizer
  */
