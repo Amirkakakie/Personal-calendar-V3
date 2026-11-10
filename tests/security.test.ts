@@ -10,6 +10,7 @@ const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chronos-security-'));
 const testDataFile = path.join(testDataDir, 'db.json');
 process.env.CHRONOS_DATA_FILE = testDataFile;
 const { default: app } = await import('../server/app.ts');
+const { getJwtSecret } = await import('../server/middleware/auth.ts');
 
 // ANSI terminal colors for clean test reporting
 const GREEN = '\x1b[32m';
@@ -36,6 +37,35 @@ async function runSecurityTestSuite() {
   console.log(`\n${BOLD}${CYAN}======================================================${RESET}`);
   console.log(`${BOLD}${CYAN}  CHRONOS SPRINT 01 - AUTOMATED SECURITY TEST SUITE   ${RESET}`);
   console.log(`${BOLD}${CYAN}======================================================${RESET}\n`);
+
+  // Production JWT configuration must fail closed rather than generating
+  // per-process secrets that invalidate sessions across instances/restarts.
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousJwtSecret = process.env.JWT_SECRET;
+  process.env.NODE_ENV = 'production';
+  delete process.env.JWT_SECRET;
+  assert(
+    (() => { try { getJwtSecret(); return false; } catch { return true; } })(),
+    'Production rejects a missing JWT_SECRET'
+  );
+  process.env.JWT_SECRET = 'short-secret';
+  assert(
+    (() => { try { getJwtSecret(); return false; } catch { return true; } })(),
+    'Production rejects a JWT_SECRET shorter than 32 bytes'
+  );
+  process.env.JWT_SECRET = 'REPLACE_WITH_A_STABLE_RANDOM_SECRET_OF_AT_LEAST_32_BYTES';
+  assert(
+    (() => { try { getJwtSecret(); return false; } catch { return true; } })(),
+    'Production rejects the documented placeholder JWT_SECRET'
+  );
+  process.env.JWT_SECRET = 'test-only-stable-random-secret-with-at-least-32-bytes';
+  assert(
+    getJwtSecret() === process.env.JWT_SECRET,
+    'Production accepts and returns a configured strong stable JWT_SECRET'
+  );
+  process.env.NODE_ENV = previousNodeEnv;
+  if (previousJwtSecret === undefined) delete process.env.JWT_SECRET;
+  else process.env.JWT_SECRET = previousJwtSecret;
 
   // Start ephemeral server
   const server = http.createServer(app);

@@ -11,13 +11,19 @@ import timelogsRouter from './routes/timelogsRouter.ts';
 import workspacesRouter from './routes/workspacesRouter.ts';
 import { db } from './db.ts';
 
-import { authenticateToken } from './middleware/auth.ts';
+import { authenticateToken, getJwtSecret } from './middleware/auth.ts';
 import {
   securityHeaders,
   corsMiddleware,
   sanitizeBody,
   createRateLimiter
 } from './middleware/security.ts';
+
+// Fail fast on misconfigured production deployments. Never issue or verify JWTs
+// with an ephemeral per-process secret, which would invalidate sessions across restarts.
+if (process.env.NODE_ENV === 'production') {
+  getJwtSecret();
+}
 
 export const app = express();
 
