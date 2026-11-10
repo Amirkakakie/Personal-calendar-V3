@@ -86,6 +86,11 @@ try {
   const storedGoogle = await prisma.googleConnection.findUnique({ where: { userId: 'user-a' } });
   assert.ok(storedGoogle?.accessToken?.startsWith('chronos-token:v1:'));
   assert.equal(decryptGoogleToken(storedGoogle?.accessToken), 'fixture-access-token');
+  const storedUser = await prisma.user.findUnique({ where: { id: 'user-a' } });
+  assert.equal(Object.prototype.hasOwnProperty.call(storedUser?.legacyData || {}, 'passwordHash'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(storedUser?.legacyData || {}, 'password'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(storedGoogle?.legacyData || {}, 'accessToken'), false);
+
   const loaded = await loadRelationalSnapshot(prisma);
   assert.equal(loaded.version, 1n);
   loaded.data.partitions['user-a'].tasks[0].title = 'Updated through relational runtime';
