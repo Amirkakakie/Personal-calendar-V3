@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 group-hover:text-indigo-400 transition-colors pointer-events-none" />
           <div className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-neutral-700 rounded-lg py-1.5 ps-9 pe-12 text-xs text-neutral-400 transition-all cursor-pointer">
-            {locale === 'fa' ? 'جستجو یا پرش سریع...' : 'Search or jump to...'}
+            {locale === 'fa' ? 'جستجو یا رفتن به بخش موردنظر…' : 'Search or jump to...'}
           </div>
           <div className="absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/10 bg-neutral-900 text-[11px] text-neutral-500 font-mono select-none">
             <Command className="w-2.5 h-2.5" />
@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenCommandPalette}
             className="lg:hidden p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.05] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
-            title={locale === 'fa' ? 'جستجو و دستورات (Cmd+K)' : 'Search & Commands (Cmd+K)'}
+            title={locale === 'fa' ? 'جستجو و میان‌برها (Ctrl/⌘ + K)' : 'Search & Commands (Cmd+K)'}
             aria-label="Search & Commands"
           >
             <Search className="w-4 h-4" />

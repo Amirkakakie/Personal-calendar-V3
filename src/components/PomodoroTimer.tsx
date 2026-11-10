@@ -167,10 +167,10 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">
-                {locale === 'fa' ? 'تایمر تمرکز عمیق پومودورو' : 'Pomodoro Deep Focus'}
+                {locale === 'fa' ? 'زمان‌سنج تمرکز پومودورو' : 'Pomodoro Deep Focus'}
               </h3>
               <p className="text-[11px] text-neutral-400">
-                {locale === 'fa' ? 'بلوک‌های ۲۵ دقیقه‌ای تمرکز بدون وقفه' : 'Scientifically proven 25m interval'}
+                {locale === 'fa' ? 'بازه‌های ۲۵ دقیقه‌ای تمرکز' : 'Scientifically proven 25m interval'}
               </p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            {locale === 'fa' ? '۱۵ دقیقه طولانی' : '15m Long'}
+            {locale === 'fa' ? 'استراحت بلند (۱۵ دقیقه)' : '15m Long'}
           </button>
         </div>
 
@@ -263,14 +263,14 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         {tasks.length > 0 && (
           <div className="mb-6">
             <label className="block text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">
-              {locale === 'fa' ? 'وظیفه در حال اجرا:' : 'Focused Action Item:'}
+              {locale === 'fa' ? 'کار در حال انجام:' : 'Focused Action Item:'}
             </label>
             <select
               value={selectedTaskId}
               onChange={(e) => setSelectedTaskId(e.target.value)}
               className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
             >
-              <option value="">{locale === 'fa' ? '-- تمرکز عمومی بدون وظیفه --' : '-- General Focus Session --'}</option>
+              <option value="">{locale === 'fa' ? '-- تمرکز بدون انتخاب کار --' : '-- General Focus Session --'}</option>
               {tasks.filter(t => t.status !== 'completed').map(task => (
                 <option key={task.id} value={task.id}>
                   [{task.category}] {task.title}

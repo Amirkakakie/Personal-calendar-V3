@@ -45,7 +45,7 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
             </span>
           </div>
           <p className="text-xs text-neutral-400">
-            {direction === 'rtl' ? 'اعضای تأییدشده پروژه:' : 'Project Collaborators:'}{' '}
+            {direction === 'rtl' ? 'اعضای پروژه:' : 'Project Collaborators:'}{' '}
             <span className="font-semibold text-neutral-200">
               {formatNumber(teamMembers.length)} {direction === 'rtl' ? 'نفر' : 'members'}
             </span>
@@ -59,7 +59,7 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
           className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all self-start md:self-auto"
         >
           <UserPlus className="w-4 h-4" />
-          <span>{direction === 'rtl' ? 'دعوت همکار با ایمیل' : 'Invite Teammate via Email'}</span>
+          <span>{direction === 'rtl' ? 'دعوت همکار از طریق ایمیل' : 'Invite Teammate via Email'}</span>
         </button>
       </div>
 
@@ -116,10 +116,10 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
 
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-neutral-400">
-                      {direction === 'rtl' ? 'وظایف در این پروژه:' : 'Tasks in Project:'}
+                      {direction === 'rtl' ? 'کارهای این پروژه:' : 'Tasks in Project:'}
                     </span>
                     <span className="font-semibold text-neutral-200">
-                      {formatNumber(assignedTasks.length)} ({formatNumber(completedTasks.length)} {direction === 'rtl' ? 'تکمیل‌شده' : 'done'})
+                      {formatNumber(assignedTasks.length)} ({formatNumber(completedTasks.length)} {direction === 'rtl' ? 'انجام‌شده' : 'done'})
                     </span>
                   </div>
                 </div>

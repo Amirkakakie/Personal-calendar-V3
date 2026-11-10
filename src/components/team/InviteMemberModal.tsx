@@ -25,7 +25,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
     if (!currentProject) {
       setFeedback({
         type: 'error',
-        message: direction === 'rtl' ? 'پروژه‌ای انتخاب نشده است.' : 'No active project selected.'
+        message: direction === 'rtl' ? 'ابتدا یک پروژه انتخاب کنید.' : 'No active project selected.'
       });
       return;
     }
@@ -34,7 +34,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
     if (!cleanEmail) {
       setFeedback({
         type: 'error',
-        message: direction === 'rtl' ? 'لطفاً ایمیل کاربر را وارد کنید.' : 'Please enter an account email address.'
+        message: direction === 'rtl' ? 'نشانی ایمیل همکارتان را وارد کنید.' : 'Please enter an account email address.'
       });
       return;
     }
@@ -75,7 +75,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-400" />
             <h3 className="text-base font-bold text-white tracking-tight">
-              {direction === 'rtl' ? 'دعوت به پروژه تیمی' : 'Invite Teammate to Project'}
+              {direction === 'rtl' ? 'دعوت همکار به پروژه' : 'Invite Teammate to Project'}
             </h3>
           </div>
           <button
@@ -93,7 +93,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
             <div className="p-3 bg-neutral-950/70 border border-neutral-800 rounded-xl flex items-center justify-between text-xs">
               <span className="text-neutral-400 flex items-center gap-1.5">
                 <FolderGit2 className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{direction === 'rtl' ? 'پروژه مقصد:' : 'Target Project:'}</span>
+                <span>{direction === 'rtl' ? 'پروژه موردنظر:' : 'Target Project:'}</span>
               </span>
               <div className="flex items-center gap-1.5 font-semibold text-neutral-200">
                 <span 
@@ -133,7 +133,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
           {/* Email Input */}
           <div>
             <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-              {direction === 'rtl' ? 'آدرس ایمیل کاربر *' : 'Registered User Email *'}
+              {direction === 'rtl' ? 'نشانی ایمیل همکار *' : 'Registered User Email *'}
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 absolute start-3.5 top-3 text-neutral-500" />
@@ -152,7 +152,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
             </div>
             <p className="text-[11px] text-neutral-500 mt-1">
               {direction === 'rtl' 
-                ? 'کاربر باید پیش از این در سیستم ثبت‌نام کرده باشد.' 
+                ? 'همکارتان باید پیش از دریافت دعوت‌نامه در برنامه حساب کاربری داشته باشد.' 
                 : 'User must already have an account on Chronos.'}
             </p>
           </div>
@@ -160,7 +160,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
           {/* Role Selection */}
           <div>
             <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-              {direction === 'rtl' ? 'نقش در پروژه' : 'Project Permission Role'}
+              {direction === 'rtl' ? 'دسترسی همکار در پروژه' : 'Project Permission Role'}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(['Member', 'Admin', 'Viewer'] as TeamRole[]).map(r => (
@@ -199,7 +199,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
               {isSubmitting ? (
                 <span>{t('common.loading')}</span>
               ) : (
-                <span>{direction === 'rtl' ? 'ارسال دعوت‌نامه' : 'Send Invitation'}</span>
+                <span>{direction === 'rtl' ? 'فرستادن دعوت‌نامه' : 'Send Invitation'}</span>
               )}
             </button>
           </div>

@@ -48,10 +48,10 @@ export const AICoachSnapshot: React.FC<AICoachSnapshotProps> = ({
   // Circadian window hint based on local time
   const currentHour = new Date().getHours();
   const currentEnergyZone = currentHour >= 8 && currentHour < 13
-    ? { title: locale === 'fa' ? 'پنجره اوج تمرکز' : 'Peak Focus Window', subtitle: '08:30 - 12:30', color: 'text-indigo-400', badge: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' }
+    ? { title: locale === 'fa' ? 'ساعت‌های اوج تمرکز' : 'Peak Focus Window', subtitle: '08:30 - 12:30', color: 'text-indigo-400', badge: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' }
     : currentHour >= 13 && currentHour < 17
-    ? { title: locale === 'fa' ? 'پنجره تفکر خلاق' : 'Creative Mind Window', subtitle: '13:30 - 16:30', color: 'text-purple-400', badge: 'bg-purple-500/10 text-purple-300 border-purple-500/20' }
-    : { title: locale === 'fa' ? 'پنجره تریاژ و سبک' : 'Recovery & Admin Window', subtitle: '16:30 - 20:00', color: 'text-amber-400', badge: 'bg-amber-500/10 text-amber-300 border-amber-500/20' };
+    ? { title: locale === 'fa' ? 'ساعت‌های مناسب کار خلاقانه' : 'Creative Mind Window', subtitle: '13:30 - 16:30', color: 'text-purple-400', badge: 'bg-purple-500/10 text-purple-300 border-purple-500/20' }
+    : { title: locale === 'fa' ? 'ساعت‌های مناسب کارهای سبک' : 'Recovery & Admin Window', subtitle: '16:30 - 20:00', color: 'text-amber-400', badge: 'bg-amber-500/10 text-amber-300 border-amber-500/20' };
 
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4 sm:p-5 backdrop-blur-md shadow-sm flex flex-col justify-between h-full">
@@ -82,12 +82,12 @@ export const AICoachSnapshot: React.FC<AICoachSnapshotProps> = ({
           {isLoading ? (
             <div className="flex items-center justify-center py-4 text-neutral-400 gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-              <span className="text-[11px]">{locale === 'fa' ? 'در حال تحلیل بار ذهنی...' : 'Evaluating cognitive queue...'}</span>
+              <span className="text-[11px]">{locale === 'fa' ? 'در حال بررسی حجم کارها…' : 'Evaluating cognitive queue...'}</span>
             </div>
           ) : brief ? (
             <div className="space-y-2 animate-fadeIn">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-violet-300">{locale === 'fa' ? 'رهنمود روزانه' : 'Daily Directive'}</span>
+                <span className="font-semibold text-violet-300">{locale === 'fa' ? 'پیشنهاد امروز' : 'Daily Directive'}</span>
                 <span className="text-[10px] text-emerald-400 font-mono font-medium">
                   {brief.burnoutRisk} Risk
                 </span>
@@ -106,13 +106,13 @@ export const AICoachSnapshot: React.FC<AICoachSnapshotProps> = ({
             <div className="space-y-1.5">
               <p className="text-neutral-300 text-[11px] leading-relaxed">
                 {locale === 'fa'
-                  ? 'برنامه امروز شما شامل وظایف استراتژیک در بخش ۲ است. برای بالاترین بازدهی، کارهای عمیق را در ساعات ابتدایی اجرا کنید.'
+                  ? 'در برنامه امروزتان کارهای مهم و غیرفوری وجود دارد. بهتر است کارهای نیازمند تمرکز را در ساعت‌های پربازده انجام دهید.'
                   : 'Queue prioritized for Quadrant 2 execution. Align complex problem-solving with your peak cortisol circadian band.'}
               </p>
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 pt-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>
-                  {tasks.filter(t => t.status !== 'completed').length} {locale === 'fa' ? 'وظیفه در صف انتظار' : 'tasks in active pipeline'}
+                  {tasks.filter(t => t.status !== 'completed').length} {locale === 'fa' ? 'کار در فهرست انجام' : 'tasks in active pipeline'}
                 </span>
               </div>
             </div>
@@ -152,7 +152,7 @@ export const AICoachSnapshot: React.FC<AICoachSnapshotProps> = ({
           className="flex-1 py-2 px-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 border border-neutral-700/80 text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
         >
           <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          <span>{locale === 'fa' ? 'رهنمود سریع' : 'Quick Brief'}</span>
+          <span>{locale === 'fa' ? 'پیشنهاد سریع' : 'Quick Brief'}</span>
         </button>
 
         <button

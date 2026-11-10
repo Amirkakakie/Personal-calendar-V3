@@ -107,7 +107,7 @@ export const BurnoutAlertBanner: React.FC<{ onNavigateToCalendar: () => void }> 
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-mono text-neutral-400">
                   {locale === 'fa' 
-                    ? `${formatNumber(data.deadlineAlerts.length)} وظیفه در ۴۸ ساعت آینده (${formatDuration(data.totalImminentMinutes)} کار تخمینی):`
+                    ? `${formatNumber(data.deadlineAlerts.length)} کار در ۴۸ ساعت آینده (${formatDuration(data.totalImminentMinutes)} کار تخمینی):`
                     : `${data.deadlineAlerts.length} task(s) due within 48h (${Math.round(data.totalImminentMinutes / 60)}h workload):`}
                 </span>
                 {data.deadlineAlerts.slice(0, 3).map(alert => (

@@ -123,7 +123,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="relative flex py-1 items-center mb-4">
             <div className="flex-grow border-t border-neutral-800" />
             <span className="flex-shrink mx-2.5 text-[10px] text-neutral-500 uppercase tracking-wider font-medium">
-              {direction === 'rtl' ? 'یا ادامه با ایمیل' : 'or continue with email'}
+              {direction === 'rtl' ? 'یا ورود با ایمیل' : 'or continue with email'}
             </span>
             <div className="flex-grow border-t border-neutral-800" />
           </div>

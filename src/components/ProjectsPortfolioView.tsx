@@ -188,17 +188,17 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
           </div>
 
           <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
-            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ساعات هدف" : "Target Hours"}</span>
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "زمان انجام‌نشده" : "Target Hours"}</span>
             <span className="text-xl font-bold font-mono text-white tracking-tight">{formatNumber(totalTargetHours)}h</span>
           </div>
 
           <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
-            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ساعات ثبت‌شده" : "Logged Hours"}</span>
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "زمان صرف‌شده" : "Logged Hours"}</span>
             <span className="text-xl font-bold font-mono text-indigo-400 tracking-tight">{formatNumber(totalLoggedHours)}h</span>
           </div>
 
           <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
-            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ارزش ایجادشده" : "Cumulative Yield"}</span>
+            <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ارزش کار انجام‌شده" : "Cumulative Yield"}</span>
             <span className="text-xl font-bold font-mono text-emerald-400 tracking-tight">${formatNumber(Math.round(totalYieldValue))}</span>
           </div>
         </div>
@@ -213,7 +213,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder={locale === 'fa' ? 'جستجوی پروژه با نام یا مشخصات...' : 'Search projects by name or spec...'}
+              placeholder={locale === 'fa' ? 'جستجو در نام یا توضیحات پروژه…' : 'Search projects by name or spec...'}
               className="app-input w-full ps-10 pe-4 bg-neutral-950/70 text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -226,9 +226,9 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
               className="app-select px-3 bg-neutral-950/70 border-neutral-800 text-neutral-300 focus:outline-none focus:border-indigo-500"
             >
               <option value="all">{locale === 'fa' ? 'همه وضعیت‌ها' : 'All Statuses'}</option>
-              <option value="in_progress">{locale === 'fa' ? 'در جریان' : 'In Progress'}</option>
-              <option value="completed">{locale === 'fa' ? 'تکمیل‌شده' : 'Completed'}</option>
-              <option value="todo">{locale === 'fa' ? 'برنامه‌ریزی‌شده' : 'To Do'}</option>
+              <option value="in_progress">{locale === 'fa' ? 'در حال انجام' : 'In Progress'}</option>
+              <option value="completed">{locale === 'fa' ? 'انجام‌شده' : 'Completed'}</option>
+              <option value="todo">{locale === 'fa' ? 'انجام‌نشده' : 'To Do'}</option>
               <option value="archived">{locale === 'fa' ? 'بایگانی‌شده' : 'Archived'}</option>
             </select>
 
@@ -273,7 +273,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
         />
       ) : filteredProjects.length === 0 ? (
         <div className="p-12 text-center border border-dashed border-neutral-800 rounded-2xl text-xs text-neutral-500">
-          {locale === 'fa' ? 'پروژه‌ای با معیارهای فیلتر شده یافت نشد.' : 'No projects matched the selected filters.'}
+          {locale === 'fa' ? 'پروژه‌ای با این فیلترها پیدا نشد.' : 'No projects matched the selected filters.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -296,7 +296,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                       </span>
                       {project.status === 'completed' && (
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {locale === 'fa' ? 'تکمیل‌شده' : 'Done'}
+                          {locale === 'fa' ? 'انجام‌شده' : 'Done'}
                         </span>
                       )}
                     </div>
@@ -351,7 +351,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                     {project.name}
                   </h3>
                   <p className="text-xs text-neutral-400 mt-1.5 line-clamp-2 leading-relaxed">
-                    {project.description || (locale === 'fa' ? 'بدون شرح تفصیلی' : 'No description provided')}
+                    {project.description || (locale === 'fa' ? 'بدون توضیحات' : 'No description provided')}
                   </p>
 
                   {/* Progress Bar */}
@@ -454,7 +454,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder={locale === 'fa' ? 'مثال: سامانه ابری پردازش کلان‌داده' : 'e.g. Distributed Core & Kafka Streaming'}
+                  placeholder={locale === 'fa' ? 'مثلاً: طراحی و راه‌اندازی فروشگاه اینترنتی' : 'e.g. Distributed Core & Kafka Streaming'}
                   value={name}
                   onChange={e => {
                     setName(e.target.value);
@@ -471,7 +471,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                 </label>
                 <textarea
                   rows={2}
-                  placeholder={locale === 'fa' ? 'شرح اهداف فنی و خروجی‌های مورد انتظار...' : 'Milestone deliverable objectives and spec...'}
+                  placeholder={locale === 'fa' ? 'هدف پروژه و نتیجه‌ای را که انتظار دارید بنویسید…' : 'Milestone deliverable objectives and spec...'}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   className="app-textarea"
@@ -508,8 +508,8 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
                     disabled={isSubmitting}
                   >
                     <option value="in_progress">{locale === 'fa' ? 'در حال انجام' : 'In Progress'}</option>
-                    <option value="completed">{locale === 'fa' ? 'تکمیل‌شده' : 'Completed'}</option>
-                    <option value="todo">{locale === 'fa' ? 'برنامه‌ریزی‌شده' : 'To Do'}</option>
+                    <option value="completed">{locale === 'fa' ? 'انجام‌شده' : 'Completed'}</option>
+                    <option value="todo">{locale === 'fa' ? 'انجام‌نشده' : 'To Do'}</option>
                     <option value="archived">{locale === 'fa' ? 'بایگانی‌شده' : 'Archived'}</option>
                   </select>
                 </div>
@@ -579,7 +579,7 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
-                  {locale === 'fa' ? 'آدرس پوشه گوگل درایو یا اسناد' : 'Google Drive Folder or Docs URL'}
+                  {locale === 'fa' ? 'نشانی پوشه یا سند در Google Drive' : 'Google Drive Folder or Docs URL'}
                 </label>
                 <input
                   type="url"

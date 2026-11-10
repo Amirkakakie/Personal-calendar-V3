@@ -157,7 +157,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
           </div>
           <div>
             <h2 className="text-base font-bold text-white">
-              {currentGoal ? (locale === 'fa' ? 'ویرایش هدف راهبردی و OKR' : 'Edit Strategic Goal / OKR') : t('goals.newGoal')}
+              {currentGoal ? (locale === 'fa' ? 'ویرایش هدف' : 'Edit Strategic Goal / OKR') : t('goals.newGoal')}
             </h2>
             <p className="text-xs text-neutral-400">
               {t('goals.subtitle')}
@@ -182,7 +182,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
               ref={titleInputRef}
               type="text"
               required
-              placeholder={locale === 'fa' ? 'مثال: تسلط کامل بر معماری سیستم‌های توزیع‌شده...' : 'e.g., Master Distributed Computing Infrastructure...'}
+              placeholder={locale === 'fa' ? 'مثلاً: راه‌اندازی نسخه اولیه محصول…' : 'e.g., Master Distributed Computing Infrastructure...'}
               value={title}
               disabled={isSubmitting}
               onChange={(e) => {
@@ -200,7 +200,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
             </label>
             <textarea
               rows={2}
-              placeholder={locale === 'fa' ? 'تعریف خروجی مطلوب و معیارهای موفقیت...' : 'Strategic significance, prerequisites, or notes...'}
+              placeholder={locale === 'fa' ? 'شرح هدف و نتیجه‌ای که می‌خواهید به آن برسید…' : 'Strategic significance, prerequisites, or notes...'}
               value={description}
               disabled={isSubmitting}
               onChange={(e) => setDescription(e.target.value)}
@@ -229,7 +229,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                {locale === 'fa' ? 'افق زمانی' : 'Timeframe'}
+                {locale === 'fa' ? 'بازه زمانی' : 'Timeframe'}
               </label>
               <select
                 value={timeframe}
@@ -237,7 +237,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
                 onChange={(e) => setTimeframe(e.target.value as any)}
                 className="app-select"
               >
-                <option value="quarterly">{locale === 'fa' ? 'سه ماهه (فصلی)' : 'Quarterly'}</option>
+                <option value="quarterly">{locale === 'fa' ? 'سه‌ماهه' : 'Quarterly'}</option>
                 <option value="monthly">{locale === 'fa' ? 'ماهانه' : 'Monthly'}</option>
                 <option value="yearly">{locale === 'fa' ? 'سالانه' : 'Yearly'}</option>
               </select>
@@ -247,7 +247,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
           {/* Target Date */}
           <div>
             <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-              {locale === 'fa' ? 'تاریخ مهلت دستیابی' : 'Target Completion Date'}
+              {locale === 'fa' ? 'تاریخ دستیابی به هدف' : 'Target Completion Date'}
             </label>
             <input
               type="date"
@@ -261,14 +261,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({
           {/* Key Results Builder */}
           <div className="pt-2">
             <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-2">
-              {locale === 'fa' ? 'نتایج کلیدی (Key Results)' : 'Key Results (OKRs)'} ({formatNumber(keyResults.length)})
+              {locale === 'fa' ? 'نتایج کلیدی' : 'Key Results (OKRs)'} ({formatNumber(keyResults.length)})
             </label>
 
             {/* Input fields to add a Key Result */}
             <div className="space-y-2 mb-3 bg-neutral-800/40 p-3 rounded-xl border border-neutral-800">
               <input
                 type="text"
-                placeholder={locale === 'fa' ? 'عنوان نتیجه قابل سنجش...' : 'e.g. Implement Raft Lab 2A from scratch'}
+                placeholder={locale === 'fa' ? 'عنوان یک نتیجه قابل‌اندازه‌گیری…' : 'e.g. Implement Raft Lab 2A from scratch'}
                 value={newKrTitle}
                 onChange={(e) => setNewKrTitle(e.target.value)}
                 onKeyDown={(e) => {
@@ -369,7 +369,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>
                   {isConfirmingDelete
-                    ? (locale === 'fa' ? 'تأیید حذف هدف؟' : 'Confirm Delete?')
+                    ? (locale === 'fa' ? 'از حذف این هدف مطمئن هستید؟' : 'Confirm Delete?')
                     : t('common.delete')}
                 </span>
               </button>

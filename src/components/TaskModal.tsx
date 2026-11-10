@@ -367,7 +367,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            <span>{locale === 'fa' ? 'زمان‌بندی و انرژی زیستی' : 'Energy & Timing'}</span>
+            <span>{locale === 'fa' ? 'زمان‌بندی و سطح انرژی' : 'Energy & Timing'}</span>
           </button>
 
           <button
@@ -380,7 +380,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             }`}
           >
             <ListTodo className="w-3.5 h-3.5" />
-            <span>{locale === 'fa' ? 'چک‌لیست و پیوندها' : 'Subtasks & Links'}</span>
+            <span>{locale === 'fa' ? 'چک‌لیست و موارد مرتبط' : 'Subtasks & Links'}</span>
             {subtasks.length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-neutral-800 text-neutral-300 font-mono">
                 {subtasks.length}
@@ -484,7 +484,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               {/* Eisenhower Matrix Quadrant Selector */}
               <div>
                 <label className="block text-[11px] font-bold text-neutral-300 uppercase tracking-wider mb-2">
-                  {t('nav.eisenhower')} — {locale === 'fa' ? 'ماتریس تصمیم‌گیری آیزنهاور' : 'Decision Quadrant'}
+                  {t('nav.eisenhower')} — {locale === 'fa' ? 'ماتریس اولویت‌بندی آیزنهاور' : 'Decision Quadrant'}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {eisenhowerOptions.map(opt => {
@@ -552,7 +552,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    {locale === 'fa' ? 'مدت تخمینی کار (دقیقه)' : 'Estimated Duration'}
+                    {locale === 'fa' ? 'زمان تقریبی انجام (دقیقه)' : 'Estimated Duration'}
                   </label>
                   <span className="text-xs font-mono font-semibold text-indigo-400">
                     {formatDuration(durationMinutes)}
@@ -592,7 +592,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <div>
                 <label className="block text-[11px] font-bold text-neutral-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <BatteryCharging className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{locale === 'fa' ? 'بازه انرژی زیستی بهینه' : 'Circadian Energy Slot'}</span>
+                  <span>{locale === 'fa' ? 'زمان مناسب بر اساس سطح انرژی' : 'Circadian Energy Slot'}</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
@@ -676,7 +676,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   onChange={(e) => setProjectId(e.target.value)}
                   className="app-select"
                 >
-                  <option value="">{locale === 'fa' ? '-- بدون پروژه خاص --' : '-- None (Unassigned) --'}</option>
+                  <option value="">{locale === 'fa' ? '-- بدون پروژه --' : '-- None (Unassigned) --'}</option>
                   {projects.map(p => (
                     <option key={p.id} value={p.id}>
                       [{p.category}] {p.name} (${formatNumber(p.hourlyValuation || 100)}/hr)
@@ -696,7 +696,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   onChange={(e) => setGoalId(e.target.value)}
                   className="app-select"
                 >
-                  <option value="">{locale === 'fa' ? '-- بدون هدف راهبردی --' : '-- None (Ad-hoc) --'}</option>
+                  <option value="">{locale === 'fa' ? '-- بدون هدف --' : '-- None (Ad-hoc) --'}</option>
                   {goals.map(g => (
                     <option key={g.id} value={g.id}>
                       [{g.category}] {g.title} ({formatNumber(g.progressPercent || 0)}%)
@@ -710,7 +710,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 <div>
                   <label className="block text-[11px] font-bold text-neutral-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{locale === 'fa' ? 'ارتقای شاخه مهارت (XP)' : 'RPG Skill Mastery Link'}</span>
+                    <span>{locale === 'fa' ? 'مهارت مرتبط' : 'RPG Skill Mastery Link'}</span>
                   </label>
                   <select
                     value={linkedSkillId}
@@ -731,7 +731,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <div className="pt-2 border-t border-neutral-800">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    {locale === 'fa' ? 'چک‌لیست زیرمجموعه‌ها' : 'Subtasks Breakdown'} ({subtasks.filter(s => s.completed).length}/{subtasks.length})
+                    {locale === 'fa' ? 'کارهای زیرمجموعه' : 'Subtasks Breakdown'} ({subtasks.filter(s => s.completed).length}/{subtasks.length})
                   </label>
                 </div>
 
@@ -777,7 +777,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                         handleAddSubtask();
                       }
                     }}
-                    placeholder={locale === 'fa' ? 'افزودن مرحله جدید...' : 'Add a step or deliverable item...'}
+                    placeholder={locale === 'fa' ? 'افزودن مورد به فهرست…' : 'Add a step or deliverable item...'}
                     className="flex-1 app-input text-xs"
                   />
                   <button
@@ -812,7 +812,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   {isDeleting
                     ? t('common.loading')
                     : isConfirmingDelete
-                    ? (locale === 'fa' ? 'تأیید حذف کار؟' : 'Confirm Delete?')
+                    ? (locale === 'fa' ? 'از حذف این کار مطمئن هستید؟' : 'Confirm Delete?')
                     : t('common.delete')}
                 </span>
               </button>

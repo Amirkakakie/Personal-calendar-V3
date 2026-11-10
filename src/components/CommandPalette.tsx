@@ -221,7 +221,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={locale === 'fa' ? 'جستجو در وظایف، ابزارها یا جابجایی بین بخش‌ها...' : 'Type a command, search tasks, or jump to view...'}
+            placeholder={locale === 'fa' ? 'جستجو در کارها و ابزارها یا رفتن به بخش‌های برنامه…' : 'Type a command, search tasks, or jump to view...'}
             className="flex-1 bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none"
           />
           <div className="flex items-center gap-1">
@@ -235,7 +235,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         <div className="max-h-80 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {combinedItems.length === 0 ? (
             <div className="py-8 text-center text-xs text-neutral-500">
-              {locale === 'fa' ? 'هیچ موردی منطبق با جستجوی شما یافت نشد.' : 'No commands or tasks found matching your query.'}
+              {locale === 'fa' ? 'نتیجه‌ای برای جستجوی شما پیدا نشد.' : 'No commands or tasks found matching your query.'}
             </div>
           ) : (
             combinedItems.map((item, idx) => {
