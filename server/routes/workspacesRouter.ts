@@ -287,7 +287,7 @@ router.delete('/team/tasks/:id', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const taskId = req.params.id;
 
-  const currentTask = (db as any).data.teamTasks.find((t: any) => t.id === taskId);
+  const currentTask = db.getTeamTaskById(taskId, userId);
   if (!currentTask) {
     return res.status(404).json({ success: false, error: 'Task not found' });
   }
