@@ -339,7 +339,7 @@ class Database {
       if (existingUsers || existingArchives) {
         throw new Error('Relational tables contain data but DatabaseRevision is missing. Refusing to initialize an inconsistent database.');
       }
-      if (this.requiresPostgres && process.env.CHRONOS_ALLOW_EMPTY_DB_INIT !== 'true') {
+      if (process.env.CHRONOS_ALLOW_EMPTY_DB_INIT !== 'true') {
         throw new Error('Relational database is not initialized. Import a verified legacy snapshot, or explicitly set CHRONOS_ALLOW_EMPTY_DB_INIT=true for a new installation.');
       }
       await this.prisma.databaseRevision.create({ data: { id: 'root', version: 1n } });
