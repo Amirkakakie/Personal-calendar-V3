@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { countLegacySnapshot, snapshotSha256, validateLegacyExport } from '../server/migrations/legacySnapshot.ts';
+import {
+  assertLegacyArchiveTargetEmpty,
+  buildLegacyArchiveRow,
+  countLegacySnapshot,
+  snapshotSha256,
+  validateLegacyExport
+} from '../server/migrations/legacySnapshot.ts';
 
 const snapshot = {
   version: 'legacy-test',
@@ -44,3 +50,13 @@ wrongCounts.counts.users = 99;
 assert.throws(() => validateLegacyExport(wrongCounts), /counts/);
 
 console.log('Legacy snapshot export tests: 5 assertions passed.');
+
+const archiveRow = buildLegacyArchiveRow(validExport);
+assert.equal(archiveRow.id, 'chronos-legacy-root-v1');
+assert.equal(archiveRow.checksum, validExport.integrity.snapshotSha256);
+assert.equal(archiveRow.payload.users.length, 1);
+assert.doesNotThrow(() => assertLegacyArchiveTargetEmpty(0, 0));
+assert.throws(() => assertLegacyArchiveTargetEmpty(1, 0), /not empty/);
+assert.throws(() => assertLegacyArchiveTargetEmpty(0, 1), /not empty/);
+
+console.log('Legacy archive preparation tests: 6 additional assertions passed.');

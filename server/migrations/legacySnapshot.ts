@@ -80,3 +80,31 @@ export function validateLegacyExport(value: any): asserts value is LegacySnapsho
     throw new Error('Snapshot record counts do not match the export manifest.');
   }
 }
+
+
+export interface LegacyArchiveRow {
+  id: string;
+  userId: null;
+  sourceVersion: string;
+  payload: Record<string, any>;
+  checksum: string;
+}
+
+export function buildLegacyArchiveRow(exportFile: LegacySnapshotExport): LegacyArchiveRow {
+  validateLegacyExport(exportFile);
+  return {
+    id: 'chronos-legacy-root-v1',
+    userId: null,
+    sourceVersion: `${exportFile.source.applicationVersion};postgres-row-version=${exportFile.source.version}`,
+    payload: exportFile.snapshot,
+    checksum: exportFile.integrity.snapshotSha256
+  };
+}
+
+export function assertLegacyArchiveTargetEmpty(userCount: number, legacySnapshotCount: number): void {
+  if (userCount !== 0 || legacySnapshotCount !== 0) {
+    throw new Error(
+      'Relational archive target is not empty. Refusing to mix a legacy snapshot into an initialized database.'
+    );
+  }
+}
