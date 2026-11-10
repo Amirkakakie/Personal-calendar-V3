@@ -641,6 +641,12 @@ class Database {
     if (actorRole === 'ADMIN' && targetRole === 'ADMIN') return false;
     project.memberIds = project.memberIds.filter(id => id !== targetUserId);
     if (project.memberRoles) delete project.memberRoles[targetUserId];
+    const now = new Date().toISOString();
+    this.data.teamTasks = this.data.teamTasks.map(task =>
+      task.projectId === projectId && task.assigneeId === targetUserId
+        ? { ...task, assigneeId: undefined, updatedAt: now }
+        : task
+    );
     this.save(this.data);
     return true;
   }
@@ -708,6 +714,7 @@ class Database {
     // VIEWER role cannot create tasks
     const role = this.getProjectRole(task.projectId, userId);
     if (role === 'VIEWER') return null;
+    if (task.assigneeId && !proj.memberIds.includes(task.assigneeId)) return null;
 
     this.data.teamTasks.unshift(task);
     this.save(this.data);
@@ -726,6 +733,8 @@ class Database {
     // VIEWER role cannot update tasks
     const role = this.getProjectRole(currentTask.projectId, userId);
     if (role === 'VIEWER') return null;
+
+    if (updates.assigneeId && !proj.memberIds.includes(updates.assigneeId)) return null;
 
     // Disallow changing taskId, projectId, or overwriting comments directly via updateTeamTask
     const safeUpdates = { ...updates };
