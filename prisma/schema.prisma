@@ -628,6 +628,8 @@ model UserStats {
   updatedAt          DateTime @updatedAt
 
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legacyData Json?
+
 }
 
 model GoogleConnection {
@@ -643,6 +645,8 @@ model GoogleConnection {
   updatedAt          DateTime @updatedAt
 
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legacyData Json?
+
 }
 
 model LegacySnapshot {
