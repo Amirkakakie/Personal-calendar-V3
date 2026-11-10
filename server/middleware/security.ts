@@ -85,6 +85,14 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
     if (!value) return;
     try { const parsed = new URL(value); if (parsed.protocol === 'https:' || parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') allowedOrigins.add(parsed.origin); } catch {}
   };
+  // Always permit the request's own origin. Same-origin browser requests still carry
+  // an Origin header on writes, and production custom domains must not depend on
+  // APP_URL/CORS_ORIGIN being manually duplicated in deployment settings.
+  const requestHost = req.get('host');
+  if (requestHost) {
+    // Express derives req.protocol from the configured trusted-proxy policy.
+    addOrigin(`${req.protocol}://${requestHost}`);
+  }
   addOrigin(process.env.APP_URL);
   for (const value of (process.env.CORS_ORIGIN || '').split(',')) addOrigin(value.trim());
   if (process.env.VERCEL_URL) {
