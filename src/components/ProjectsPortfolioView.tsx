@@ -187,17 +187,17 @@ export const ProjectsPortfolioView: React.FC<ProjectsPortfolioViewProps> = ({
             <span className="text-xl font-bold font-mono text-white tracking-tight">{formatNumber(projects.length)}</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
+          <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
             <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ساعات هدف" : "Target Hours"}</span>
             <span className="text-xl font-bold font-mono text-white tracking-tight">{formatNumber(totalTargetHours)}h</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
+          <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
             <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ساعات ثبت‌شده" : "Logged Hours"}</span>
             <span className="text-xl font-bold font-mono text-indigo-400 tracking-tight">{formatNumber(totalLoggedHours)}h</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800">
+          <div className="p-4 sm:p-5 min-h-[112px] rounded-2xl bg-neutral-900/70 border border-neutral-800/90 hover:border-neutral-700 transition-colors">
             <span className="text-xs font-medium text-neutral-400 block mb-2">{locale === "fa" ? "ارزش ایجادشده" : "Cumulative Yield"}</span>
             <span className="text-xl font-bold font-mono text-emerald-400 tracking-tight">${formatNumber(Math.round(totalYieldValue))}</span>
           </div>
