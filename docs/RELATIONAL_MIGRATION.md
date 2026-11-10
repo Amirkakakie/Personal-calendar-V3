@@ -20,7 +20,9 @@ docker compose up -d postgres
 
 ```powershell
 $env:DATABASE_URL = "postgresql://chronos:$env:CHRONOS_POSTGRES_PASSWORD@localhost:5432/chronos?schema=public"
-$env:CHRONOS_DATA_ENCRYPTION_KEY = [Convert]::ToBase64String((1..32 | ForEach-Object { [byte](Get-Random -Minimum 0 -Maximum 256) }))
+$keyBytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($keyBytes)
+$env:CHRONOS_DATA_ENCRYPTION_KEY = [Convert]::ToBase64String($keyBytes)
 ```
 
 For a durable setup across terminal sessions, store these values in a local untracked `.env` file or a secrets manager. Never commit that file. Back up the encryption key separately; losing it prevents decryption of the archived legacy snapshot and stored OAuth tokens.
