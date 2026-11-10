@@ -57,6 +57,19 @@ try {
   assert.equal(await prisma.teamTask.count(), 1);
   assert.equal(await prisma.teamTaskComment.count(), 1);
   assert.equal(await prisma.projectInvitation.count(), 1);
+  await prisma.project.create({ data: {
+    id: 'foreign-project-b', userId: 'user-b', name: 'Bob private project',
+    status: 'IN_PROGRESS', createdAt: new Date(), updatedAt: new Date()
+  }});
+  await assert.rejects(
+    () => prisma.task.create({ data: {
+      id: 'cross-tenant-task', userId: 'user-a', projectId: 'foreign-project-b',
+      title: 'Must be rejected', createdAt: new Date(), updatedAt: new Date()
+    } }),
+    /foreign key|constraint|violates/i
+  );
+  assert.equal(await prisma.task.count(), 1, 'composite foreign keys reject cross-user project references');
+
   const invitation = await prisma.projectInvitation.findUnique({ where: { id: 'invite-a' } });
   assert.equal(invitation?.recipientId, null, 'pending invitations to unregistered email addresses are retained');
   const task = await prisma.task.findUnique({ where: { id: 'task-a' }, include: { subtasks: true } });
