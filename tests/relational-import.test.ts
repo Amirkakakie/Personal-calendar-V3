@@ -28,7 +28,7 @@ const snapshot = {
       skills: [{ id: 'skill-a', name: 'Planning', category: 'Work', level: 2, currentXp: 20, requiredXp: 100, masteryPct: 20, icon: 'Target', description: 'Planning', unlocked: true, perks: [] }],
       badges: [{ id: 'badge-a', name: 'Starter', description: 'Started', icon: 'Star', category: 'Progress', xpBonus: 10, unlocked: true }],
       stats: { focusMinutes: 30, pomodoroSessions: 1, totalXp: 20, userLevel: 2, rpgTitle: 'Novice', focusScore: 90, totalRoiDollars: 10, activityHistory: { '2026-02-01': 1 }, legacyStatsFlag: 'keep' },
-      googleAuth: { isConnected: false, email: '', legacyGoogleFlag: 'keep' }
+      googleAuth: { isConnected: false, email: '', accessToken: 'fixture-access-token', refreshToken: 'fixture-refresh-token', tokenExpiry: '2027-01-01T00:00:00.000Z', calendarId: 'fixture-calendar', legacyGoogleFlag: 'keep' }
     },
     'user-b': { tasks: [], goals: [], projects: [], calendarEvents: [], timeLogs: [], skills: [], badges: [], stats: {}, googleAuth: { isConnected: false, email: '' } }
   },
@@ -90,6 +90,8 @@ try {
   assert.equal((reloaded.data.partitions['user-a'].goals[0].keyResults[0] as any).legacyKeyResultFlag, 'keep');
   assert.equal((reloaded.data.partitions['user-a'].stats as any).legacyStatsFlag, 'keep');
   assert.equal((reloaded.data.partitions['user-a'].googleAuth as any).legacyGoogleFlag, 'keep');
+  assert.equal((reloaded.data.partitions['user-a'].googleAuth as any).accessToken, 'fixture-access-token');
+  assert.equal((reloaded.data.partitions['user-a'].googleAuth as any).refreshToken, 'fixture-refresh-token');
   assert.equal((reloaded.data.workspaces[0].members[0] as any).legacyMemberFlag, true);
   assert.equal((reloaded.data.teamTasks[0].subtasks[0] as any).legacyTeamSubtaskFlag, 'keep');
   await assert.rejects(
