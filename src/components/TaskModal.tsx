@@ -336,7 +336,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             onClick={onClose}
             disabled={isSubmitting}
             className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors disabled:opacity-40"
-            aria-label="Close modal"
+            aria-label={t('common.close')}
           >
             <X className="w-4 h-4" />
           </button>
