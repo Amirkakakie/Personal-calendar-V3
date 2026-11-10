@@ -47,7 +47,7 @@ function json(v: any): Prisma.InputJsonValue { return JSON.parse(JSON.stringify(
 function legacy(row: any): any { return metadata(row); }
 
 export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ data: DatabaseSchema; version: bigint }> {
-  const [users,workspaces,workspaceMembers,goals,keyResults,projects,tasks,subtasks,timeLogs,skills,userSkills,badges,events,stats,googleConnections,teamProjects,projectMembers,teamTasks,teamSubtasks,teamComments,teamTags,teamTagAssignments,invitations,revision] = await Promise.all([
+  const [users,workspaces,workspaceMembers,goals,keyResults,projects,tasks,subtasks,timeLogs,skills,userSkills,badges,events,stats,googleConnections,teamProjects,projectMembers,teamTasks,teamSubtasks,teamComments,teamTags,teamTagAssignments,invitationsRows,revision] = await Promise.all([
     prisma.user.findMany(), prisma.workspace.findMany(), prisma.workspaceMember.findMany(),
     prisma.goalOKR.findMany(), prisma.keyResult.findMany(), prisma.project.findMany(), prisma.task.findMany(),
     prisma.subTask.findMany(), prisma.timeLog.findMany(), prisma.skill.findMany(), prisma.userSkill.findMany(),
@@ -78,7 +78,7 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
 
   for(const g of goals){
     const raw=legacy(g.legacyData);
-    const keyResultsForGoal=keyResults.filter(k=>k.goalId===g.id).map(k=>({...legacy(k.legacyData),id:k.id,title:k.title,currentValue:k.currentValue,targetValue:k.targetValue,unit:k.unit,completed:k.completed}));
+    const keyResultsForGoal=keyResults.filter(k=>k.goalId===g.id).map(k=>({id:k.id,title:k.title,currentValue:k.currentValue,targetValue:k.targetValue,unit:k.unit,completed:k.completed}));
     const record={...raw,id:g.id,userId:g.userId,title:g.title,description:g.description||'',category:raw.category||g.category,timeframe:raw.timeframe||g.timeframe.toLowerCase(),targetDate:iso(g.targetDate),progressPercent:g.progressPercent,keyResults:keyResultsForGoal,createdAt:iso(g.createdAt)};
     partitionFor(g.userId).goals.push(record);
   }
@@ -121,13 +121,13 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
   });
   const teamTaskRecords: TeamTaskRecord[]=teamTasks.map(t=>{
     const raw=legacy(t.legacyData);
-    const children=teamSubtasks.filter(x=>x.taskId===t.id).sort((a,b)=>a.position-b.position).map(x=>({...legacy(x.legacyData),id:x.id,title:x.title,completed:x.completed}));
+    const children=teamSubtasks.filter(x=>x.taskId===t.id).sort((a,b)=>a.position-b.position).map(x=>({id:x.id,title:x.title,completed:x.completed}));
     const comments=teamComments.filter(x=>x.taskId===t.id).map(x=>({...legacy(x.legacyData),id:x.id,authorId:x.authorId,authorName:x.authorName,authorInitials:x.authorInitials,authorColor:x.authorColor,text:x.body,createdAt:iso(x.createdAt)}));
     const tags=teamTagAssignments.filter(a=>a.taskId===t.id).map(a=>teamTags.find(tag=>tag.id===a.tagId)?.name).filter(Boolean) as string[];
     return {...raw,id:t.id,taskNumber:t.taskNumber,projectId:t.projectId,columnId:t.columnId,title:t.title,description:t.description||undefined,priority:t.priority,assigneeId:t.assigneeId||undefined,dueDate:t.dueDate||undefined,estimatedHours:t.estimatedHours,subtasks:children,tags,comments,order:t.order,createdAt:iso(t.createdAt),updatedAt:iso(t.updatedAt)} as TeamTaskRecord;
   });
-  const invitations: ProjectInvitationRecord[]=invitationsRows.map(i=>({...legacy(i.legacyData),id:i.id,projectId:i.projectId,projectName:i.projectName,projectKey:i.projectKey,projectColor:i.projectColor,invitedEmail:i.invitedEmail,invitedByUserId:i.invitedByUserId,invitedByName:i.invitedByName,invitedByEmail:i.invitedByEmail,role:i.role,status:i.status,createdAt:iso(i.createdAt)})) as any;
-  const data: DatabaseSchema={version:'3.0-prisma-relational',users:userRecords,workspaces:workspaceRecords,partitions,teamProjects:teamProjectRecords,teamTasks:teamTaskRecords,teamInvitations:invitations};
+  const invitationRecords: ProjectInvitationRecord[]=invitationsRows.map((i:any)=>({...legacy(i.legacyData),id:i.id,projectId:i.projectId,projectName:i.projectName,projectKey:i.projectKey,projectColor:i.projectColor,invitedEmail:i.invitedEmail,invitedByUserId:i.invitedByUserId,invitedByName:i.invitedByName,invitedByEmail:i.invitedByEmail,role:role(i.role),status:(i.status==='ACCEPTED'||i.status==='DECLINED'?'ACCEPTED'===i.status?'ACCEPTED':'DECLINED':'PENDING'),createdAt:iso(i.createdAt)}));
+  const data: DatabaseSchema={version:'3.0-prisma-relational',users:userRecords,workspaces:workspaceRecords,partitions,teamProjects:teamProjectRecords,teamTasks:teamTaskRecords,teamInvitations:invitationRecords};
   return {data,version:revision.version};
 }
 
