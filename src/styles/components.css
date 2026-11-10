@@ -74,3 +74,70 @@ main :where(input,select,textarea):focus-visible {
   .app-select,
   .app-textarea { font-size: 1rem; }
 }
+
+
+/* Phase 2: focused polish for task, goal, calendar and team workflows. */
+:where(button, a, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid rgba(129,140,248,.82);
+  outline-offset: 2px;
+}
+
+:where(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+}
+
+.chronos-toolbar {
+  background: linear-gradient(145deg, rgba(23,23,30,.94), rgba(17,17,22,.88));
+  border: 1px solid var(--chronos-border);
+  border-radius: 1.125rem;
+  box-shadow: 0 10px 28px rgba(0,0,0,.14);
+}
+
+.chronos-card {
+  border: 1px solid var(--chronos-border);
+  border-radius: 1rem;
+  background: linear-gradient(155deg, rgba(25,25,33,.94), rgba(17,17,22,.94));
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.chronos-card:hover {
+  border-color: var(--chronos-border-strong);
+  box-shadow: 0 12px 28px rgba(0,0,0,.2);
+}
+
+.chronos-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,.28) transparent;
+  overscroll-behavior-inline: contain;
+}
+
+.chronos-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+.chronos-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.28); border-radius: 999px; }
+.chronos-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.chronos-modal-panel {
+  max-height: min(88dvh, 860px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.chronos-metric {
+  min-width: 0;
+  border: 1px solid var(--chronos-border);
+  border-radius: .9rem;
+  background: rgba(255,255,255,.025);
+  padding: .875rem;
+}
+
+@media (max-width: 640px) {
+  .chronos-toolbar { padding: .75rem; border-radius: 1rem; }
+  .chronos-card { border-radius: .9rem; }
+  .chronos-modal-panel { max-height: 92dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chronos-card { transition: none; }
+  .chronos-card:hover { transform: none; }
+}
