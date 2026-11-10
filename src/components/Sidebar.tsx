@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside 
-      className={`fixed top-14 ${direction === 'rtl' ? 'right-0' : 'left-0'} bottom-0 z-30 flex flex-col border-e border-white/5 bg-neutral-950 transition-all duration-300 ease-in-out ${
+      className={`fixed top-16 ${direction === 'rtl' ? 'right-0' : 'left-0'} bottom-0 z-30 flex flex-col border-e border-white/5 bg-neutral-950 transition-all duration-300 ease-in-out ${
         collapsed ? 'w-[4.5rem]' : 'w-[17rem]'
       } hidden lg:flex`}
     >
