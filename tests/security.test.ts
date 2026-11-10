@@ -582,6 +582,52 @@ async function runSecurityTestSuite() {
       'Non-owner/admin MEMBER is blocked from sending invitations or escalating privileges (403 Forbidden)'
     );
 
+    // Project member directory and role lifecycle.
+    const resProjectMembers = await fetch(`${BASE_URL}/team/projects/${teamProjId}/members`, {
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    const dataProjectMembers = await resProjectMembers.json();
+    assert(resProjectMembers.status === 200, 'Project owner can load authoritative project member directory');
+    assert(dataProjectMembers.data.some((member: any) => member.id === userB.id), 'Accepted member appears in project directory');
+    assert(dataProjectMembers.data.some((member: any) => member.id === userC.id), 'Viewer appears in project directory');
+
+    const resMemberForbiddenRoleChange = await fetch(`${BASE_URL}/team/projects/${teamProjId}/members/${userC.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenB}` },
+      body: JSON.stringify({ role: 'MEMBER' })
+    });
+    assert(resMemberForbiddenRoleChange.status === 403, 'Regular members cannot change project member roles');
+
+    const resOwnerRoleChange = await fetch(`${BASE_URL}/team/projects/${teamProjId}/members/${userB.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` },
+      body: JSON.stringify({ role: 'VIEWER' })
+    });
+    assert(resOwnerRoleChange.status === 200, 'Project owner can reduce a member to viewer');
+    const resViewerNowCannotCreate = await fetch(`${BASE_URL}/team/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenB}` },
+      body: JSON.stringify({ projectId: teamProjId, title: 'Should be blocked after downgrade' })
+    });
+    assert(resViewerNowCannotCreate.status === 403, 'Role downgrade is enforced immediately by task API');
+
+    const resRestoreMemberRole = await fetch(`${BASE_URL}/team/projects/${teamProjId}/members/${userB.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenA}` },
+      body: JSON.stringify({ role: 'MEMBER' })
+    });
+    assert(resRestoreMemberRole.status === 200, 'Project owner can restore member role');
+
+    const resRemoveViewer = await fetch(`${BASE_URL}/team/projects/${teamProjId}/members/${userC.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    assert(resRemoveViewer.status === 200, 'Project owner can remove a project member');
+    const resRemovedMemberTasks = await fetch(`${BASE_URL}/team/tasks?projectId=${teamProjId}`, {
+      headers: { Authorization: `Bearer ${tokenC}` }
+    });
+    assert(resRemovedMemberTasks.status === 403, 'Removed member loses project task access immediately');
+
     // ---------------------------------------------------------
     // SCENARIO 13: ACCOUNT ENUMERATION DEFENSE
     // ---------------------------------------------------------
