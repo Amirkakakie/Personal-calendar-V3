@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { buildLegacyArchiveRow, validateLegacyExport, type LegacySnapshotExport } from './legacySnapshot.ts';
+import { encryptGoogleToken, encryptJsonPayload } from '../security/dataEncryption.ts';
 
 type Tx = Prisma.TransactionClient;
 type Row = Record<string, any>;
@@ -104,7 +105,7 @@ export async function importLegacySnapshotToRelational(
 
     await tx.legacySnapshot.create({ data: {
       id: archive.id, userId: null, sourceVersion: archive.sourceVersion,
-      payload: json(archive.payload), checksum: archive.checksum
+      payload: encryptJsonPayload(archive.payload), checksum: archive.checksum
     }});
 
     // Users are inserted first so all ownership and collaboration foreign keys can be checked.
@@ -112,6 +113,8 @@ export async function importLegacySnapshotToRelational(
       if (!u.id || !u.email) throw new Error('A legacy user is missing its stable ID or email; import aborted.');
       const p = object(partitions[u.id]);
       const stats = object(p.stats);
+      const safeUser = { ...u };
+      for (const key of ['password','passwordHash','googleAccessToken','googleRefreshToken','googleTokenExpiry']) delete safeUser[key];
       await tx.user.create({ data: {
         id: text(u.id), email: text(u.email).trim().toLowerCase(), name: text(u.name, text(u.email).split('@')[0]),
         avatarUrl: nullable(u.avatarUrl), avatarColor: text(u.avatarColor, 'from-violet-600 to-indigo-600'),
@@ -119,7 +122,7 @@ export async function importLegacySnapshotToRelational(
         joinedAt: date(u.joinedAt), passwordHash: nullable(u.passwordHash),
         googleId: nullable(u.googleId), totalXp: number(stats.totalXp), level: number(stats.userLevel, 1),
         rpgTitle: text(stats.rpgTitle, 'Novice Pioneer'), focusScore: number(stats.focusScore, 100),
-        legacyData: legacy(u)
+        legacyData: legacy(safeUser)
       }});
       report.users++;
     }
@@ -291,13 +294,15 @@ export async function importLegacySnapshotToRelational(
       report.stats++;
       const google = object(p.googleAuth);
       const sourceUser = object(userRows.find(u=>text(u.id)===userId));
+      const safeGoogle = { ...google };
+      for (const key of ['accessToken','refreshToken','googleAccessToken','googleRefreshToken']) delete safeGoogle[key];
       await tx.googleConnection.create({ data: {
         id: 'google-'+userId, userId, email: text(google.email), isConnected: bool(google.isConnected),
         googleId: nullable(sourceUser.googleId),
-        accessToken: nullable(google.accessToken || google.googleAccessToken || sourceUser.googleAccessToken),
-        refreshToken: nullable(google.refreshToken || google.googleRefreshToken || sourceUser.googleRefreshToken),
+        accessToken: encryptGoogleToken(nullable(google.accessToken || google.googleAccessToken || sourceUser.googleAccessToken)),
+        refreshToken: encryptGoogleToken(nullable(google.refreshToken || google.googleRefreshToken || sourceUser.googleRefreshToken)),
         tokenExpiry: google.tokenExpiry ? date(google.tokenExpiry) : sourceUser.googleTokenExpiry ? date(sourceUser.googleTokenExpiry) : null,
-        calendarId: text(google.calendarId, 'primary'), legacyData: legacy(google)
+        calendarId: text(google.calendarId, 'primary'), legacyData: legacy(safeGoogle)
       }});
       report.googleConnections++;
     }
