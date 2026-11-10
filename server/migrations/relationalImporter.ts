@@ -284,13 +284,13 @@ export async function importLegacySnapshotToRelational(
         id: 'stats-'+userId, userId, focusMinutes: number(stats.focusMinutes), pomodoroSessions: number(stats.pomodoroSessions),
         totalXp: number(stats.totalXp), userLevel: number(stats.userLevel, 1), rpgTitle: text(stats.rpgTitle, 'Novice Pioneer'),
         focusScore: number(stats.focusScore, 100), totalRoiDollars: number(stats.totalRoiDollars),
-        activityHistory: json(object(stats.activityHistory))
+        activityHistory: json(object(stats.activityHistory)), legacyData: legacy(stats)
       }});
       report.stats++;
       const google = object(p.googleAuth);
       await tx.googleConnection.create({ data: {
         id: 'google-'+userId, userId, email: text(google.email), isConnected: bool(google.isConnected),
-        googleId: nullable(object(userRows.find(u=>text(u.id)===userId)).googleId)
+        googleId: nullable(object(userRows.find(u=>text(u.id)===userId)).googleId), legacyData: legacy(google)
       }});
       report.googleConnections++;
     }
