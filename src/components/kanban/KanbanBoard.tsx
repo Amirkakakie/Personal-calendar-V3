@@ -86,9 +86,9 @@ export const KanbanBoard: React.FC = () => {
   const hasActiveFilters = !!(filter.search || filter.assigneeId || (filter.priority && filter.priority !== 'all') || filter.tag);
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className="flex flex-col h-full space-y-4 min-w-0">
       {/* Filter and Control Bar */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-3 md:p-4 backdrop-blur shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="chronos-toolbar p-3 md:p-4 backdrop-blur flex flex-col lg:flex-row lg:items-center justify-between gap-3 min-w-0">
         {/* Search */}
         <div className="flex-1 relative">
           <Search className="w-4 h-4 text-neutral-500 absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -185,7 +185,7 @@ export const KanbanBoard: React.FC = () => {
       )}
 
       {/* Kanban Board Columns Container */}
-      <div className="flex overflow-x-auto gap-4 pb-4 items-start min-w-full custom-scrollbar">
+      <div className="flex overflow-x-auto gap-4 pb-4 items-start min-w-full custom-scrollbar chronos-scroll snap-x snap-proximity">
         {COLUMNS.map(col => {
           const colTasks = projectTasks.filter(t => t.columnId === col.id);
           const isDraggingOver = dragOverCol === col.id;
@@ -211,7 +211,7 @@ export const KanbanBoard: React.FC = () => {
                   moveTask(taskId, col.id);
                 }
               }}
-              className={`flex flex-col bg-neutral-900/60 border rounded-2xl p-3 min-h-[500px] min-w-[280px] flex-1 shrink-0 xl:min-w-0 transition-all duration-150 ${
+              className={`flex flex-col bg-neutral-900/60 border rounded-2xl p-3 min-h-[420px] sm:min-h-[500px] min-w-[280px] flex-1 shrink-0 xl:min-w-0 transition-all duration-150 snap-start ${
                 isDraggingOver
                   ? 'border-indigo-500/80 bg-indigo-950/20 shadow-lg shadow-indigo-500/10'
                   : 'border-neutral-800/80'

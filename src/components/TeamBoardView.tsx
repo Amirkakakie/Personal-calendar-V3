@@ -45,7 +45,7 @@ export const TeamBoardView: React.FC<TeamBoardViewProps> = ({ onOpenAuthModal })
   // Blank slate empty state when newly registered user has no projects
   if (!currentProject) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5 min-w-0">
         <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto space-y-4 my-8 shadow-xl">
           <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/20 shadow-lg">
             <FolderGit2 className="w-8 h-8" />
@@ -88,7 +88,7 @@ export const TeamBoardView: React.FC<TeamBoardViewProps> = ({ onOpenAuthModal })
   return (
     <div className="space-y-6">
       {/* Team Project Banner & Sub-Navigation */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 md:p-5 backdrop-blur shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="chronos-toolbar p-3.5 sm:p-4 md:p-5 backdrop-blur flex flex-col xl:flex-row xl:items-center justify-between gap-4 min-w-0">
         {/* Left: Project Selector & Details */}
         <div className="flex items-center gap-3">
           <div
@@ -253,7 +253,7 @@ export const TeamBoardView: React.FC<TeamBoardViewProps> = ({ onOpenAuthModal })
       </div>
 
       {/* Main View Content */}
-      <div className="min-h-[600px]">
+      <div className="min-h-[420px] sm:min-h-[520px] min-w-0">
         {activeTab === 'board' && <KanbanBoard />}
         {activeTab === 'analytics' && <TeamAnalyticsView />}
         {activeTab === 'directory' && (

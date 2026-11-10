@@ -44,7 +44,7 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -74,7 +74,7 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
           onAction={onOpenNewGoal}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 lg:gap-5">
           {goals.map(goal => (
             <div
               key={goal.id}
@@ -135,12 +135,12 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
 
                 {/* Key Results */}
                 {goal.keyResults && goal.keyResults.length > 0 && (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 space-y-2.5">
                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                       {t('goals.keyResults')}
                     </span>
                     {goal.keyResults.map(kr => (
-                      <div key={kr.id} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[12px] flex items-center justify-between gap-3">
+                      <div key={kr.id} className="p-3 rounded-xl bg-white/[0.025] border border-white/[0.07] text-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 transition-colors hover:bg-white/[0.04]">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${kr.completed ? 'text-emerald-400' : 'text-neutral-600'}`} />
                           <span className={`truncate ${kr.completed ? 'line-through text-neutral-500' : 'text-neutral-300'}`}>

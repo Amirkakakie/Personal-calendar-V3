@@ -379,9 +379,9 @@ function ChronosWorkspace() {
         )}
 
         <main className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 pb-28 lg:pb-8 ${
-          workspaceMode === 'personal' ? (sidebarCollapsed ? 'lg:ms-16' : 'lg:ms-64') : ''
+          workspaceMode === 'personal' ? (sidebarCollapsed ? 'lg:ms-[4.5rem]' : 'lg:ms-[17rem]') : ''
         }`}>
-          <div className="max-w-[1200px] mx-auto px-4 lg:px-8 py-6 sm:py-8">
+          <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-5 lg:px-8 2xl:px-10 py-5 sm:py-7 lg:py-8">
             {workspaceMode === 'team' ? (
               <TeamBoardView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
             ) : (
@@ -394,7 +394,7 @@ function ChronosWorkspace() {
                 )}
 
             {!isLoading && (
-              <div className="flex-1 space-y-6">
+              <div className="flex-1 space-y-7">
                 {/* 1. Dashboard View */}
                 {currentTab === 'dashboard' && (
                   <div className="space-y-6">
@@ -407,7 +407,7 @@ function ChronosWorkspace() {
                     <StatsCards stats={stats} />
 
                     {/* Pressing Priorities & Daily Agenda */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
                       {/* Urgent Items */}
                       <div className="lg:col-span-2 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-5 backdrop-blur">
                         <div className="flex items-center justify-between mb-4">
