@@ -112,7 +112,8 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (typeof result !== 'string') {
-        return key;
+        console.warn('[i18n] Missing translation:', key, 'locale:', locale);
+        return locale === 'fa' ? 'ترجمه در دسترس نیست' : 'Translation unavailable';
       }
 
       // Replace {{param}} placeholders
