@@ -295,7 +295,7 @@ export const KanbanBoard: React.FC = () => {
                 ) : (
                   <div className="h-32 border border-dashed border-neutral-800/60 rounded-xl flex flex-col items-center justify-center p-4 text-center">
                     <p className="text-xs text-neutral-500">
-                      {isDraggingOver ? 'Drop card here' : t('tasks.noTasks')}
+                      {isDraggingOver ? t('kanban.dropCardHere') : t('tasks.noTasks')}
                     </p>
                     <button
                       type="button"
