@@ -63,7 +63,7 @@ function skillTier(level: any): 'NOVICE'|'APPRENTICE'|'PRACTITIONER'|'EXPERT'|'M
 function legacy(row: Row): Prisma.InputJsonValue { return json(row); }
 
 async function countTarget(tx: Tx) {
-  const models = ['user','workspace','domain','goalOKR','project','task','subTask','timeLog','skill','userSkill','userBadge','calendarEvent','workspaceMember','teamProject','teamTask','projectMember','teamTaskSubtask','teamTaskComment','teamTaskTag','teamTaskTagAssignment','projectInvitation','userStats','googleConnection','legacySnapshot','databaseRevision'] as const;
+  const models = ['user','workspace','domain','goalOKR','keyResult','project','task','subTask','timeLog','skill','userSkill','userBadge','calendarEvent','workspaceMember','teamProject','teamTask','projectMember','teamTaskSubtask','teamTaskComment','teamTaskTag','teamTaskTagAssignment','projectInvitation','userStats','googleConnection','legacySnapshot','databaseRevision'] as const;
   const result: Record<string, number> = {};
   for (const model of models) result[model] = await (tx as any)[model].count();
   return result;
