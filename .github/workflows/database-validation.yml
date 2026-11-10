@@ -141,6 +141,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_import_test?schema=public
 
+      - name: Validate security test database schema
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_security?schema=public
+
+      - name: Validate E2E test database schema
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_e2e?schema=public
+
       - name: Relational legacy import integration tests
         run: npm run test:relational-import
         env:
