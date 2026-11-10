@@ -125,10 +125,17 @@ export async function importLegacySnapshotToRelational(
     // Workspaces and their membership edges.
     const workspaceRows = array(snapshot.workspaces).map(object);
     const workspaceIds = new Set(workspaceRows.map(w => text(w.id)));
+    const usedSlugs = new Set<string>();
     for (const w of workspaceRows) {
       if (!userIds.has(text(w.ownerId))) throw new Error('Workspace owner is missing; refusing to orphan workspace '+text(w.id));
+      let slug = text(w.slug, 'workspace-'+text(w.id)).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+      if (!slug) slug = 'workspace-'+text(w.id);
+      const originalSlug = slug;
+      let suffix = 1;
+      while (usedSlugs.has(slug)) slug = originalSlug+'-'+(++suffix);
+      usedSlugs.add(slug);
       await tx.workspace.create({ data: {
-        id: text(w.id), name: text(w.name, 'Workspace'), slug: text(w.slug, 'workspace-'+text(w.id)),
+        id: text(w.id), name: text(w.name, 'Workspace'), slug,
         type: bool(w.isPersonal) ? 'PERSONAL' : 'TEAM', isPersonal: bool(w.isPersonal), ownerId: text(w.ownerId),
         createdAt: date(w.createdAt), legacyData: legacy(w)
       }});
@@ -159,6 +166,7 @@ export async function importLegacySnapshotToRelational(
       const projectRows = array(p.projects).map(object);
       const goalRows = array(p.goals).map(object);
       const taskIds = new Set(taskRows.map(t => text(t.id)));
+      const usedTaskNumbers = new Set<number>();
       const projectIds = new Set(projectRows.map(x => text(x.id)));
       const goalIds = new Set(goalRows.map(x => text(x.id)));
 
@@ -201,10 +209,14 @@ export async function importLegacySnapshotToRelational(
           await tx.skill.create({ data: {
             id: text(sk.id), name: text(sk.name, 'Skill '+text(sk.id)), category: text(sk.category, 'General'),
             tier: skillTier(sk.level), icon: text(sk.icon, 'Zap'), description: text(sk.description),
-            parentSkillId: nullable(sk.parentSkillId), requiredXp: number(sk.requiredXp, 500),
-            legacyData: legacy(sk)
+            parentSkillId: null, requiredXp: number(sk.requiredXp, 500), legacyData: legacy(sk)
           }});
           report.skills++;
+        }
+      }
+      for (const sk of skillRows) {
+        if (sk.parentSkillId && skillIds.has(text(sk.parentSkillId))) {
+          await tx.skill.update({ where: { id: text(sk.id) }, data: { parentSkillId: text(sk.parentSkillId) } });
         }
         await tx.userSkill.create({ data: {
           id: 'us-'+userId+'-'+text(sk.id), userId, skillId: text(sk.id),
@@ -328,8 +340,11 @@ export async function importLegacySnapshotToRelational(
       const ownerId = text(teamProjects.find(p=>text(p.id)===text(t.projectId))?.ownerId);
       const assigneeId = userIds.has(text(t.assigneeId)) ? text(t.assigneeId) : null;
       const subtasks = array(t.subtasks).map(object), comments = array(t.comments).map(object), tags = array(t.tags).map(x=>text(x));
+      let taskNumber = Math.max(1, Math.floor(number(t.taskNumber, report.teamTasks+1)));
+      while (usedTaskNumbers.has(taskNumber)) taskNumber++;
+      usedTaskNumbers.add(taskNumber);
       await tx.teamTask.create({ data: {
-        id: text(t.id), projectId: text(t.projectId), taskNumber: number(t.taskNumber, report.teamTasks+1),
+        id: text(t.id), projectId: text(t.projectId), taskNumber,
         columnId: text(t.columnId, 'todo'), title: text(t.title, 'Untitled team task'), description: nullable(t.description),
         priority: text(t.priority, 'medium'), assigneeId, dueDate: nullable(t.dueDate), estimatedHours: number(t.estimatedHours),
         subtasksJson: json(subtasks), tagsJson: json(tags), commentsJson: json(comments), order: number(t.order),
@@ -363,7 +378,7 @@ export async function importLegacySnapshotToRelational(
       if (!teamProjectIds.has(text(inv.projectId)) || !userIds.has(text(inv.invitedByUserId))) continue;
       await tx.projectInvitation.create({ data: {
         id: text(inv.id), projectId: text(inv.projectId), invitedEmail: text(inv.invitedEmail).trim().toLowerCase(),
-        invitedByUserId: text(inv.invitedByUserId), projectName: text(inv.projectName), projectKey: text(inv.projectKey),
+        invitedByUserId: text(inv.invitedByUserId), recipientId: text(userRows.find(u=>text(u.email).toLowerCase()===text(inv.invitedEmail).toLowerCase())?.id) || null, projectName: text(inv.projectName), projectKey: text(inv.projectKey),
         projectColor: text(inv.projectColor, '#6366f1'), invitedByName: text(inv.invitedByName),
         invitedByEmail: text(inv.invitedByEmail), role: role(inv.role), status: text(inv.status, 'PENDING'),
         createdAt: date(inv.createdAt), legacyData: legacy(inv)
