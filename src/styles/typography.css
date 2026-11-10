@@ -1,0 +1,150 @@
+/* Chronos typography foundation
+ * Shared type scale for Persian (Vazirmatn) and English (Plus Jakarta Sans).
+ * Imported after index.css so these rules normalize legacy utility-heavy views.
+ */
+
+:root {
+  --chronos-font-fa: "Vazirmatn", Tahoma, Arial, sans-serif;
+  --chronos-font-en: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  --chronos-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --type-caption: 0.75rem;
+  --type-body-sm: 0.8125rem;
+  --type-body: 0.875rem;
+  --type-body-lg: 0.9375rem;
+  --type-title-sm: 1rem;
+  --type-title: 1.25rem;
+  --type-title-lg: clamp(1.375rem, 2vw, 1.75rem);
+
+  --leading-fa-body: 1.85;
+  --leading-fa-heading: 1.55;
+  --leading-en-body: 1.6;
+  --leading-en-heading: 1.3;
+}
+
+html {
+  font-size: 16px;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-size: var(--type-body);
+  line-height: var(--leading-en-body);
+  font-family: var(--chronos-font-en);
+}
+
+html[lang="fa"] body,
+html[dir="rtl"] body {
+  font-family: var(--chronos-font-fa);
+  font-size: var(--type-body);
+  line-height: var(--leading-fa-body);
+  letter-spacing: 0;
+}
+
+html[lang="en"] body,
+html[dir="ltr"] body {
+  font-family: var(--chronos-font-en);
+  line-height: var(--leading-en-body);
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  text-wrap: pretty;
+  font-weight: 700;
+}
+
+html[dir="rtl"] :where(h1, h2, h3, h4, h5, h6) {
+  line-height: var(--leading-fa-heading);
+  letter-spacing: 0;
+}
+
+html[dir="ltr"] :where(h1, h2, h3, h4, h5, h6) {
+  line-height: var(--leading-en-heading);
+}
+
+:where(p, li, dd, dt, label, input, textarea, select, button) {
+  overflow-wrap: anywhere;
+}
+
+:where(input, textarea, select, button) {
+  font: inherit;
+}
+
+:where(input, textarea, select) {
+  min-height: 2.625rem;
+}
+
+:where(button, [role="button"], a) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, input, textarea, select, a):focus-visible {
+  outline: 2px solid rgb(129 140 248 / 0.9);
+  outline-offset: 2px;
+}
+
+/* Persian screens contained many 9–11px utility labels. Raise only those
+   micro-labels to a legible floor without changing the English layout. */
+html[dir="rtl"] [class*="text-[9px]"] {
+  font-size: max(0.6875rem, 11px) !important;
+  line-height: 1.7;
+}
+
+html[dir="rtl"] [class*="text-[10px]"] {
+  font-size: max(0.75rem, 12px) !important;
+  line-height: 1.75;
+}
+
+html[dir="rtl"] [class*="text-[11px]"] {
+  font-size: max(0.78125rem, 12.5px) !important;
+  line-height: 1.8;
+}
+
+html[dir="rtl"] .text-xs {
+  font-size: max(0.8125rem, 13px);
+  line-height: 1.85;
+}
+
+html[dir="rtl"] .text-sm {
+  line-height: 1.75;
+}
+
+/* Numeric, technical and mixed-direction content should remain readable. */
+html[dir="rtl"] :where(code, pre, kbd, samp, .font-mono, .ltr-text, [dir="ltr"]) {
+  font-family: var(--chronos-font-mono), var(--chronos-font-en);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+html[dir="rtl"] :where(input[type="email"], input[type="password"], input[type="url"], input[type="tel"]) {
+  direction: ltr;
+  text-align: left;
+}
+
+::placeholder {
+  opacity: 0.72;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 0.875rem;
+  }
+
+  html[dir="rtl"] [class*="text-[9px]"],
+  html[dir="rtl"] [class*="text-[10px]"] {
+    font-size: 0.75rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
