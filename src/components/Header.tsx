@@ -132,10 +132,10 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenNewTask}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-600/20 min-h-[40px]"
-            aria-label={t('tasks.newTask') || 'New Task'}
+            aria-label={t('header.newTask') || 'New Task'}
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span className="hidden sm:inline">{t('tasks.newTask') || 'New Task'}</span>
+            <span className="hidden sm:inline">{t('header.newTask') || 'New Task'}</span>
           </button>
 
           <div className="flex items-center gap-1">
