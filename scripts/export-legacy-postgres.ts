@@ -95,7 +95,7 @@ async function main() {
     counts: exportFile.counts,
     sha256: exportFile.integrity.snapshotSha256
   }, null, 2));
-  console.warn('This file contains personal data and password hashes. Keep it encrypted, outside Git, and delete temporary copies securely after the migration is verified.');
+  console.warn('This JSON export contains personal data and password hashes and is not itself encrypted. It is created with restrictive file permissions; store it on an encrypted volume or encrypt it separately, keep it outside Git, and delete temporary copies securely after verification.');
 }
 
 main().catch((error) => {
