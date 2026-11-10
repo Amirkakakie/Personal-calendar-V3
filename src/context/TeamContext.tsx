@@ -27,6 +27,8 @@ interface TeamContextType {
   projects: TeamProject[];
   currentProject: TeamProject | null;
   teamMembers: TeamMember[];
+  updateMemberRole: (memberId: string, role: TeamRole) => Promise<void>;
+  removeMember: (memberId: string) => Promise<void>;
   projectTasks: TeamTask[];
   filter: TeamFilter;
   setFilter: React.Dispatch<React.SetStateAction<TeamFilter>>;
@@ -60,6 +62,7 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [allProjects, setAllProjects] = useState<TeamProject[]>([]);
   const [allTasks, setAllTasks] = useState<TeamTask[]>([]);
   const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [currentProjectId, setCurrentProjectIdState] = useState<string>('');
 
   const [filter, setFilter] = useState<TeamFilter>({
@@ -75,6 +78,7 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAllProjects([]);
       setAllTasks([]);
       setInvitations([]);
+      setTeamMembers([]);
       setCurrentProjectIdState('');
       return;
     }
@@ -157,11 +161,50 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUserId]);
 
-  // Team members strictly for the current project
-  const teamMembers = useMemo(() => {
-    if (!currentProject) return [];
-    return getProjectMembers(currentProject.memberIds);
-  }, [currentProject, getProjectMembers]);
+  // Team members are loaded from the authoritative backend, not browser-local user data.
+  useEffect(() => {
+    let cancelled = false;
+    setTeamMembers([]);
+    if (!currentUserId || !currentProject?.id) return;
+    api.getTeamProjectMembers(currentProject.id).then(rows => {
+      if (!cancelled) setTeamMembers(rows.map((member: any) => ({
+        ...member,
+        role: String(member.role || 'MEMBER').toLowerCase().replace(/^./, (c: string) => c.toUpperCase()) as TeamRole
+      })));
+    }).catch(error => {
+      console.error('[TeamContext] Failed to load project members:', error);
+    });
+    return () => { cancelled = true; };
+  }, [currentUserId, currentProject?.id]);
+
+  const refreshProjectMembers = useCallback(async (projectId: string) => {
+    const rows = await api.getTeamProjectMembers(projectId);
+    setTeamMembers(rows.map((member: any) => ({
+      ...member,
+      role: String(member.role || 'MEMBER').toLowerCase().replace(/^./, (c: string) => c.toUpperCase()) as TeamRole
+    })));
+  }, []);
+
+  const updateMemberRole = useCallback(async (memberId: string, role: TeamRole) => {
+    if (!currentProject) return;
+    const rows = await api.updateTeamProjectMemberRole(currentProject.id, memberId, role);
+    setTeamMembers(rows.map((member: any) => ({
+      ...member,
+      role: String(member.role || 'MEMBER').toLowerCase().replace(/^./, (c: string) => c.toUpperCase()) as TeamRole
+    })));
+    const freshProjects = await api.getTeamProjects();
+    setAllProjects(freshProjects);
+  }, [currentProject]);
+
+  const removeMember = useCallback(async (memberId: string) => {
+    if (!currentProject) return;
+    await api.removeTeamProjectMember(currentProject.id, memberId);
+    await refreshProjectMembers(currentProject.id);
+    const freshProjects = await api.getTeamProjects();
+    setAllProjects(freshProjects);
+    setAllTasks(prev => prev.map(task => task.projectId === currentProject.id && task.assigneeId === memberId
+      ? { ...task, assigneeId: undefined, assignee: undefined } : task));
+  }, [currentProject, refreshProjectMembers]);
 
   // Filtered tasks for current project
   const projectTasks = useMemo(() => {
@@ -485,6 +528,8 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
         projects: userProjects,
         currentProject,
         teamMembers,
+        updateMemberRole,
+        removeMember,
         projectTasks,
         filter,
         setFilter,
