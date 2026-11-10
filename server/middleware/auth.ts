@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { jwtVerify } from 'jose';
 import { db } from '../db.ts';
+import crypto from 'crypto';
+import path from 'path';
 
 export interface AuthenticatedUser {
   id: string;
@@ -17,22 +19,23 @@ declare global {
   }
 }
 
-import crypto from 'crypto';
-import path from 'path';
-
-let ephemeralProdSecret: string | null = null;
 export function getJwtSecret(): string {
-  if (process.env.JWT_SECRET) {
-    return process.env.JWT_SECRET;
-  }
+  const configuredSecret = process.env.JWT_SECRET;
+
   if (process.env.NODE_ENV === 'production') {
-    if (!ephemeralProdSecret) {
-      ephemeralProdSecret = crypto.randomBytes(32).toString('hex');
-      console.warn('[Security Warning] JWT_SECRET was not provided in production environment! Generated ephemeral cryptographically secure secret.');
+    if (
+      typeof configuredSecret !== 'string' ||
+      Buffer.byteLength(configuredSecret, 'utf8') < 32 ||
+      /replace_with|change[-_ ]in[-_ ]production|your[-_ ]secret|example/i.test(configuredSecret)
+    ) {
+      throw new Error(
+        'JWT_SECRET must be configured as a stable, randomly generated secret of at least 32 bytes in production.'
+      );
     }
-    return ephemeralProdSecret;
+    return configuredSecret;
   }
-  return 'chronos-dev-secret-key-production-min-32-chars-entropy-2026';
+
+  return configuredSecret || 'chronos-dev-secret-key-production-min-32-chars-entropy-2026';
 }
 
 function getSecretKey(): Uint8Array {
