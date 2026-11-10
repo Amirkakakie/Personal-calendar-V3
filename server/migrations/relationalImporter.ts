@@ -290,9 +290,14 @@ export async function importLegacySnapshotToRelational(
       }});
       report.stats++;
       const google = object(p.googleAuth);
+      const sourceUser = object(userRows.find(u=>text(u.id)===userId));
       await tx.googleConnection.create({ data: {
         id: 'google-'+userId, userId, email: text(google.email), isConnected: bool(google.isConnected),
-        googleId: nullable(object(userRows.find(u=>text(u.id)===userId)).googleId), legacyData: legacy(google)
+        googleId: nullable(sourceUser.googleId),
+        accessToken: nullable(google.accessToken || google.googleAccessToken || sourceUser.googleAccessToken),
+        refreshToken: nullable(google.refreshToken || google.googleRefreshToken || sourceUser.googleRefreshToken),
+        tokenExpiry: google.tokenExpiry ? date(google.tokenExpiry) : sourceUser.googleTokenExpiry ? date(sourceUser.googleTokenExpiry) : null,
+        calendarId: text(google.calendarId, 'primary'), legacyData: legacy(google)
       }});
       report.googleConnections++;
     }
