@@ -127,6 +127,7 @@ jobs:
           createdb --host=127.0.0.1 --username=chronos chronos_security
           createdb --host=127.0.0.1 --username=chronos chronos_e2e
           createdb --host=127.0.0.1 --username=chronos chronos_migrate
+          createdb --host=127.0.0.1 --username=chronos chronos_import_test
         env:
           PGPASSWORD: chronos
 
@@ -134,6 +135,17 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_migrate?schema=public
+
+      - name: Validate relational import target schema
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_import_test?schema=public
+
+      - name: Relational legacy import integration tests
+        run: npm run test:relational-import
+        env:
+          DATABASE_URL: postgresql://chronos:chronos@127.0.0.1:5432/chronos_import_test?schema=public
+          CHRONOS_RELATIONAL_IMPORT_TEST: '1'
 
       - name: Security tests
         run: npm run test:security
