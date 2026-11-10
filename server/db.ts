@@ -985,6 +985,7 @@ class Database {
       }
       return t;
     });
+    partition.projects = partition.projects.map(p => p.goalId === id ? { ...p, goalId: undefined } : p);
     this.save(this.data);
     return partition.goals.length < init;
   }
