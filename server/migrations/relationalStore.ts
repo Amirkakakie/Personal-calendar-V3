@@ -23,7 +23,7 @@ function category(v: any): 'WORK_CAREER'|'ACADEMIC_STUDY'|'PERSONAL_GROWTH'|'HEA
 }
 function taskStatus(v: any): 'TODO'|'IN_PROGRESS'|'COMPLETED'|'ARCHIVED' {
   const s=text(v).toLowerCase();
-  return s==='completed'?'COMPLETED':s==='archived'?'ARCHIVED':s==='in_progress'?'IN_PROGRESS':'TODO';
+  return s==='completed'||s==='done'?'COMPLETED':s==='archived'?'ARCHIVED':s==='in_progress'||s==='in-progress'||s==='doing'||s==='active'?'IN_PROGRESS':'TODO';
 }
 function priority(v: any): 'HIGH'|'MEDIUM'|'LOW' {
   const s=text(v).toLowerCase(); return s==='high'||s==='urgent'?'HIGH':s==='low'?'LOW':'MEDIUM';
