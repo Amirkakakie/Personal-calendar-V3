@@ -40,7 +40,7 @@ router.post('/team/projects', (req: Request, res: Response) => {
   }
 
   // Multi-tenant check: if workspaceId is provided, verify user is an authorized member
-  if (body.workspaceId && body.workspaceId !== 'ws-team') {
+  if (body.workspaceId) {
     const hasWorkspaceAccess = db.isUserInWorkspace(body.workspaceId, userId);
     if (!hasWorkspaceAccess) {
       return res.status(403).json({
@@ -216,7 +216,7 @@ router.put('/team/tasks/:id', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const taskId = req.params.id;
 
-  const currentTask = (db as any).data.teamTasks.find((t: any) => t.id === taskId);
+  const currentTask = db.getTeamTaskById(taskId, userId);
   if (!currentTask) {
     return res.status(404).json({ success: false, error: 'Task not found' });
   }
@@ -249,7 +249,7 @@ router.post('/team/tasks/:id/comments', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Comment text is required.' });
   }
 
-  const currentTask = (db as any).data.teamTasks.find((t: any) => t.id === taskId);
+  const currentTask = db.getTeamTaskById(taskId, userId);
   if (!currentTask) {
     return res.status(404).json({ success: false, error: 'Task not found' });
   }
@@ -322,7 +322,7 @@ router.post('/team/invitations', (req: Request, res: Response) => {
   const userName = req.user!.name || userEmail.split('@')[0];
   const { projectId, email, role = 'MEMBER' } = req.body;
 
-  if (!projectId || !email || typeof email !== 'string') {
+  if (!projectId || !email || typeof email !== 'string' || email.trim().length > 254) {
     return res.status(400).json({ success: false, error: 'projectId and valid email are required' });
   }
 
@@ -350,8 +350,8 @@ router.post('/team/invitations', (req: Request, res: Response) => {
     });
   }
 
-  const requestedRole = (role.toUpperCase() as WorkspaceRole);
-  if (!['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'].includes(requestedRole)) {
+  const requestedRole = (typeof role === 'string' ? role.toUpperCase() : '') as WorkspaceRole;
+  if (!['ADMIN', 'MEMBER', 'VIEWER'].includes(requestedRole)) {
     return res.status(400).json({ success: false, error: 'Invalid role specified.' });
   }
 
@@ -400,7 +400,8 @@ router.post('/team/invitations/:id/respond', (req: Request, res: Response) => {
   const inviteId = req.params.id;
   const { accept } = req.body;
 
-  const success = db.respondToInvitation(inviteId, userId, userEmail, Boolean(accept));
+  if (typeof accept !== 'boolean') return res.status(400).json({ success: false, error: 'accept must be a boolean.' });
+  const success = db.respondToInvitation(inviteId, userId, userEmail, accept);
   if (!success) {
     return res.status(404).json({ success: false, error: 'Invitation not found or not addressed to your email' });
   }
