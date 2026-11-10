@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import type { DatabaseSchema, UserPartition, WorkspaceRecord, TeamProjectRecord, TeamTaskRecord, ProjectInvitationRecord, UserRecord } from '../db.ts';
+import { decryptGoogleToken, encryptGoogleToken } from '../security/dataEncryption.ts';
 
 type Tx = Prisma.TransactionClient;
 type Row = Record<string, any>;
@@ -119,7 +120,7 @@ export async function loadRelationalSnapshot(prisma: PrismaClient): Promise<{ da
     const history=obj(st.activityHistory);
     partitionFor(st.userId).stats={...legacy(st.legacyData),focusMinutes:st.focusMinutes,pomodoroSessions:st.pomodoroSessions,totalXp:st.totalXp,userLevel:st.userLevel,rpgTitle:st.rpgTitle,focusScore:st.focusScore,totalRoiDollars:st.totalRoiDollars,activityHistory:history};
   }
-  for(const g of googleConnections) partitionFor(g.userId).googleAuth={...legacy(g.legacyData),isConnected:g.isConnected,email:g.email,accessToken:g.accessToken||undefined,refreshToken:g.refreshToken||undefined,tokenExpiry:g.tokenExpiry?iso(g.tokenExpiry):undefined,calendarId:g.calendarId};
+  for(const g of googleConnections) partitionFor(g.userId).googleAuth={...legacy(g.legacyData),isConnected:g.isConnected,email:g.email,accessToken:decryptGoogleToken(g.accessToken)||undefined,refreshToken:decryptGoogleToken(g.refreshToken)||undefined,tokenExpiry:g.tokenExpiry?iso(g.tokenExpiry):undefined,calendarId:g.calendarId};
 
   const teamProjectRecords: TeamProjectRecord[]=teamProjects.map(p=>{
     const raw=legacy(p.legacyData), members=projectMembers.filter(m=>m.projectId===p.id);
@@ -193,7 +194,8 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
 
     for(const u of users){
       const p=obj(partitions[text(u.id)]), stats=obj(p.stats);
-      await upsert('user',text(u.id),{email:text(u.email).trim().toLowerCase(),name:text(u.name),avatarUrl:nullable(u.avatarUrl),avatarColor:text(u.avatarColor,'from-violet-600 to-indigo-600'),initials:text(u.initials),title:text(u.title),role:text(u.role,'Member'),joinedAt:asDate(u.joinedAt),passwordHash:nullable(u.passwordHash),googleId:nullable(u.googleId),totalXp:num(stats.totalXp),level:num(stats.userLevel,1),rpgTitle:text(stats.rpgTitle,'Novice Pioneer'),focusScore:num(stats.focusScore,100),legacyData:json(u)});
+      const safeUser={...u}; for(const key of ['password','passwordHash','googleAccessToken','googleRefreshToken','googleTokenExpiry']) delete safeUser[key];
+      await upsert('user',text(u.id),{email:text(u.email).trim().toLowerCase(),name:text(u.name),avatarUrl:nullable(u.avatarUrl),avatarColor:text(u.avatarColor,'from-violet-600 to-indigo-600'),initials:text(u.initials),title:text(u.title),role:text(u.role,'Member'),joinedAt:asDate(u.joinedAt),passwordHash:nullable(u.passwordHash),googleId:nullable(u.googleId),totalXp:num(stats.totalXp),level:num(stats.userLevel,1),rpgTitle:text(stats.rpgTitle,'Novice Pioneer'),focusScore:num(stats.focusScore,100),legacyData:json(safeUser)});
     }
     for(const w of workspaces){
       await upsert('workspace',text(w.id),{name:text(w.name,'Workspace'),slug:text(w.slug,'workspace-'+text(w.id)),type:bool(w.isPersonal)?'PERSONAL':'TEAM',isPersonal:bool(w.isPersonal),ownerId:text(w.ownerId),createdAt:asDate(w.createdAt),legacyData:json(w)});
@@ -222,7 +224,8 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     for(const u of users){
       const p=obj(partitions[text(u.id)]), st=obj(p.stats), ga=obj(p.googleAuth);
       await upsert('userStats','stats-'+text(u.id),{userId:text(u.id),focusMinutes:num(st.focusMinutes),pomodoroSessions:num(st.pomodoroSessions),totalXp:num(st.totalXp),userLevel:num(st.userLevel,1),rpgTitle:text(st.rpgTitle,'Novice Pioneer'),focusScore:num(st.focusScore,100),totalRoiDollars:num(st.totalRoiDollars),activityHistory:json(obj(st.activityHistory)),legacyData:json(st)});
-      await upsert('googleConnection','google-'+text(u.id),{userId:text(u.id),email:text(ga.email),isConnected:bool(ga.isConnected),googleId:nullable(u.googleId),accessToken:nullable(ga.accessToken||u.googleAccessToken),refreshToken:nullable(ga.refreshToken||u.googleRefreshToken),tokenExpiry:ga.tokenExpiry?asDate(ga.tokenExpiry):null,calendarId:text(ga.calendarId,'primary'),legacyData:json(ga)});
+      const safeGoogle={...ga}; for(const key of ['accessToken','refreshToken','googleAccessToken','googleRefreshToken']) delete safeGoogle[key];
+      await upsert('googleConnection','google-'+text(u.id),{userId:text(u.id),email:text(ga.email),isConnected:bool(ga.isConnected),googleId:nullable(u.googleId),accessToken:encryptGoogleToken(ga.accessToken||u.googleAccessToken),refreshToken:encryptGoogleToken(ga.refreshToken||u.googleRefreshToken),tokenExpiry:ga.tokenExpiry?asDate(ga.tokenExpiry):null,calendarId:text(ga.calendarId,'primary'),legacyData:json(safeGoogle)});
     }
     const teamProjectIds=new Set(teamProjects.map(p=>text(p.id)));
     for(const p of teamProjects){
