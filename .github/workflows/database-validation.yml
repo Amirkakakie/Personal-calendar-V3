@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Generate lockfile for the exact declared dependencies
@@ -70,11 +70,11 @@ jobs:
         run: npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/chronos-relational-baseline.sql
 
       - name: Apply generated baseline to disposable PostgreSQL
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /tmp/chronos-relational-baseline.sql
+        run: psql "postgresql://chronos:chronos@127.0.0.1:5432/chronos_validation" -v ON_ERROR_STOP=1 -f /tmp/chronos-relational-baseline.sql
 
       - name: Verify relational tables were created
         run: |
-          TABLE_COUNT=$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
+          TABLE_COUNT=$(psql "postgresql://chronos:chronos@127.0.0.1:5432/chronos_validation" -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
           echo "Created $TABLE_COUNT relational tables"
           test "$TABLE_COUNT" -ge 20
 
