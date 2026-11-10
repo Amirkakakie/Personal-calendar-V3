@@ -17,23 +17,23 @@ const snapshot = {
     { id: 'user-a', name: 'Alice', email: 'alice@example.test', passwordHash: '$2a$10$fixture', role: 'Member', title: 'Owner', avatarColor: '#111111', initials: 'AL', joinedAt: '2026-01-01T00:00:00.000Z' },
     { id: 'user-b', name: 'Bob', email: 'bob@example.test', passwordHash: '$2a$10$fixture', role: 'Member', title: 'Member', avatarColor: '#222222', initials: 'BO', joinedAt: '2026-01-02T00:00:00.000Z' }
   ],
-  workspaces: [{ id: 'workspace-a', name: 'Alice Space', slug: 'alice-space', ownerId: 'user-a', isPersonal: true, createdAt: '2026-01-01T00:00:00.000Z', members: [{ userId: 'user-a', role: 'OWNER', joinedAt: '2026-01-01T00:00:00.000Z' }] }],
+  workspaces: [{ id: 'workspace-a', name: 'Alice Space', slug: 'alice-space', ownerId: 'user-a', isPersonal: true, createdAt: '2026-01-01T00:00:00.000Z', members: [{ userId: 'user-a', role: 'OWNER', joinedAt: '2026-01-01T00:00:00.000Z', legacyMemberFlag: true }] }],
   partitions: {
     'user-a': {
-      tasks: [{ id: 'task-a', title: 'Private task', description: 'keep me', category: 'Work/Career', priority: 'High', status: 'todo', eisenhower: 'q1_urgent_important', energyLevel: 'High Focus', dueDate: '2026-12-01', dueTime: '09:00', durationMinutes: 30, subtasks: [{ id: 'sub-a', title: 'Step one', completed: false }], goalId: 'goal-a', projectId: 'personal-project-a', tags: ['private'], syncedToGoogle: false, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }],
-      goals: [{ id: 'goal-a', title: 'Goal', description: 'Goal details', category: 'Work/Career', timeframe: 'quarterly', targetDate: '2026-12-31', progressPercent: 25, keyResults: [{ id: 'kr-a', title: 'Key result', currentValue: 1, targetValue: 4, unit: 'items', completed: false }], createdAt: '2026-01-01T00:00:00.000Z' }],
+      tasks: [{ id: 'task-a', title: 'Private task', description: 'keep me', category: 'Work/Career', priority: 'High', status: 'todo', eisenhower: 'q1_urgent_important', energyLevel: 'High Focus', dueDate: '2026-12-01', dueTime: '09:00', durationMinutes: 30, subtasks: [{ id: 'sub-a', title: 'Step one', completed: false, legacySubtaskFlag: 'keep' }], goalId: 'goal-a', projectId: 'personal-project-a', tags: ['private'], syncedToGoogle: false, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }],
+      goals: [{ id: 'goal-a', title: 'Goal', description: 'Goal details', category: 'Work/Career', timeframe: 'quarterly', targetDate: '2026-12-31', progressPercent: 25, keyResults: [{ id: 'kr-a', title: 'Key result', currentValue: 1, targetValue: 4, unit: 'items', completed: false, legacyKeyResultFlag: 'keep' }], createdAt: '2026-01-01T00:00:00.000Z' }],
       projects: [{ id: 'personal-project-a', name: 'Personal project', description: 'Project details', category: 'Work/Career', goalId: 'goal-a', status: 'in_progress', targetHours: 10, loggedHours: 2, hourlyValuation: 20, color: 'blue', createdAt: '2026-01-01T00:00:00.000Z' }],
       calendarEvents: [{ id: 'event-a', title: 'Event', startTime: '2026-02-01T10:00:00.000Z', endTime: '2026-02-01T11:00:00.000Z', category: 'Work/Career', isGoogleEvent: false, taskId: 'task-a' }],
       timeLogs: [{ id: 'log-a', taskId: 'task-a', projectId: 'personal-project-a', durationSeconds: 1800, hourlyRate: 20, calculatedRoi: 10, efficiencyRate: 90, energyReported: 'High', startedAt: '2026-02-01T10:00:00.000Z', endedAt: '2026-02-01T10:30:00.000Z' }],
       skills: [{ id: 'skill-a', name: 'Planning', category: 'Work', level: 2, currentXp: 20, requiredXp: 100, masteryPct: 20, icon: 'Target', description: 'Planning', unlocked: true, perks: [] }],
       badges: [{ id: 'badge-a', name: 'Starter', description: 'Started', icon: 'Star', category: 'Progress', xpBonus: 10, unlocked: true }],
-      stats: { focusMinutes: 30, pomodoroSessions: 1, totalXp: 20, userLevel: 2, rpgTitle: 'Novice', focusScore: 90, totalRoiDollars: 10, activityHistory: { '2026-02-01': 1 } },
-      googleAuth: { isConnected: false, email: '' }
+      stats: { focusMinutes: 30, pomodoroSessions: 1, totalXp: 20, userLevel: 2, rpgTitle: 'Novice', focusScore: 90, totalRoiDollars: 10, activityHistory: { '2026-02-01': 1 }, legacyStatsFlag: 'keep' },
+      googleAuth: { isConnected: false, email: '', legacyGoogleFlag: 'keep' }
     },
     'user-b': { tasks: [], goals: [], projects: [], calendarEvents: [], timeLogs: [], skills: [], badges: [], stats: {}, googleAuth: { isConnected: false, email: '' } }
   },
   teamProjects: [{ id: 'team-project-a', workspaceId: 'workspace-a', ownerId: 'user-a', ownerEmail: 'alice@example.test', name: 'Team project', key: 'TEAM', description: 'Team details', color: '#123456', icon: 'Shield', memberIds: ['user-a', 'user-b'], memberRoles: { 'user-a': 'OWNER', 'user-b': 'MEMBER' }, createdAt: '2026-01-01T00:00:00.000Z' }],
-  teamTasks: [{ id: 'team-task-a', taskNumber: 1, projectId: 'team-project-a', columnId: 'todo', title: 'Team task', priority: 'high', assigneeId: 'user-b', subtasks: [{ id: 'team-sub-a', title: 'Team step', completed: false }], tags: ['release'], comments: [{ id: 'comment-a', authorId: 'user-b', authorName: 'Bob', authorInitials: 'BO', authorColor: '#222222', text: 'Ready', createdAt: '2026-01-02T00:00:00.000Z' }], order: 0, createdAt: '2026-01-02T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z' }],
+  teamTasks: [{ id: 'team-task-a', taskNumber: 1, projectId: 'team-project-a', columnId: 'todo', title: 'Team task', priority: 'high', assigneeId: 'user-b', subtasks: [{ id: 'team-sub-a', title: 'Team step', completed: false, legacyTeamSubtaskFlag: 'keep' }], tags: ['release'], comments: [{ id: 'comment-a', authorId: 'user-b', authorName: 'Bob', authorInitials: 'BO', authorColor: '#222222', text: 'Ready', createdAt: '2026-01-02T00:00:00.000Z' }], order: 0, createdAt: '2026-01-02T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z' }],
   teamInvitations: [{ id: 'invite-a', projectId: 'team-project-a', projectName: 'Team project', projectKey: 'TEAM', projectColor: '#123456', invitedEmail: 'new-person@example.test', invitedByUserId: 'user-a', invitedByName: 'Alice', invitedByEmail: 'alice@example.test', role: 'MEMBER', status: 'PENDING', createdAt: '2026-01-03T00:00:00.000Z' }]
 };
 const exported: LegacySnapshotExport = {
@@ -86,6 +86,12 @@ try {
   assert.equal(nextVersion, 2n);
   const reloaded = await loadRelationalSnapshot(prisma);
   assert.equal(reloaded.data.partitions['user-a'].tasks[0].title, 'Updated through relational runtime');
+  assert.equal(reloaded.data.partitions['user-a'].tasks[0].subtasks[0].legacySubtaskFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'].goals[0].keyResults[0].legacyKeyResultFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'].stats.legacyStatsFlag, 'keep');
+  assert.equal(reloaded.data.partitions['user-a'].googleAuth.legacyGoogleFlag, 'keep');
+  assert.equal(reloaded.data.workspaces[0].members[0].legacyMemberFlag, true);
+  assert.equal(reloaded.data.teamTasks[0].subtasks[0].legacyTeamSubtaskFlag, 'keep');
   await assert.rejects(
     () => persistRelationalSnapshot(prisma, loaded.data, loaded.version),
     /changed in another instance/
