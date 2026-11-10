@@ -664,8 +664,8 @@ class Database {
 
   public updateTeamProject(projectId: string, updates: Partial<TeamProjectRecord>, userId: string): TeamProjectRecord | null {
     const proj = this.getTeamProjectById(projectId, userId);
-    if (updates.workspaceId !== undefined && (typeof updates.workspaceId !== 'string' || !this.isUserInWorkspace(updates.workspaceId, userId))) return null;
     if (!proj) return null;
+    if (updates.workspaceId !== undefined && (typeof updates.workspaceId !== 'string' || !this.isUserInWorkspace(updates.workspaceId, userId))) return null;
     
     // Only OWNER and ADMIN can update team project settings
     const role = this.getProjectRole(projectId, userId);
