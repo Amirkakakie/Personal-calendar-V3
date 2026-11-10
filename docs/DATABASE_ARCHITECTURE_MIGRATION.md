@@ -9,7 +9,7 @@ The current application data-access API is synchronous and is used by every rout
 ## Current production behavior after this branch
 
 - Production and serverless deployments require a valid `DATABASE_URL`.
-- There is no production fallback to `data/db.json`, `/tmp`, or an in-memory state.
+- There is no production fallback to `data/db.json`, `/tmp`, or an in-memory state. The repository's `data/db.json` remains a local-development artifact and is never imported automatically into production.
 - The application loads the existing PostgreSQL `chronos_data` root row. It creates an empty row only when no row exists; it never seeds production from the repository's local JSON fixture.
 - PostgreSQL writes are serialized per process and use a monotonically increasing version compare-and-swap. A stale serverless instance cannot silently overwrite a newer snapshot.
 - Each API request refreshes its snapshot before auth/business logic.
@@ -193,3 +193,10 @@ Before deploying this branch to an existing production environment:
 5. Confirm the app loads the existing root row and expected user count before enabling writes.
 
 The assistant cannot access the user's production database or Vercel environment secrets, so no live backup, data-count verification, or production restore has been performed here.
+
+
+## Local data-file preservation
+
+The tracked `data/db.json` file from the latest `main` branch is retained in the reconciled branch. It may contain local-development data and is not deleted as part of this database safety change. Security and E2E tests use unique temporary files through `CHRONOS_DATA_FILE`, so test registrations do not mutate that tracked file. Production must continue to read only the configured PostgreSQL root row; do not use the repository file as a production backup or automatic seed.
+
+The live production PostgreSQL database is not accessible through this repository integration. Its contents have not been exported, counted, backed up, or migrated by this change.
