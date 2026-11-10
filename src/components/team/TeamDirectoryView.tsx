@@ -1,5 +1,5 @@
-import React from 'react';
-import { Users, Mail, Shield, CheckCircle2, UserPlus, FolderGit2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, Mail, Shield, CheckCircle2, UserPlus, FolderGit2, UserMinus } from 'lucide-react';
 import { useTeam } from '../../context/TeamContext.tsx';
 import { useI18n } from '../../i18n/I18nContext.tsx';
 
@@ -8,7 +8,9 @@ interface TeamDirectoryViewProps {
 }
 
 export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInviteModal }) => {
-  const { currentProject, teamMembers, projectTasks } = useTeam();
+  const { currentProject, teamMembers, projectTasks, updateMemberRole, removeMember } = useTeam();
+  const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { t, formatNumber, direction } = useI18n();
 
   if (!currentProject) {
@@ -63,6 +65,8 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
         </button>
       </div>
 
+      {actionError && <p role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">{actionError}</p>}
+
       {/* Members Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {teamMembers.map(member => {
@@ -73,7 +77,7 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
           return (
             <div
               key={member.id}
-              className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 hover:border-neutral-700 transition-all shadow-sm flex flex-col justify-between"
+              className="min-w-0 bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 hover:border-neutral-700 transition-all shadow-sm flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
@@ -104,7 +108,7 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
                   </div>
 
                   <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
-                    {member.role}
+                    {member.role === 'Owner' ? (direction === 'rtl' ? 'مالک' : 'Owner') : member.role === 'Admin' ? (direction === 'rtl' ? 'مدیر' : 'Admin') : member.role === 'Viewer' ? (direction === 'rtl' ? 'فقط مشاهده' : 'Viewer') : (direction === 'rtl' ? 'عضو' : 'Member')}
                   </span>
                 </div>
 
@@ -124,9 +128,50 @@ export const TeamDirectoryView: React.FC<TeamDirectoryViewProps> = ({ onOpenInvi
                   </div>
                 </div>
               </div>
+              {member.id !== currentProject.ownerId && currentProject.ownerId && (
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 border-t border-neutral-800 pt-3">
+                  <label className="sr-only" htmlFor={`role-${member.id}`}>{direction === 'rtl' ? 'سطح دسترسی' : 'Member role'}</label>
+                  <select
+                    id={`role-${member.id}`}
+                    value={member.role}
+                    disabled={busyMemberId === member.id}
+                    onChange={async e => {
+                      setBusyMemberId(member.id); setActionError(null);
+                      try { await updateMemberRole(member.id, e.target.value as any); }
+                      catch (error: any) { setActionError(error?.message || (direction === 'rtl' ? 'تغییر دسترسی انجام نشد.' : 'Could not update member role.')); }
+                      finally { setBusyMemberId(null); }
+                    }}
+                    className="app-input min-w-0 flex-1 text-xs"
+                  >
+                    <option value="Admin">{direction === 'rtl' ? 'مدیر پروژه' : 'Admin'}</option>
+                    <option value="Member">{direction === 'rtl' ? 'عضو' : 'Member'}</option>
+                    <option value="Viewer">{direction === 'rtl' ? 'فقط مشاهده' : 'Viewer'}</option>
+                  </select>
+                  <button
+                    type="button"
+                    disabled={busyMemberId === member.id}
+                    onClick={async () => {
+                      if (!window.confirm(direction === 'rtl' ? 'دسترسی این عضو به پروژه لغو شود؟' : 'Remove this member from the project?')) return;
+                      setBusyMemberId(member.id); setActionError(null);
+                      try { await removeMember(member.id); }
+                      catch (error: any) { setActionError(error?.message || (direction === 'rtl' ? 'حذف عضو انجام نشد.' : 'Could not remove member.')); }
+                      finally { setBusyMemberId(null); }
+                    }}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-500/30 px-3 py-2 text-xs text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+                  >
+                    <UserMinus className="h-3.5 w-3.5" />
+                    {direction === 'rtl' ? 'لغو دسترسی' : 'Remove'}
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
+        {teamMembers.length === 0 && (
+          <div className="col-span-full rounded-2xl border border-dashed border-neutral-700 p-8 text-center text-sm text-neutral-400">
+            {direction === 'rtl' ? 'هنوز عضوی به این پروژه اضافه نشده است.' : 'No members have joined this project yet.'}
+          </div>
+        )}
       </div>
     </div>
   );
