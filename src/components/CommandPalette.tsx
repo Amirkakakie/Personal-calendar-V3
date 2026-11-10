@@ -97,7 +97,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'action-new-goal',
       title: t('goals.newGoal'),
-      category: 'Actions',
+      category: t('commandPalette.actions'),
       icon: Target,
       run: () => {
         onClose();
@@ -107,7 +107,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'action-pomodoro',
       title: locale === 'fa' ? 'شروع تایمر تمرکز پومودورو (۲۵ دقیقه)' : 'Start Pomodoro Focus Timer (25m)',
-      category: 'Actions',
+      category: t('commandPalette.actions'),
       icon: Clock,
       run: () => {
         onClose();
@@ -117,7 +117,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'action-ai-decompose',
       title: t('accountMenu.aiDecompose'),
-      category: 'Actions',
+      category: t('commandPalette.actions'),
       icon: Sparkles,
       run: () => {
         onClose();
@@ -127,7 +127,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'action-export-ical',
       title: t('accountMenu.exportIcal'),
-      category: 'Actions',
+      category: t('commandPalette.actions'),
       icon: Download,
       run: () => {
         onClose();
@@ -137,7 +137,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'action-switch-workspace',
       title: workspaceMode === 'personal' ? t('header.teamWorkspace') : t('header.personalWorkspace'),
-      category: 'Actions',
+      category: t('commandPalette.actions'),
       icon: Users,
       run: () => {
         onClose();
@@ -148,15 +148,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const navigationItems: { id: string; title: string; category: string; icon: any; run: () => void }[] = [
     { id: 'nav-dashboard', title: t('nav.dashboard'), category: t('commandPalette.navigation'), icon: LayoutDashboard, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('dashboard'); onClose(); } },
-    { id: 'nav-tasks', title: t('nav.tasks'), category: 'Navigation', icon: CheckSquare, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('tasks'); onClose(); } },
-    { id: 'nav-projects', title: t('nav.projects'), category: 'Navigation', icon: FolderGit2, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('projects'); onClose(); } },
-    { id: 'nav-calendar', title: t('nav.calendar'), category: 'Navigation', icon: Calendar, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('calendar'); onClose(); } },
-    { id: 'nav-eisenhower', title: t('nav.eisenhower'), category: 'Navigation', icon: Grid, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('eisenhower'); onClose(); } },
-    { id: 'nav-skills', title: t('nav.skills'), category: 'Navigation', icon: Zap, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('skills'); onClose(); } },
-    { id: 'nav-stopwatch', title: t('nav.stopwatch'), category: 'Navigation', icon: Clock, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('stopwatch'); onClose(); } },
-    { id: 'nav-goals', title: t('nav.goals'), category: 'Navigation', icon: Target, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('goals'); onClose(); } },
-    { id: 'nav-coach', title: t('nav.coach'), category: 'Navigation', icon: Sparkles, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('coach'); onClose(); } },
-    { id: 'nav-team', title: t('team.board'), category: 'Navigation', icon: Users, run: () => { onToggleWorkspaceMode('team'); onClose(); } }
+    { id: 'nav-tasks', title: t('nav.tasks'), category: t('commandPalette.navigation'), icon: CheckSquare, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('tasks'); onClose(); } },
+    { id: 'nav-projects', title: t('nav.projects'), category: t('commandPalette.navigation'), icon: FolderGit2, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('projects'); onClose(); } },
+    { id: 'nav-calendar', title: t('nav.calendar'), category: t('commandPalette.navigation'), icon: Calendar, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('calendar'); onClose(); } },
+    { id: 'nav-eisenhower', title: t('nav.eisenhower'), category: t('commandPalette.navigation'), icon: Grid, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('eisenhower'); onClose(); } },
+    { id: 'nav-skills', title: t('nav.skills'), category: t('commandPalette.navigation'), icon: Zap, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('skills'); onClose(); } },
+    { id: 'nav-stopwatch', title: t('nav.stopwatch'), category: t('commandPalette.navigation'), icon: Clock, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('stopwatch'); onClose(); } },
+    { id: 'nav-goals', title: t('nav.goals'), category: t('commandPalette.navigation'), icon: Target, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('goals'); onClose(); } },
+    { id: 'nav-coach', title: t('nav.coach'), category: t('commandPalette.navigation'), icon: Sparkles, run: () => { onToggleWorkspaceMode('personal'); onSelectTab('coach'); onClose(); } },
+    { id: 'nav-team', title: t('team.board'), category: t('commandPalette.navigation'), icon: Users, run: () => { onToggleWorkspaceMode('team'); onClose(); } }
   ];
 
   const matchingTasks = tasks
@@ -165,7 +165,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     .map(t => ({
       id: `task-${t.id}`,
       title: t.title,
-      category: `Task: ${t.category}`,
+      category: locale === 'fa' ? `کار: ${t.category}` : `Task: ${t.category}`,
       icon: CheckSquare,
       run: () => {
         onClose();
