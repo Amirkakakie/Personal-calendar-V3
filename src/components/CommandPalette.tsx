@@ -205,7 +205,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={locale === "fa" ? "جستجو و میان‌برهای کرونوس" : "Chronos command search"}
         className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
         onClick={(e) => e.stopPropagation()}
       >
@@ -215,6 +218,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <input
             ref={inputRef}
             type="text"
+            aria-label={locale === "fa" ? "جستجو در کارها و بخش‌ها" : "Search tasks and navigation"}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -232,7 +236,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Results List */}
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        <div role="listbox" aria-label={locale === "fa" ? "نتایج جستجو" : "Search results"} className="max-h-80 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {combinedItems.length === 0 ? (
             <div className="py-8 text-center text-xs text-neutral-500">
               {locale === 'fa' ? 'نتیجه‌ای برای جستجوی شما پیدا نشد.' : 'No commands or tasks found matching your query.'}
@@ -245,6 +249,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               return (
                 <div
                   key={item.id}
+                  role="option"
+                  aria-selected={isSelected}
                   onClick={() => item.run()}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-xs transition-colors ${
@@ -271,10 +277,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         {/* Footer instructions */}
         <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-950/60 flex items-center justify-between text-[11px] text-neutral-500 font-mono">
           <div className="flex items-center gap-3">
-            <span>↑↓ Navigate</span>
-            <span>↵ Select</span>
+            <span>{locale === "fa" ? "↑↓ جابه‌جایی" : "↑↓ Navigate"}</span>
+            <span>{locale === "fa" ? "↵ انتخاب" : "↵ Select"}</span>
           </div>
-          <span>Chronos Quick Navigator</span>
+          <span>{locale === "fa" ? "جستجو و دسترسی سریع کرونوس" : "Chronos Quick Navigator"}</span>
         </div>
       </div>
     </div>
