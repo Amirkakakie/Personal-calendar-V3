@@ -67,20 +67,21 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
 
   const totalCategorized = categories.reduce((sum, c) => sum + c.count, 0) || 1;
   const completionRate = stats.completionRate || 0;
+  const safeCompletionRate = Math.min(100, Math.max(0, completionRate));
 
   // Circular progress ring calculation
   const ringSize = 42;
   const ringStroke = 4;
   const ringRadius = (ringSize - ringStroke) / 2;
   const ringCircumference = 2 * Math.PI * ringRadius;
-  const ringOffset = ringCircumference - (completionRate / 100) * ringCircumference;
+  const ringOffset = ringCircumference - (safeCompletionRate / 100) * ringCircumference;
 
   return (
-    <div className="space-y-4">
+    <section aria-label={locale === "fa" ? "آمار بهره‌وری" : "Productivity overview"} className="space-y-5">
       {/* 4 Metric KPI Cards */}
-      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 2xl:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. Completion Velocity */}
-        <div className="premium-border rounded-2xl p-4 sm:p-5 min-h-[132px] relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.035] transition-all bg-white/[0.02]">
+        <div className="premium-border group relative min-h-[148px] overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/[0.075] via-neutral-900/90 to-neutral-950 p-4 shadow-[0_12px_35px_-28px_rgba(99,102,241,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-28px_rgba(99,102,241,0.65)] sm:p-5">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-[13px] font-semibold text-neutral-400 tracking-normal">
               {t('stats.completionRate')}
@@ -94,7 +95,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             <div>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-mono tabular-nums">
-                  {formatNumber(completionRate)}%
+                  {formatNumber(safeCompletionRate)}%
                 </span>
               </div>
               <p className="text-xs text-neutral-500 mt-1">
@@ -105,8 +106,8 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             </div>
 
             {/* Circular Progress Ring */}
-            <div className="relative shrink-0 hidden sm:block">
-              <svg width={ringSize} height={ringSize} className="transform -rotate-90">
+            <div className="relative shrink-0 hidden sm:block" role="progressbar" aria-label={locale === "fa" ? "درصد انجام کارها" : "Task completion rate"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={safeCompletionRate}>
+              <svg width={ringSize} height={ringSize} className="transform -rotate-90" aria-hidden="true">
                 <circle
                   cx={ringSize / 2}
                   cy={ringSize / 2}
@@ -134,13 +135,13 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
           <div className="w-full bg-white/5 h-1 rounded-full mt-3 overflow-hidden sm:hidden">
             <div 
               className="bg-indigo-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${completionRate}%` }}
+              style={{ width: `${safeCompletionRate}%` }}
             />
           </div>
         </div>
 
         {/* 2. Streak Counter */}
-        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
+        <div className="premium-border group relative min-h-[148px] overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/[0.07] via-neutral-900/90 to-neutral-950 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.035] sm:p-5">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
               {t('stats.streak')}
@@ -168,7 +169,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         {/* 3. Focus Hours */}
-        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
+        <div className="premium-border group relative min-h-[148px] overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/[0.07] via-neutral-900/90 to-neutral-950 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.035] sm:p-5">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
               {t('stats.focusTime')}
@@ -190,7 +191,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         {/* 4. Synced Tasks */}
-        <div className="premium-border rounded-2xl p-4 relative overflow-hidden group hover:border-white/10 transition-all bg-white/[0.02]">
+        <div className="premium-border group relative min-h-[148px] overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500/[0.07] via-neutral-900/90 to-neutral-950 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.035] sm:p-5">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
               {locale === 'fa' ? 'همگام‌شده' : 'Synced'}
@@ -216,21 +217,22 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
       </div>
 
       {/* Visualizer Toggle Strip */}
-      <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4">
+      <div className="rounded-2xl border border-white/[0.07] bg-gradient-to-br from-neutral-900 to-neutral-950 p-4 shadow-[0_16px_45px_-36px_rgba(0,0,0,0.9)] sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
+            <span className="text-sm font-bold text-neutral-100">
               {t('stats.categories')}
             </span>
             <div className="flex items-center bg-neutral-950 p-0.5 rounded-lg border border-neutral-800 ms-2">
               <button
                 type="button"
                 onClick={() => setActiveVisualizer(prev => prev === 'trend' ? 'none' : 'trend')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                className={`flex min-h-9 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
                   activeVisualizer === 'trend'
                     ? 'bg-neutral-800 text-white shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-300'
                 }`}
+                aria-pressed={activeVisualizer === "trend"}
               >
                 <TrendingUp className="w-3 h-3 text-indigo-400" />
                 <span>{locale === 'fa' ? 'روند انجام کارها' : 'Velocity'}</span>
@@ -243,6 +245,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                     ? 'bg-neutral-800 text-white shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-300'
                 }`}
+                aria-pressed={activeVisualizer === "donut"}
               >
                 <PieChart className="w-3 h-3 text-purple-400" />
                 <span>{locale === 'fa' ? 'سهم دسته‌بندی‌ها' : 'Donut'}</span>
@@ -257,11 +260,12 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                 key={c.id}
                 type="button"
                 onClick={() => onSelectCategoryFilter?.(selectedCategory === c.id ? '' : c.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-all min-h-[32px] ${
+                className={`flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] transition-all ${
                   selectedCategory === c.id 
                     ? 'bg-neutral-700 text-white font-medium ring-1 ring-neutral-500 shadow-sm' 
-                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'
+                    : 'border-transparent text-neutral-400 hover:border-white/10 hover:bg-white/[0.04] hover:text-neutral-200'
                 }`}
+                aria-pressed={selectedCategory === c.id}
               >
                 <span className={`w-2 h-2 rounded-full ${c.color}`} />
                 <span>{c.label}</span>
@@ -308,6 +312,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
           />
         </div>
       )}
-    </div>
+    </section>
   );
 };
