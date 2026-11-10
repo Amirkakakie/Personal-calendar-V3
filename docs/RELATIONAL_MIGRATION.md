@@ -18,25 +18,35 @@ npm run db:export-legacy -- --source-file "D:\project\Personal-calendar-V3\data\
 npm run db:verify-legacy-export -- "D:\secure-backups\chronos-local-export.json"
 ```
 
-5. Configure a PostgreSQL `DATABASE_URL` for the target database, then apply the committed migrations:
+5. Generate a stable 32-byte encryption key and store it as `CHRONOS_DATA_ENCRYPTION_KEY` in the target environment. Keep the same key in a secure secrets manager and in the disaster-recovery backup:
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$env:CHRONOS_DATA_ENCRYPTION_KEY = [Convert]::ToBase64String($bytes)
+```
+
+Do not rotate or lose this key without a planned re-encryption procedure. It protects the archived snapshot and Google OAuth tokens.
+
+6. Configure a PostgreSQL `DATABASE_URL` for the target database, then apply the committed migrations:
 
 ```powershell
 npm run prisma:migrate:deploy
 ```
 
-6. Run the import in dry-run mode first:
+7. Run the import in dry-run mode first:
 
 ```powershell
 npm run db:import-legacy-archive -- --file "D:\secure-backups\chronos-local-export.json"
 ```
 
-7. Copy the SHA-256 digest printed by dry-run and apply the exact export:
+8. Copy the SHA-256 digest printed by dry-run and apply the exact export:
 
 ```powershell
 npm run db:import-legacy-archive -- --file "D:\secure-backups\chronos-local-export.json" --apply --expected-sha256 YOUR_EXACT_SHA256
 ```
 
-8. Keep the original JSON and export until all user accounts, tasks, goals, projects, calendar events, time logs, skills, team projects, comments, invitations and account switching have been checked against the imported database.
+9. Keep the original JSON and export until all user accounts, tasks, goals, projects, calendar events, time logs, skills, team projects, comments, invitations and account switching have been checked against the imported database.
 
 Once the relational import is complete, start Chronos with the target `DATABASE_URL`. In development, the presence of a valid `DATABASE_URL` selects Prisma relational persistence; without it, Chronos continues using the local JSON file.
 
@@ -55,6 +65,7 @@ npm run db:export-legacy -- --output /secure/chronos-postgres-export.json
 
 - `DATABASE_URL`: stable PostgreSQL connection string.
 - `JWT_SECRET`: stable randomly generated secret of at least 32 bytes.
+- `CHRONOS_DATA_ENCRYPTION_KEY`: stable 32-byte base64 or 64-character hex key for encrypted archives and Google tokens.
 - Apply `prisma migrate deploy` before starting the new runtime.
 - Complete the verified legacy import before deploying the relational runtime when legacy data exists.
 - Do not set `CHRONOS_ALLOW_EMPTY_DB_INIT=true` for a database containing legacy data. It is only an explicit bootstrap switch for a genuinely new, empty installation.
