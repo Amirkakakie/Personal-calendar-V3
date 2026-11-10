@@ -86,7 +86,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const quickActions = [
     {
       id: 'action-new-task',
-      title: t('tasks.newTask'),
+      title: t('header.newTask'),
       category: 'Actions',
       icon: Plus,
       run: () => {
