@@ -122,6 +122,8 @@ model User {
   updatedAt        DateTime     @updatedAt
 
   @@index([email])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -148,6 +150,8 @@ model Domain {
 
   @@unique([userId, type])
   @@index([userId])
+  legacyData Json?
+
 }
 
 model GoalOKR {
@@ -173,6 +177,8 @@ model GoalOKR {
 
   @@index([userId, timeframe])
   @@index([domainId])
+  legacyData Json?
+
 }
 
 model KeyResult {
@@ -222,6 +228,8 @@ model Project {
   @@index([userId, status])
   @@index([domainId])
   @@index([goalId])
+  legacyData Json?
+
 }
 
 model Task {
@@ -275,6 +283,8 @@ model Task {
   @@index([goalId])
   @@index([domainId])
   @@index([linkedSkillId])
+  legacyData Json?
+
 }
 
 model SubTask {
@@ -317,6 +327,8 @@ model TimeLog {
   @@index([userId, startedAt])
   @@index([taskId])
   @@index([projectId])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -325,7 +337,7 @@ model TimeLog {
 
 model Skill {
   id          String      @id @default(uuid())
-  name        String      @unique
+  name        String
   category    String      // e.g. "Distributed Systems", "AI & ML", "Systems Design", "Biohacking"
   tier        SkillTier   @default(NOVICE)
   icon        String      @default("Zap")
@@ -340,7 +352,10 @@ model Skill {
 
   createdAt   DateTime    @default(now())
 
+  @@index([name])
   @@index([parentSkillId])
+  legacyData Json?
+
 }
 
 model UserSkill {
@@ -361,6 +376,8 @@ model UserSkill {
   @@unique([userId, skillId])
   @@index([userId])
   @@index([skillId])
+  legacyData Json?
+
 }
 
 model UserBadge {
@@ -377,6 +394,8 @@ model UserBadge {
 
   @@unique([userId, badgeId])
   @@index([userId])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -405,6 +424,8 @@ model CalendarEvent {
   @@index([userId, startTime])
   @@index([taskId])
   @@index([googleEventId])
+  legacyData Json?
+
 }
 
 // ----------------------------------------------------------------------------
@@ -439,6 +460,8 @@ model Workspace {
 
   @@index([ownerId])
   @@index([ownerId, isPersonal])
+  legacyData Json?
+
 }
 
 model WorkspaceMember {
@@ -478,6 +501,8 @@ model TeamProject {
 
   @@index([workspaceId])
   @@index([ownerId])
+  legacyData Json?
+
 }
 
 model TeamTask {
@@ -510,6 +535,8 @@ model TeamTask {
   @@unique([projectId, taskNumber])
   @@index([projectId, columnId, order])
   @@index([assigneeId])
+  legacyData Json?
+
 }
 
 model ProjectMember {
@@ -546,6 +573,9 @@ model TeamTaskComment {
   authorId    String
   author      User     @relation("TeamTaskCommentAuthor", fields: [authorId], references: [id], onDelete: Restrict)
   body        String
+  authorName String @default("")
+  authorInitials String @default("")
+  authorColor String @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -553,6 +583,8 @@ model TeamTaskComment {
 
   @@index([taskId, createdAt])
   @@index([authorId])
+  legacyData Json?
+
 }
 
 model TeamTaskTag {
@@ -621,6 +653,12 @@ model LegacySnapshot {
   @@index([userId, importedAt])
 }
 
+model DatabaseRevision {
+  id        String   @id
+  version   BigInt   @default(1)
+  updatedAt DateTime @updatedAt
+}
+
 model AuthSession {
   id          String   @id @default(uuid())
   userId      String
@@ -655,4 +693,6 @@ model ProjectInvitation {
 
   @@index([invitedEmail])
   @@index([projectId])
+  legacyData Json?
+
 }
