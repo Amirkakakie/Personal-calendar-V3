@@ -78,6 +78,23 @@ async function runSecurityTestSuite() {
     // Browser origins must be explicitly allowed; absent Origin remains valid for non-browser clients.
     const blockedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'https://attacker.invalid' } });
     assert(blockedOrigin.status === 403, 'Untrusted browser Origin is rejected');
+    // A production custom domain must be allowed to call its own API even when
+    // APP_URL/CORS_ORIGIN are not configured for that domain.
+    const savedNodeEnv = process.env.NODE_ENV;
+    const savedAppUrl = process.env.APP_URL;
+    const savedCorsOrigin = process.env.CORS_ORIGIN;
+    const savedVercelUrl = process.env.VERCEL_URL;
+    process.env.NODE_ENV = 'production';
+    delete process.env.APP_URL;
+    delete process.env.CORS_ORIGIN;
+    delete process.env.VERCEL_URL;
+    const sameOrigin = new URL(BASE_URL).origin;
+    const sameOriginResponse = await fetch(`${BASE_URL}/health`, { headers: { Origin: sameOrigin } });
+    assert(sameOriginResponse.status === 200 && sameOriginResponse.headers.get('access-control-allow-origin') === sameOrigin, 'Production same-origin API requests work without manually configured CORS origins');
+    process.env.NODE_ENV = savedNodeEnv;
+    if (savedAppUrl === undefined) delete process.env.APP_URL; else process.env.APP_URL = savedAppUrl;
+    if (savedCorsOrigin === undefined) delete process.env.CORS_ORIGIN; else process.env.CORS_ORIGIN = savedCorsOrigin;
+    if (savedVercelUrl === undefined) delete process.env.VERCEL_URL; else process.env.VERCEL_URL = savedVercelUrl;
     const allowedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'http://localhost:3000' } });
     assert(allowedOrigin.status === 200 && allowedOrigin.headers.get('access-control-allow-origin') === 'http://localhost:3000', 'Configured development Origin receives an exact CORS allowlist response');
 
