@@ -139,7 +139,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
       }}
     >
       <div 
-        className="bg-neutral-900 border-t sm:border border-neutral-800 rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl p-5 sm:p-6 relative flex flex-col"
+        className="bg-neutral-900 border-t sm:border border-neutral-800 rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[92dvh] overflow-y-auto shadow-2xl p-4 sm:p-6 relative flex flex-col chronos-modal-panel chronos-scroll"
         onClick={(e) => e.stopPropagation()}
       >
         <button
