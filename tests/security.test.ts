@@ -75,6 +75,12 @@ async function runSecurityTestSuite() {
   console.log(`[Test Server] Ephemeral test instance listening on port ${port}\n`);
 
   try {
+    // Browser origins must be explicitly allowed; absent Origin remains valid for non-browser clients.
+    const blockedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'https://attacker.invalid' } });
+    assert(blockedOrigin.status === 403, 'Untrusted browser Origin is rejected');
+    const allowedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'http://localhost:3000' } });
+    assert(allowedOrigin.status === 200 && allowedOrigin.headers.get('access-control-allow-origin') === 'http://localhost:3000', 'Configured development Origin receives an exact CORS allowlist response');
+
     // ---------------------------------------------------------
     // Setup: Create User A & User B
     // ---------------------------------------------------------
