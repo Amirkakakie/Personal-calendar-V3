@@ -58,7 +58,7 @@ This guide keeps Persian labels, actions, field names, and product terminology c
 ## Control and form-label rules
 
 - Buttons start with a clear verb: «افزودن کار»، «ذخیره»، «حذف»، «دعوت همکار».
-- Field labels name the value expected: «عنوان کار»، «تاریخ انجام»، «زمان تقریبی انجام»، «مسئول انجام».
+- Field labels name the value expected: «عنوان کار»، «موعد انجام»، «ساعت انجام»، «زمان تقریبی انجام»، «مسئول انجام».
 - Placeholders provide a short example or instruction and never replace the visible field label.
 - Destructive actions use explicit confirmation copy, e.g. «از حذف این کار مطمئن هستید؟».
 - Empty states explain what is missing and offer a direct next action.
