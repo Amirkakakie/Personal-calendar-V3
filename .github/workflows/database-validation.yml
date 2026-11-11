@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [feat/relational-database-architecture]
+    branches: [feat/relational-database-architecture, security-hardening-2026-11]
   workflow_dispatch:
 
 permissions:
@@ -57,7 +57,7 @@ jobs:
       # Keep the committed lockfile reproducible. This runs only on a push to
       # the dedicated feature branch, never from forked pull_request contexts.
       - name: Commit synchronized npm lockfile
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/relational-database-architecture'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/feat/relational-database-architecture' || github.ref == 'refs/heads/security-hardening-2026-11')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -66,8 +66,8 @@ jobs:
           git add package-lock.json
           if ! git diff --cached --quiet; then
             git commit -m "chore(deps): sync npm lockfile"
-            git push origin "HEAD:feat/relational-database-architecture"
-            gh workflow run database-validation.yml --ref feat/relational-database-architecture
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            gh workflow run database-validation.yml --ref "${GITHUB_REF_NAME}"
           fi
 
       - name: Upload generated package lock for review
