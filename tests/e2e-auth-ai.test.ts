@@ -158,6 +158,15 @@ async function runAllTests() {
       assert.strictEqual(res.status, 400);
     });
 
+    await test('POST /api/auth/google rejects authorization-code flow until state and PKCE are verified', async () => {
+      const res = await fetch(`${baseUrl}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'unbound-authorization-code' })
+      });
+      assert.strictEqual(res.status, 400);
+    });
+
     await test('POST /api/auth/google rejects mock tokens unless the explicit test flag is enabled', async () => {
       process.env.CHRONOS_ENABLE_MOCK_GOOGLE_AUTH = 'false';
       const res = await fetch(`${baseUrl}/api/auth/google`, {
