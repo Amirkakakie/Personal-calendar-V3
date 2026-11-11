@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { SignJWT } from 'jose';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
 import { getJwtSecret } from '../middleware/auth.ts';
 
@@ -19,6 +20,26 @@ function getInitials(name: string): string {
 
 function getSigningKey(): Uint8Array {
   return new TextEncoder().encode(getJwtSecret());
+}
+
+async function issueSessionToken(user: { id: string; email: string; name?: string; role?: string }): Promise<string> {
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const token = await new SignJWT({
+    sub: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuer('chronos-os')
+    .setAudience('chronos-clients')
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(expiresAt.getTime() / 1000))
+    .sign(getSigningKey());
+
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  await db.createAuthSession(user.id, tokenHash, expiresAt);
+  return token;
 }
 
 // POST /api/auth/signup
@@ -75,18 +96,7 @@ router.post('/signup', async (req: Request, res: Response) => {
     const created = db.createUser(newUser);
 
     // Cryptographically sign JWT with jose and standard claims
-    const token = await new SignJWT({
-      sub: created.id,
-      email: created.email,
-      name: created.name,
-      role: created.role
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuer('chronos-os')
-      .setAudience('chronos-clients')
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(getSigningKey());
+    const token = await issueSessionToken(created);
 
     const { passwordHash: _hash, password: _legacy, ...safeUser } = created as any;
     res.status(201).json({
@@ -136,18 +146,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // Cryptographically sign JWT with jose
-    const token = await new SignJWT({
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuer('chronos-os')
-      .setAudience('chronos-clients')
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(getSigningKey());
+    const token = await issueSessionToken(user);
 
     const { passwordHash: _hash, password: _legacy, ...safeUser } = user as any;
     res.json({
@@ -358,6 +357,23 @@ router.post('/google', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('[Google Auth Error]:', err);
     res.status(500).json({ success: false, error: err.message || 'Google authentication failed' });
+  }
+});
+
+// POST /api/auth/logout - Revoke the current server-side session.
+router.post('/logout', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!req.user || !token) {
+    return res.status(401).json({ success: false, error: 'Not authenticated.' });
+  }
+  try {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    await db.revokeAuthSession(tokenHash);
+    res.json({ success: true, message: 'Session revoked.' });
+  } catch (error) {
+    console.error('[Auth Logout Error]:', error);
+    res.status(503).json({ success: false, error: 'Could not revoke the session. Please retry.' });
   }
 });
 
