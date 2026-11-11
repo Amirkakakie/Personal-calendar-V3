@@ -202,7 +202,7 @@ router.post('/google', async (req: Request, res: Response) => {
       }
 
       // Check for mock/test credentials in non-production test runs
-      if (process.env.NODE_ENV !== 'production' && credential.startsWith('test-mock-google-token')) {
+      if (process.env.NODE_ENV === 'test' && process.env.CHRONOS_ENABLE_MOCK_GOOGLE_AUTH === 'true' && credential.startsWith('test-mock-google-token')) {
         isMockCredential = true;
         const parts = credential.split(':');
         const testEmail = parts[1] || 'google.test@chronos.ai';
