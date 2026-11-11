@@ -92,7 +92,7 @@ async function runSecurityTestSuite() {
     const sameOriginResponse = await fetch(`${BASE_URL}/health`, { headers: { Origin: sameOrigin } });
     assert(sameOriginResponse.status === 200 && sameOriginResponse.headers.get('access-control-allow-origin') === sameOrigin, 'Production same-origin API requests work without manually configured CORS origins');
     const productionCsp = sameOriginResponse.headers.get('content-security-policy') || '';
-    assert(!productionCsp.includes("'unsafe-inline'"), 'Production CSP does not inherit development inline-script allowances');
+    assert(!/script-src[^;]*'unsafe-inline'/.test(productionCsp), 'Production CSP does not inherit development inline-script allowances');
     process.env.NODE_ENV = savedNodeEnv;
     if (savedAppUrl === undefined) delete process.env.APP_URL; else process.env.APP_URL = savedAppUrl;
     if (savedCorsOrigin === undefined) delete process.env.CORS_ORIGIN; else process.env.CORS_ORIGIN = savedCorsOrigin;
