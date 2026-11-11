@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import type { DatabaseSchema, UserPartition, WorkspaceRecord, TeamProjectRecord, TeamTaskRecord, ProjectInvitationRecord, UserRecord } from '../db.ts';
 import { decryptGoogleToken, encryptGoogleToken } from '../security/dataEncryption.ts';
 
