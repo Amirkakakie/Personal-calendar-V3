@@ -35,7 +35,15 @@ export function getJwtSecret(): string {
     return configuredSecret;
   }
 
-  return configuredSecret || 'chronos-dev-secret-key-production-min-32-chars-entropy-2026';
+  if (process.env.NODE_ENV === 'test') {
+    return configuredSecret || 'chronos-test-only-secret-key-not-for-any-deployment';
+  }
+
+  if (typeof configuredSecret !== 'string' || Buffer.byteLength(configuredSecret, 'utf8') < 32 ||
+      /replace_with|change[-_ ]in[-_ ]production|your[-_ ]secret|example/i.test(configuredSecret)) {
+    throw new Error('JWT_SECRET must be configured as a stable, randomly generated secret of at least 32 bytes in every non-test environment.');
+  }
+  return configuredSecret;
 }
 
 function getSecretKey(): Uint8Array {
