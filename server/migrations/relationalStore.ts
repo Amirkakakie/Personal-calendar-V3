@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import type { DatabaseSchema, UserPartition, WorkspaceRecord, TeamProjectRecord, TeamTaskRecord, ProjectInvitationRecord, UserRecord } from '../db.ts';
 import { decryptGoogleToken, encryptGoogleToken } from '../security/dataEncryption.ts';
 
@@ -279,5 +279,5 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     await deleteMissing('userStats',users.map(u=>'stats-'+text(u.id))); await deleteMissing('googleConnection',users.map(u=>'google-'+text(u.id)));
     await deleteMissing('user',ids(users));
     return expectedVersion+1n;
-  },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,timeout:120000});
+  },{isolationLevel:'Serializable',timeout:120000});
 }
