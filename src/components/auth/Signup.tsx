@@ -34,8 +34,13 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       return;
     }
 
-    if (password.length < 8) {
-      setErrorMessage(direction === 'rtl' ? 'رمز عبور باید حداقل ۸ کاراکتر باشد.' : 'Password must be at least 8 characters.');
+    if (password.length < 12) {
+      setErrorMessage(direction === 'rtl' ? 'رمز عبور باید حداقل ۱۲ کاراکتر باشد.' : 'Password must be at least 12 characters.');
+      return;
+    }
+
+    if (new TextEncoder().encode(password).length > 72) {
+      setErrorMessage(direction === 'rtl' ? 'طول رمز عبور نباید بیشتر از ۷۲ بایت باشد.' : 'Password must not exceed 72 UTF-8 bytes.');
       return;
     }
 
@@ -47,12 +52,18 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const displayName = name.trim() || email.trim().split('@')[0];
-    const res = await signup(displayName, email.trim(), password, jobTitle);
-    setIsSubmitting(false);
+    try {
+      const displayName = name.trim() || email.trim().split('@')[0];
+      const res = await signup(displayName, email.trim(), password, jobTitle);
 
-    if (!res.success) {
-      setErrorMessage(res.error || (direction === 'rtl' ? 'خطا در ثبت نام.' : 'Failed to create account.'));
+      if (!res.success) {
+        setErrorMessage(res.error || (direction === 'rtl' ? 'ثبت‌نام انجام نشد. لطفاً دوباره تلاش کنید.' : 'Registration was not completed. Please try again.'));
+      }
+    } catch (error: any) {
+      console.error('[Signup] Unexpected registration error:', error);
+      setErrorMessage(error?.message || (direction === 'rtl' ? 'خطای غیرمنتظره هنگام ثبت‌نام رخ داد.' : 'An unexpected error occurred during registration.'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
