@@ -142,7 +142,7 @@ router.put('/team/projects/:id', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Target date must use YYYY-MM-DD format.' });
   }
   if (updates.workspaceId !== undefined && (typeof updates.workspaceId !== 'string' || !db.isUserInWorkspace(updates.workspaceId, userId))) {
-    return res.status(403).json({ success: false, error: 'Workspace access denied.' });
+    return res.status(404).json({ success: false, error: 'Project not found or workspace access denied.' });
   }
   const updated = db.updateTeamProject(projectId, updates, userId);
   if (!updated) {
