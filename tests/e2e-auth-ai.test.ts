@@ -158,6 +158,17 @@ async function runAllTests() {
       assert.strictEqual(res.status, 400);
     });
 
+    await test('POST /api/auth/google rejects mock tokens unless the explicit test flag is enabled', async () => {
+      process.env.CHRONOS_ENABLE_MOCK_GOOGLE_AUTH = 'false';
+      const res = await fetch(`${baseUrl}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: `test-mock-google-token:blocked.${uniqueNum}@gmail.com` })
+      });
+      process.env.CHRONOS_ENABLE_MOCK_GOOGLE_AUTH = 'true';
+      assert.strictEqual(res.status, 401);
+    });
+
     const googleNewEmail = `google.new.${uniqueNum}@gmail.com`;
     let googleUserToken = '';
     let googleUserId = '';
@@ -308,6 +319,18 @@ async function runAllTests() {
       assert.ok(res.headers.get('content-type')?.includes('text/event-stream'));
       const text = await res.text();
       assert.ok(text.includes('data:'), 'Should emit SSE data frames');
+    });
+
+    await test('Logout revokes the JWT server-side and blocks subsequent requests', async () => {
+      const logoutRes = await fetch(`${baseUrl}/api/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${userToken}` }
+      });
+      assert.strictEqual(logoutRes.status, 200);
+      const revokedRes = await fetch(`${baseUrl}/api/tasks`, {
+        headers: { Authorization: `Bearer ${userToken}` }
+      });
+      assert.strictEqual(revokedRes.status, 401);
     });
 
     console.log(`\n======================================================`);
