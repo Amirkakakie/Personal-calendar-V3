@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { SignJWT } from 'jose';
 import bcrypt from 'bcryptjs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { db } from '../db.ts';
 import { getJwtSecret } from '../middleware/auth.ts';
 
@@ -28,7 +28,8 @@ async function issueSessionToken(user: { id: string; email: string; name?: strin
     sub: user.id,
     email: user.email,
     name: user.name,
-    role: user.role
+    role: user.role,
+    jti: randomUUID()
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuer('chronos-os')
