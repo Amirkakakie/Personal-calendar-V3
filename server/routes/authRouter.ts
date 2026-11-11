@@ -95,6 +95,9 @@ router.post('/signup', async (req: Request, res: Response) => {
 
     const created = db.createUser(newUser);
 
+    // Persist the new account before creating its FK-backed session row.
+    await db.flush();
+
     // Cryptographically sign JWT with jose and standard claims
     const token = await issueSessionToken(created);
 
@@ -332,6 +335,8 @@ router.post('/google', async (req: Request, res: Response) => {
       };
 
       user = db.createUser(newUser);
+      // Persist the new account before creating its FK-backed session row.
+      await db.flush();
     }
 
     // Sign cryptographic Chronos JWT session
