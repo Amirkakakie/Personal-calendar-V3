@@ -54,6 +54,9 @@ jobs:
       - name: Install dependencies from generated lockfile
         run: npm ci --no-audit --no-fund
 
+      - name: Audit production and development dependencies
+        run: npm audit --audit-level=high
+
       # Keep the committed lockfile reproducible. This runs only on a push to
       # the dedicated feature branch, never from forked pull_request contexts.
       - name: Commit synchronized npm lockfile
