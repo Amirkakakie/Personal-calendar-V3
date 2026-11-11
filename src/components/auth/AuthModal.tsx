@@ -54,8 +54,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMessage(direction === 'rtl' ? 'لطفاً ایمیل و رمز عبور را وارد کنید.' : 'Please enter email and password.');
       return;
     }
-    if (password.length < 6) {
-      setErrorMessage(direction === 'rtl' ? 'رمز عبور باید حداقل ۶ کاراکتر باشد.' : 'Password must be at least 6 characters.');
+    if (password.length < 12) {
+      setErrorMessage(direction === 'rtl' ? 'رمز عبور باید حداقل ۱۲ کاراکتر باشد.' : 'Password must be at least 12 characters.');
+      return;
+    }
+    if (new TextEncoder().encode(password).length > 72) {
+      setErrorMessage(direction === 'rtl' ? 'طول رمز عبور نباید بیشتر از ۷۲ بایت باشد.' : 'Password must not exceed 72 UTF-8 bytes.');
       return;
     }
     if (password !== confirmPassword) {
@@ -65,14 +69,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsSubmitting(true);
     setErrorMessage(null);
-    const displayName = name.trim() || email.trim().split('@')[0];
-    const res = await signup(displayName, email.trim(), password, jobTitle);
-    setIsSubmitting(false);
+    try {
+      const displayName = name.trim() || email.trim().split('@')[0];
+      const res = await signup(displayName, email.trim(), password, jobTitle);
 
-    if (res.success) {
-      onClose();
-    } else {
-      setErrorMessage(res.error || 'Signup failed.');
+      if (res.success) {
+        onClose();
+      } else {
+        setErrorMessage(res.error || (direction === 'rtl' ? 'ثبت‌نام انجام نشد. لطفاً دوباره تلاش کنید.' : 'Registration was not completed. Please try again.'));
+      }
+    } catch (error: any) {
+      console.error('[AuthModal] Unexpected registration error:', error);
+      setErrorMessage(error?.message || (direction === 'rtl' ? 'خطای غیرمنتظره هنگام ثبت‌نام رخ داد.' : 'An unexpected error occurred during registration.'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -106,7 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-6">
           {/* Error Banner */}
           {errorMessage && (
-            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-xs text-rose-400">
+            <div role="alert" aria-live="assertive" className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-xs text-rose-400">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
