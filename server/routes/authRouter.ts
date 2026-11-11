@@ -184,8 +184,16 @@ router.post('/google', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Google authorization code is invalid or too large.' });
     }
 
-    if (!credential && !code) {
-      return res.status(400).json({ success: false, error: 'Google credential (ID token) or authorization code is required' });
+    // Authorization-code exchange is disabled until the browser flow supplies
+    // and the server verifies one-time OAuth state and PKCE. The active client
+    // uses a Google ID token credential, which is verified against Google's
+    // tokeninfo endpoint and the configured client audience.
+    if (code) {
+      return res.status(400).json({ success: false, error: 'Google authorization-code flow is disabled until state and PKCE validation are enabled. Use the verified ID-token credential flow.' });
+    }
+
+    if (!credential) {
+      return res.status(400).json({ success: false, error: 'Google ID-token credential is required.' });
     }
 
     let googlePayload: {
