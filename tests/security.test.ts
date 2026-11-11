@@ -6,6 +6,7 @@ import path from 'node:path';
 // Each test process gets a disposable database file. Test fixtures must never
 // be written into the developer's tracked data directory.
 process.env.NODE_ENV = 'test';
+process.env.CHRONOS_ENABLE_MOCK_GOOGLE_AUTH = 'true';
 const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chronos-security-'));
 const testDataFile = path.join(testDataDir, 'db.json');
 process.env.CHRONOS_DATA_FILE = testDataFile;
