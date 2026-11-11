@@ -19,9 +19,9 @@ import {
   createRateLimiter
 } from './middleware/security.ts';
 
-// Fail fast on misconfigured production deployments. Never issue or verify JWTs
-// with an ephemeral per-process secret, which would invalidate sessions across restarts.
-if (process.env.NODE_ENV === 'production') {
+// Fail fast in every real deployment and local runtime. Only isolated tests may use
+// the deterministic test-only key; no development/staging fallback is permitted.
+if (process.env.NODE_ENV !== 'test') {
   getJwtSecret();
 }
 
