@@ -279,5 +279,5 @@ export async function persistRelationalSnapshot(prisma: PrismaClient, snapshot: 
     await deleteMissing('userStats',users.map(u=>'stats-'+text(u.id))); await deleteMissing('googleConnection',users.map(u=>'google-'+text(u.id)));
     await deleteMissing('user',ids(users));
     return expectedVersion+1n;
-  },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,timeout:120000});
+  },{isolationLevel:'Serializable',timeout:120000});
 }
