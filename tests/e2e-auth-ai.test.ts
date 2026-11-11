@@ -6,6 +6,7 @@ import path from 'node:path';
 
 // E2E data is isolated from the developer's local database and repository.
 process.env.NODE_ENV = 'test';
+process.env.CHRONOS_ENABLE_MOCK_GOOGLE_AUTH = 'true';
 const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chronos-e2e-'));
 process.env.CHRONOS_DATA_FILE = path.join(testDataDir, 'db.json');
 const [{ default: app }, { db }] = await Promise.all([
