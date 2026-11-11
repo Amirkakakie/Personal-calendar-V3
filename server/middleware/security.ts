@@ -86,7 +86,8 @@ async function consumeDistributedLimit(
 export function createRateLimiter(options: { windowMs: number; max: number; message?: string }) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    const route = req.baseUrl || req.path;
+    // originalUrl remains stable while Express trims req.url inside mounted middleware.
+    const route = (req.originalUrl || req.path).split('?')[0];
     const key = `chronos:rate-limit:${createHash('sha256').update(`${ip}:${route}`).digest('hex')}`;
 
     if (process.env.NODE_ENV === 'production') {
