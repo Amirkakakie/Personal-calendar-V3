@@ -108,6 +108,12 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
       return;
     }
 
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    if (!(await db.isAuthSessionActive(user.id, tokenHash))) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Session has expired or been revoked.' });
+      return;
+    }
+
     req.user = {
       id: user.id,
       email: user.email,
