@@ -64,6 +64,12 @@ async function runSecurityTestSuite() {
     getJwtSecret() === process.env.JWT_SECRET,
     'Production accepts and returns a configured strong stable JWT_SECRET'
   );
+  process.env.NODE_ENV = 'development';
+  delete process.env.JWT_SECRET;
+  assert(
+    (() => { try { getJwtSecret(); return false; } catch { return true; } })(),
+    'Development rejects a missing JWT_SECRET instead of using a predictable fallback'
+  );
   process.env.NODE_ENV = previousNodeEnv;
   if (previousJwtSecret === undefined) delete process.env.JWT_SECRET;
   else process.env.JWT_SECRET = previousJwtSecret;
