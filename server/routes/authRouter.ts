@@ -349,18 +349,7 @@ router.post('/google', async (req: Request, res: Response) => {
     }
 
     // Sign cryptographic Chronos JWT session
-    const token = await new SignJWT({
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuer('chronos-os')
-      .setAudience('chronos-clients')
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(getSigningKey());
+    const token = await issueSessionToken(user);
 
     const { passwordHash: _hash, password: _legacy, ...safeUser } = user as any;
     res.json({
