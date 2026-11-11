@@ -21,9 +21,19 @@ function resolvePort(): number {
 }
 
 function resolveHost(): string {
+  // Production Express servers must be reachable behind the platform proxy.
+  // The Vite middleware is only created in development, where we bind loopback.
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.HOST || '0.0.0.0';
+  }
+
   const hostArgIndex = process.argv.indexOf('--host');
   if (hostArgIndex !== -1 && process.argv[hostArgIndex + 1]) {
-    return process.argv[hostArgIndex + 1];
+    const requestedHost = process.argv[hostArgIndex + 1];
+    if (!['localhost', '127.0.0.1', '::1'].includes(requestedHost)) {
+      throw new Error('The Chronos Vite development server must bind to loopback only. Remote dev-server exposure is disabled.');
+    }
+    return requestedHost;
   }
   return '127.0.0.1';
 }
