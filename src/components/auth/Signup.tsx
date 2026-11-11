@@ -100,7 +100,7 @@ export const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
           {/* Error Banner */}
           {errorMessage && (
-            <div className="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3 text-sm text-rose-400">
+            <div role="alert" aria-live="assertive" className="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3 text-sm text-rose-400">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
