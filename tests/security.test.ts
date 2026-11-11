@@ -91,12 +91,17 @@ async function runSecurityTestSuite() {
     const sameOrigin = new URL(BASE_URL).origin;
     const sameOriginResponse = await fetch(`${BASE_URL}/health`, { headers: { Origin: sameOrigin } });
     assert(sameOriginResponse.status === 200 && sameOriginResponse.headers.get('access-control-allow-origin') === sameOrigin, 'Production same-origin API requests work without manually configured CORS origins');
+    const productionCsp = sameOriginResponse.headers.get('content-security-policy') || '';
+    assert(!productionCsp.includes("'unsafe-inline'"), 'Production CSP does not inherit development inline-script allowances');
     process.env.NODE_ENV = savedNodeEnv;
     if (savedAppUrl === undefined) delete process.env.APP_URL; else process.env.APP_URL = savedAppUrl;
     if (savedCorsOrigin === undefined) delete process.env.CORS_ORIGIN; else process.env.CORS_ORIGIN = savedCorsOrigin;
     if (savedVercelUrl === undefined) delete process.env.VERCEL_URL; else process.env.VERCEL_URL = savedVercelUrl;
     const allowedOrigin = await fetch(`${BASE_URL}/health`, { headers: { Origin: 'http://localhost:3000' } });
     assert(allowedOrigin.status === 200 && allowedOrigin.headers.get('access-control-allow-origin') === 'http://localhost:3000', 'Configured development Origin receives an exact CORS allowlist response');
+    const developmentCsp = allowedOrigin.headers.get('content-security-policy') || '';
+    assert(developmentCsp.includes("'unsafe-inline'") && developmentCsp.includes('https://fonts.googleapis.com'), 'Development CSP permits the Vite React refresh preamble and Google Fonts stylesheet');
+    assert(developmentCsp.includes('ws:') && developmentCsp.includes('wss:'), 'Development CSP permits Vite HMR WebSocket connections');
 
     // ---------------------------------------------------------
     // Setup: Create User A & User B
