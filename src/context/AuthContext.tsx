@@ -32,6 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const logout = useCallback(() => {
+    const token = getAuthToken();
+    if (token) {
+      void fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch((error) => {
+        console.warn('[AuthContext] Server-side logout could not be confirmed:', error);
+      });
+    }
     setCurrentUser(null);
     setAuthToken(null);
     try {
