@@ -9,7 +9,7 @@ const isRecord = (value: unknown): value is Record<string, any> =>
 const PROJECT_UPDATE_FIELDS = new Set(['name', 'key', 'description', 'color', 'icon', 'targetDate', 'workspaceId']);
 const TASK_UPDATE_FIELDS = new Set(['columnId', 'title', 'description', 'priority', 'assigneeId', 'dueDate', 'estimatedHours', 'subtasks', 'tags', 'order']);
 const isDateOnly = (value: unknown): value is string =>
-  typeof value === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
 
 
 // GET /api/workspaces - List workspaces for authenticated user
