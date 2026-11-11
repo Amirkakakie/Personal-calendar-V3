@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { buildLegacyArchiveRow, validateLegacyExport, type LegacySnapshotExport } from './legacySnapshot.ts';
 import { encryptGoogleToken, encryptJsonPayload } from '../security/dataEncryption.ts';
@@ -436,5 +436,5 @@ export async function importLegacySnapshotToRelational(
       throw new Error('Post-import row-count reconciliation failed; transaction rolled back. '+JSON.stringify({verify,report}));
     }
     return { status: 'IMPORTED', archiveId: archive.id, checksum: archive.checksum, report, targetCounts: verify };
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120000 });
+  }, { isolationLevel: 'Serializable', timeout: 120000 });
 }
