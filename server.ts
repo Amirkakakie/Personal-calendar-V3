@@ -25,7 +25,7 @@ function resolveHost(): string {
   if (hostArgIndex !== -1 && process.argv[hostArgIndex + 1]) {
     return process.argv[hostArgIndex + 1];
   }
-  return '0.0.0.0';
+  return '127.0.0.1';
 }
 
 const PORT = resolvePort();
