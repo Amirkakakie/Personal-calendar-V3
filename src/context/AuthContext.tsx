@@ -150,31 +150,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const res = await fetch(`${API_BASE}/auth/signup`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({ name: name.trim(), email: cleanEmail, password, title })
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.user && data.token) {
-            setAuthToken(data.token);
-            setCurrentUser(data.user);
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
-            setIsLoading(false);
-            return { success: true };
+        // Read the body for both success and failure responses. Some proxies return
+        // HTML/plain text for server errors, so never let JSON parsing hide the status.
+        const rawBody = await res.text();
+        let data: any = {};
+        if (rawBody) {
+          try {
+            data = JSON.parse(rawBody);
+          } catch {
+            data = {};
           }
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          setIsLoading(false);
-          return { success: false, error: errData.error || 'Registration failed.' };
         }
-      } catch (networkErr: any) {
-        setIsLoading(false);
-        return { success: false, error: networkErr.message || 'Unable to connect to registration service.' };
-      }
 
-      setIsLoading(false);
-      return { success: false, error: 'Registration failed.' };
+        if (!res.ok || !data.success) {
+          const serverMessage = typeof data.error === 'string' && data.error.trim()
+            ? data.error.trim()
+            : typeof data.message === 'string' && data.message.trim()
+              ? data.message.trim()
+              : rawBody && rawBody.length < 240
+                ? rawBody
+                : res.statusText || 'The server rejected the registration request.';
+          return {
+            success: false,
+            error: `HTTP ${res.status}: ${serverMessage}`
+          };
+        }
+
+        if (!data.user || !data.token) {
+          return {
+            success: false,
+            error: 'The server responded successfully but did not return the account session. Contact the administrator before trying again with the same email.'
+          };
+        }
+
+        // The account has been created by the server. A localStorage failure must
+        // not turn that successful registration into a misleading "failed" result.
+        setAuthToken(data.token);
+        setCurrentUser(data.user);
+        try {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+        } catch (storageError) {
+          console.warn('[AuthContext] Account created, but the local session cache could not be saved:', storageError);
+        }
+        return { success: true };
+      } catch (networkErr: any) {
+        console.error('[AuthContext] Registration request failed:', networkErr);
+        return {
+          success: false,
+          error: networkErr?.message
+            ? `Could not complete registration: ${networkErr.message}`
+            : 'Unable to connect to the registration service. Check the server and network, then try again.'
+        };
+      } finally {
+        setIsLoading(false);
+      }
     },
     []
   );
