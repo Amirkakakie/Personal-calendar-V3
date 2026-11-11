@@ -3,6 +3,15 @@ import { db, TeamProjectRecord, TeamTaskRecord, ProjectInvitationRecord, Workspa
 
 const router = Router();
 
+const isRecord = (value: unknown): value is Record<string, any> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const PROJECT_UPDATE_FIELDS = new Set(['name', 'key', 'description', 'color', 'icon', 'targetDate', 'workspaceId']);
+const TASK_UPDATE_FIELDS = new Set(['columnId', 'title', 'description', 'priority', 'assigneeId', 'dueDate', 'estimatedHours', 'subtasks', 'tags', 'order']);
+const isDateOnly = (value: unknown): value is string =>
+  typeof value === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+
+
 // GET /api/workspaces - List workspaces for authenticated user
 router.get('/workspaces', (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -34,8 +43,11 @@ router.post('/team/projects', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const userEmail = req.user!.email;
   const body = req.body;
+  if (!isRecord(body) || Object.keys(body).some(key => !['name', 'key', 'description', 'color', 'icon', 'workspaceId', 'targetDate'].includes(key))) {
+    return res.status(400).json({ success: false, error: 'Invalid project payload.' });
+  }
 
-  if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
+  if (typeof body.name !== 'string' || !body.name.trim() || body.name.trim().length > 120) {
     return res.status(400).json({ success: false, error: 'Project name is required' });
   }
 
@@ -52,7 +64,22 @@ router.post('/team/projects', (req: Request, res: Response) => {
   }
 
   const id = `proj-${Date.now()}`;
-  const key = body.key?.trim().toUpperCase() || body.name.trim().substring(0, 3).toUpperCase();
+  if (body.key !== undefined && (typeof body.key !== 'string' || !/^[a-zA-Z0-9_-]{2,12}$/.test(body.key.trim()))) {
+    return res.status(400).json({ success: false, error: 'Project key must contain 2-12 letters, numbers, underscores or hyphens.' });
+  }
+  if (body.description !== undefined && (typeof body.description !== 'string' || body.description.length > 5000)) {
+    return res.status(400).json({ success: false, error: 'Project description is too long or invalid.' });
+  }
+  if (body.color !== undefined && (typeof body.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(body.color))) {
+    return res.status(400).json({ success: false, error: 'Project color must be a six-digit hex color.' });
+  }
+  if (body.icon !== undefined && (typeof body.icon !== 'string' || body.icon.length > 40)) {
+    return res.status(400).json({ success: false, error: 'Project icon is invalid.' });
+  }
+  if (body.targetDate !== undefined && body.targetDate !== '' && !isDateOnly(body.targetDate)) {
+    return res.status(400).json({ success: false, error: 'Target date must use YYYY-MM-DD format.' });
+  }
+  const key = (body.key || body.name.trim().substring(0, 3)).trim().toUpperCase();
 
   const newProj: TeamProjectRecord = {
     id,
@@ -92,7 +119,32 @@ router.put('/team/projects/:id', (req: Request, res: Response) => {
     });
   }
 
-  const updated = db.updateTeamProject(projectId, req.body, userId);
+  if (!isRecord(req.body) || Object.keys(req.body).some(key => !PROJECT_UPDATE_FIELDS.has(key))) {
+    return res.status(400).json({ success: false, error: 'Project update contains unsupported fields.' });
+  }
+  const updates = req.body;
+  if (updates.name !== undefined && (typeof updates.name !== 'string' || !updates.name.trim() || updates.name.trim().length > 120)) {
+    return res.status(400).json({ success: false, error: 'Project name must be 1-120 characters.' });
+  }
+  if (updates.key !== undefined && (typeof updates.key !== 'string' || !/^[a-zA-Z0-9_-]{2,12}$/.test(updates.key.trim()))) {
+    return res.status(400).json({ success: false, error: 'Project key must contain 2-12 letters, numbers, underscores or hyphens.' });
+  }
+  if (updates.description !== undefined && (typeof updates.description !== 'string' || updates.description.length > 5000)) {
+    return res.status(400).json({ success: false, error: 'Project description is too long or invalid.' });
+  }
+  if (updates.color !== undefined && (typeof updates.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(updates.color))) {
+    return res.status(400).json({ success: false, error: 'Project color must be a six-digit hex color.' });
+  }
+  if (updates.icon !== undefined && (typeof updates.icon !== 'string' || updates.icon.length > 40)) {
+    return res.status(400).json({ success: false, error: 'Project icon is invalid.' });
+  }
+  if (updates.targetDate !== undefined && updates.targetDate !== '' && !isDateOnly(updates.targetDate)) {
+    return res.status(400).json({ success: false, error: 'Target date must use YYYY-MM-DD format.' });
+  }
+  if (updates.workspaceId !== undefined && (typeof updates.workspaceId !== 'string' || !db.isUserInWorkspace(updates.workspaceId, userId))) {
+    return res.status(403).json({ success: false, error: 'Workspace access denied.' });
+  }
+  const updated = db.updateTeamProject(projectId, updates, userId);
   if (!updated) {
     return res.status(404).json({ success: false, error: 'Team project not found or access denied' });
   }
@@ -170,8 +222,36 @@ router.post('/team/tasks', (req: Request, res: Response) => {
   const userId = req.user!.id;
   const body = req.body;
 
-  if (!body.projectId || !body.title) {
-    return res.status(400).json({ success: false, error: 'projectId and title are required' });
+  if (!isRecord(body) || Object.keys(body).some(key => !['projectId', 'taskNumber', 'columnId', 'title', 'description', 'priority', 'assigneeId', 'dueDate', 'estimatedHours', 'subtasks', 'tags', 'order'].includes(key))) {
+    return res.status(400).json({ success: false, error: 'Invalid task payload.' });
+  }
+  if (typeof body.projectId !== 'string' || !body.projectId.trim() || body.projectId.length > 128 ||
+      typeof body.title !== 'string' || !body.title.trim() || body.title.trim().length > 200) {
+    return res.status(400).json({ success: false, error: 'A valid projectId and task title (1-200 characters) are required.' });
+  }
+  if (body.description !== undefined && (typeof body.description !== 'string' || body.description.length > 5000)) {
+    return res.status(400).json({ success: false, error: 'Task description must not exceed 5000 characters.' });
+  }
+  if (body.priority !== undefined && !['low', 'medium', 'high', 'urgent'].includes(body.priority)) {
+    return res.status(400).json({ success: false, error: 'Task priority is invalid.' });
+  }
+  if (body.columnId !== undefined && (typeof body.columnId !== 'string' || !body.columnId.trim() || body.columnId.length > 64)) {
+    return res.status(400).json({ success: false, error: 'Task column is invalid.' });
+  }
+  if (body.assigneeId !== undefined && (typeof body.assigneeId !== 'string' || body.assigneeId.length > 128)) {
+    return res.status(400).json({ success: false, error: 'Task assignee is invalid.' });
+  }
+  if (body.dueDate !== undefined && body.dueDate !== '' && !isDateOnly(body.dueDate)) {
+    return res.status(400).json({ success: false, error: 'Task due date must use YYYY-MM-DD format.' });
+  }
+  if (body.estimatedHours !== undefined && (!Number.isFinite(Number(body.estimatedHours)) || Number(body.estimatedHours) < 0 || Number(body.estimatedHours) > 10000)) {
+    return res.status(400).json({ success: false, error: 'Estimated hours are outside the allowed range.' });
+  }
+  if (body.tags !== undefined && (!Array.isArray(body.tags) || body.tags.length > 20 || body.tags.some((tag: unknown) => typeof tag !== 'string' || tag.length > 40))) {
+    return res.status(400).json({ success: false, error: 'Task tags must be an array of up to 20 short strings.' });
+  }
+  if (body.subtasks !== undefined && (!Array.isArray(body.subtasks) || body.subtasks.length > 50 || body.subtasks.some((item: any) => !isRecord(item) || typeof item.title !== 'string' || !item.title.trim() || item.title.length > 200))) {
+    return res.status(400).json({ success: false, error: 'Task subtasks must contain up to 50 valid titled items.' });
   }
 
   const role = db.getProjectRole(body.projectId, userId);
@@ -230,7 +310,35 @@ router.put('/team/tasks/:id', (req: Request, res: Response) => {
     return res.status(403).json({ success: false, error: 'Forbidden: Viewers have read-only access and cannot modify tasks.' });
   }
 
-  const updated = db.updateTeamTask(taskId, req.body, userId);
+  if (!isRecord(req.body) || Object.keys(req.body).some(key => !TASK_UPDATE_FIELDS.has(key))) {
+    return res.status(400).json({ success: false, error: 'Task update contains unsupported fields.' });
+  }
+  const updates = req.body;
+  if (updates.title !== undefined && (typeof updates.title !== 'string' || !updates.title.trim() || updates.title.trim().length > 200)) {
+    return res.status(400).json({ success: false, error: 'Task title must be 1-200 characters.' });
+  }
+  if (updates.description !== undefined && (typeof updates.description !== 'string' || updates.description.length > 5000)) {
+    return res.status(400).json({ success: false, error: 'Task description must not exceed 5000 characters.' });
+  }
+  if (updates.priority !== undefined && !['low', 'medium', 'high', 'urgent'].includes(updates.priority)) {
+    return res.status(400).json({ success: false, error: 'Task priority is invalid.' });
+  }
+  if (updates.dueDate !== undefined && updates.dueDate !== '' && !isDateOnly(updates.dueDate)) {
+    return res.status(400).json({ success: false, error: 'Task due date must use YYYY-MM-DD format.' });
+  }
+  if (updates.estimatedHours !== undefined && (!Number.isFinite(Number(updates.estimatedHours)) || Number(updates.estimatedHours) < 0 || Number(updates.estimatedHours) > 10000)) {
+    return res.status(400).json({ success: false, error: 'Estimated hours are outside the allowed range.' });
+  }
+  if (updates.assigneeId !== undefined && updates.assigneeId !== null && (typeof updates.assigneeId !== 'string' || updates.assigneeId.length > 128)) {
+    return res.status(400).json({ success: false, error: 'Task assignee is invalid.' });
+  }
+  if (updates.tags !== undefined && (!Array.isArray(updates.tags) || updates.tags.length > 20 || updates.tags.some((tag: unknown) => typeof tag !== 'string' || tag.length > 40))) {
+    return res.status(400).json({ success: false, error: 'Task tags must be an array of up to 20 short strings.' });
+  }
+  if (updates.subtasks !== undefined && (!Array.isArray(updates.subtasks) || updates.subtasks.length > 50 || updates.subtasks.some((item: any) => !isRecord(item) || typeof item.title !== 'string' || !item.title.trim() || item.title.length > 200))) {
+    return res.status(400).json({ success: false, error: 'Task subtasks must contain up to 50 valid titled items.' });
+  }
+  const updated = db.updateTeamTask(taskId, updates, userId);
   if (!updated) {
     return res.status(404).json({ success: false, error: 'Task not found or unauthorized' });
   }
