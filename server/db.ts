@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -233,6 +234,7 @@ class Database {
   private readonly requiresPostgres: boolean;
   private readonly relationalEnabled: boolean;
   private configurationError: string | null = null;
+  private readonly localAuthSessions = new Map<string, { userId: string; expiresAt: Date; revokedAt: Date | null }>();
 
   constructor() {
     const { targetFile, isServerless } = resolveStoragePath();
@@ -445,6 +447,50 @@ class Database {
       console.error('[Database] Local development persistence failed:', err);
       throw err;
     }
+  }
+
+  public async createAuthSession(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    if (this.relationalEnabled) {
+      await this.ready();
+      if (!this.prisma) throw new Error('Relational database is unavailable for session creation.');
+      await this.prisma.authSession.create({
+        data: { id: randomUUID(), userId, tokenHash, expiresAt }
+      });
+      return;
+    }
+    this.localAuthSessions.set(tokenHash, { userId, expiresAt, revokedAt: null });
+  }
+
+  public async isAuthSessionActive(userId: string, tokenHash: string): Promise<boolean> {
+    if (this.relationalEnabled) {
+      await this.ready();
+      if (!this.prisma) return false;
+      const session = await this.prisma.authSession.findUnique({ where: { tokenHash } });
+      if (!session || session.userId !== userId || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
+        return false;
+      }
+      await this.prisma.authSession.update({
+        where: { tokenHash },
+        data: { lastUsedAt: new Date() }
+      });
+      return true;
+    }
+    const session = this.localAuthSessions.get(tokenHash);
+    return Boolean(session && session.userId === userId && !session.revokedAt && session.expiresAt.getTime() > Date.now());
+  }
+
+  public async revokeAuthSession(tokenHash: string): Promise<void> {
+    if (this.relationalEnabled) {
+      await this.ready();
+      if (!this.prisma) throw new Error('Relational database is unavailable for session revocation.');
+      await this.prisma.authSession.updateMany({
+        where: { tokenHash, revokedAt: null },
+        data: { revokedAt: new Date() }
+      });
+      return;
+    }
+    const session = this.localAuthSessions.get(tokenHash);
+    if (session) session.revokedAt = new Date();
   }
 
   public getHealthInfo() {
